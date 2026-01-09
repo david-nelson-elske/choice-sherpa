@@ -725,10 +725,10 @@ Response: 200 OK (empty body)
 **Goal:** AccessChecker port with in-memory tier limits
 
 **Deliverables:**
-- [ ] AccessChecker port definition
-- [ ] TierLimits value object
-- [ ] MembershipAccessChecker implementation
-- [ ] Session module integration
+- [x] AccessChecker port definition
+- [x] TierLimits value object (+ MembershipTier enum)
+- [x] StubAccessChecker implementation (for development/testing)
+- [ ] Session module integration (blocked: requires Session aggregate from Loop 3)
 
 **Exit Criteria:** Session creation blocked when limit reached
 

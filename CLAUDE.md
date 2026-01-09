@@ -234,6 +234,7 @@ dev_frontend: cd frontend && npm run dev
 | `/lint` | Run linters |
 | `/commit` | Create git commit |
 | `/pr` | Create pull request |
+| `/checklist-sync` | Sync REQUIREMENTS checklist with filesystem state |
 
 ### Security & Code Quality
 

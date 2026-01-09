@@ -15,7 +15,7 @@ mod state_machine;
 mod errors;
 mod events;
 
-pub use ids::{SessionId, CycleId, ComponentId, ConversationId, UserId};
+pub use ids::{SessionId, CycleId, ComponentId, ConversationId, UserId, MembershipId};
 pub use timestamp::Timestamp;
 pub use percentage::Percentage;
 pub use rating::Rating;

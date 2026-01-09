@@ -81,9 +81,15 @@ pub enum ErrorCode {
     AIProviderError,
     RateLimited,
 
+    // Payment errors
+    PaymentRequired,
+    PaymentFailed,
+
     // Infrastructure errors
     DatabaseError,
     CacheError,
+    ExternalServiceError,
+    NotFound,
     InternalError,
 }
 
@@ -110,8 +116,12 @@ impl fmt::Display for ErrorCode {
             ErrorCode::Forbidden => "FORBIDDEN",
             ErrorCode::AIProviderError => "AI_PROVIDER_ERROR",
             ErrorCode::RateLimited => "RATE_LIMITED",
+            ErrorCode::PaymentRequired => "PAYMENT_REQUIRED",
+            ErrorCode::PaymentFailed => "PAYMENT_FAILED",
             ErrorCode::DatabaseError => "DATABASE_ERROR",
             ErrorCode::CacheError => "CACHE_ERROR",
+            ErrorCode::ExternalServiceError => "EXTERNAL_SERVICE_ERROR",
+            ErrorCode::NotFound => "NOT_FOUND",
             ErrorCode::InternalError => "INTERNAL_ERROR",
         };
         write!(f, "{}", s)
@@ -150,6 +160,16 @@ impl DomainError {
     pub fn with_detail(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.details.insert(key.into(), value.into());
         self
+    }
+
+    /// Returns the error message.
+    pub fn message(&self) -> &str {
+        &self.message
+    }
+
+    /// Returns the error code.
+    pub fn code(&self) -> ErrorCode {
+        self.code
     }
 }
 

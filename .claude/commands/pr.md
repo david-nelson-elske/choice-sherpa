@@ -56,6 +56,17 @@ git rebase origin/main
 git status  # Should be clean
 ```
 
+### 7. Sync Requirements Checklist
+```bash
+/checklist-sync <module>
+```
+
+Sync the REQUIREMENTS checklist to reflect current filesystem state. This ensures the PR includes accurate progress metrics.
+
+### 8. Update Implementation Summary
+
+Ensure `REQUIREMENTS/summary.md` reflects current progress across all modules. This provides reviewers with overall project status context.
+
 ---
 
 ## Process
@@ -72,6 +83,34 @@ All four must pass before PR creation:
 - **Test**: Functionality verification
 - **Security**: No CRITICAL/HIGH vulnerabilities
 - **Simplify**: No unnecessary complexity
+
+### Step 1.5: Sync Requirements Checklist
+
+```bash
+# Determine module from changed files and sync checklist
+/checklist-sync <module>
+```
+
+This step:
+1. Detects which module(s) are affected by the PR
+2. Syncs the corresponding REQUIREMENTS checklist(s)
+3. Extracts progress metrics for the PR description
+4. Stages the updated checklist file(s) for commit
+
+### Step 1.6: Update Implementation Summary
+
+After syncing checklists, update the overall progress summary:
+
+```bash
+# Update REQUIREMENTS/summary.md with current progress from all checklists
+```
+
+This step:
+1. Reads progress metrics from all `CHECKLIST-*.md` files
+2. Updates `REQUIREMENTS/summary.md` with current file/test counts
+3. Stages the updated summary for commit
+
+The summary document provides a quick overview of implementation status across all modules for the PR reviewer.
 
 ### Step 2: Analyze Changes
 
@@ -140,6 +179,22 @@ Examples:
 - Added password hashing utility
 - Added input validation
 
+## Requirements Progress
+<!-- Auto-generated from /checklist-sync -->
+| Module | Files | Tests | Progress |
+|--------|-------|-------|----------|
+| session | 12/45 (27%) | 28/85 (33%) | 30% |
+
+<details>
+<summary>Files added in this PR</summary>
+
+- ✅ `backend/src/domain/session/session.rs`
+- ✅ `backend/src/domain/session/events.rs`
+- ✅ `backend/src/domain/session/errors.rs`
+</details>
+
+📋 See: [REQUIREMENTS/CHECKLIST-session.md](../REQUIREMENTS/CHECKLIST-session.md)
+
 ## Testing
 - [x] Unit tests added
 - [x] Integration tests added (if applicable)
@@ -157,6 +212,8 @@ Examples:
 - [x] Tests cover new functionality
 - [x] Security review completed
 - [x] Code simplification review completed
+- [x] Requirements checklist synced
+- [x] Implementation summary updated
 - [ ] Documentation updated (if needed)
 
 ---
@@ -261,6 +318,8 @@ Pre-flight checks:
   ✅ Code simplification review passed
   ✅ Branch up to date with main
   ✅ All changes committed
+  ✅ Requirements checklist synced (session: 12/45 files)
+  ✅ Implementation summary updated
 
 PR Preview:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -273,11 +332,20 @@ Allow users to register and login securely.
 - [x] Create password hashing utility
 - [x] Add register method to AuthService
 - [x] Add login method to AuthService
+
+## Requirements Progress
+| Module | Files | Tests | Progress |
+|--------|-------|-------|----------|
+| session | 12/45 (27%) | 28/85 (33%) | 30% |
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Creating PR...
 
 ✅ PR #42 created: https://github.com/user/repo/pull/42
+
+Files updated:
+  - REQUIREMENTS/CHECKLIST-session.md
+  - REQUIREMENTS/summary.md
 
 Next steps:
 1. PR will run CI checks
@@ -333,5 +401,8 @@ git push -u origin $(git branch --show-current)
 - `/lint` - Code quality checks
 - `/security-review` - Security analysis
 - `/code-simplifier` - Code simplification review
+- `/checklist-sync` - Sync REQUIREMENTS checklists with filesystem
 - `/commit` - Create commits (use commit-commands plugin)
 - `docs/architecture/APPLICATION-SECURITY-STANDARD.md` - Security requirements
+- `REQUIREMENTS/CHECKLIST-*.md` - Module implementation checklists
+- `REQUIREMENTS/summary.md` - Overall implementation progress summary

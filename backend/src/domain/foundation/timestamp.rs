@@ -1,6 +1,6 @@
 //! Timestamp value object for immutable points in time.
 
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Immutable point in time, always UTC.
@@ -32,6 +32,27 @@ impl Timestamp {
     /// Checks if this timestamp is after another.
     pub fn is_after(&self, other: &Timestamp) -> bool {
         self.0 > other.0
+    }
+
+    /// Returns the duration from another timestamp to this one.
+    ///
+    /// Returns negative duration if other is after self.
+    pub fn duration_since(&self, other: &Timestamp) -> Duration {
+        self.0.signed_duration_since(other.0)
+    }
+
+    /// Creates a new timestamp by adding the specified number of days.
+    ///
+    /// Negative values subtract days.
+    pub fn add_days(&self, days: i64) -> Self {
+        Self(self.0 + Duration::days(days))
+    }
+
+    /// Creates a new timestamp by adding the specified number of months.
+    ///
+    /// Note: Uses 30 days per month approximation.
+    pub fn add_months(&self, months: i64) -> Self {
+        Self(self.0 + Duration::days(months * 30))
     }
 }
 

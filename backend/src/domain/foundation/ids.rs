@@ -201,6 +201,48 @@ impl fmt::Display for UserId {
     }
 }
 
+/// Unique identifier for a membership subscription.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct MembershipId(Uuid);
+
+impl MembershipId {
+    /// Creates a new random MembershipId.
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+
+    /// Creates a MembershipId from an existing UUID.
+    pub fn from_uuid(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
+
+    /// Returns the inner UUID.
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+impl Default for MembershipId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for MembershipId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for MembershipId {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(Uuid::parse_str(s)?))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

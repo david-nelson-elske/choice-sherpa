@@ -47,12 +47,12 @@ impl AiConfig {
 
     /// Check if OpenAI is configured
     pub fn has_openai(&self) -> bool {
-        self.openai_api_key.as_ref().map(|k| !k.is_empty()).unwrap_or(false)
+        self.openai_api_key.as_ref().is_some_and(|k| !k.is_empty())
     }
 
     /// Check if Anthropic is configured
     pub fn has_anthropic(&self) -> bool {
-        self.anthropic_api_key.as_ref().map(|k| !k.is_empty()).unwrap_or(false)
+        self.anthropic_api_key.as_ref().is_some_and(|k| !k.is_empty())
     }
 
     /// Validate AI configuration
