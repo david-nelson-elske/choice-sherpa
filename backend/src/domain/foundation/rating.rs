@@ -6,11 +6,12 @@ use std::fmt;
 use super::ValidationError;
 
 /// Pugh matrix rating: -2 (much worse) to +2 (much better).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[repr(i8)]
 pub enum Rating {
     MuchWorse = -2,
     Worse = -1,
+    #[default]
     Same = 0,
     Better = 1,
     MuchBetter = 2,
@@ -63,12 +64,6 @@ impl Rating {
     /// Returns true if this is neutral (Same).
     pub fn is_neutral(&self) -> bool {
         self.value() == 0
-    }
-}
-
-impl Default for Rating {
-    fn default() -> Self {
-        Rating::Same
     }
 }
 
