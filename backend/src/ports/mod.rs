@@ -10,6 +10,10 @@
 //! - `EventHandler` - Handler that processes incoming events
 //! - `ProcessedEventStore` - Idempotency tracking for event handlers
 //!
+//! ## AI Provider Port
+//!
+//! - `AIProvider` - Port for LLM provider integrations (OpenAI, Anthropic)
+//!
 //! ## Scaling Infrastructure Ports
 //!
 //! - `OutboxWriter` - Transactional event persistence for guaranteed delivery
@@ -18,16 +22,23 @@
 //!
 //! See `docs/architecture/SCALING-READINESS.md` for architectural details.
 
+mod ai_provider;
 mod event_publisher;
 mod event_subscriber;
 mod outbox_writer;
 mod connection_registry;
 mod circuit_breaker;
 mod processed_event_store;
+mod schema_validator;
 
+pub use ai_provider::{
+    AIError, AIProvider, CompletionRequest, CompletionResponse, FinishReason, Message,
+    MessageRole, ProviderInfo, RequestMetadata, StreamChunk, TokenUsage,
+};
 pub use event_publisher::EventPublisher;
 pub use event_subscriber::{EventBus, EventHandler, EventSubscriber};
 pub use outbox_writer::{OutboxWriter, OutboxEntry, OutboxStatus};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use processed_event_store::ProcessedEventStore;
+pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};

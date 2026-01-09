@@ -6,7 +6,7 @@ use std::fmt;
 use thiserror::Error;
 
 /// Errors that occur during value object construction.
-#[derive(Debug, Clone, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ValidationError {
     #[error("Field '{field}' cannot be empty")]
     EmptyField { field: String },

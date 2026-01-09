@@ -920,13 +920,13 @@ impl ComponentSchemaValidator for JsonSchemaValidator {
 
 ## Tasks
 
-- [ ] Create JSON schema files for all 9 components in `backend/src/domain/proact/schemas/`
-- [ ] Implement ComponentSchemaValidator port in `backend/src/ports/schema_validator.rs`
-- [ ] Implement JsonSchemaValidator adapter in `backend/src/adapters/validation/`
-- [ ] Add schema validation to Cycle.update_component_output()
-- [ ] Add schema validation to DataExtractor.extract()
-- [ ] Write unit tests for each schema with valid and invalid examples
-- [ ] Write integration tests for conversation extraction → cycle storage flow
+- [x] Create JSON schema files for all 9 components in `backend/src/domain/proact/schemas/`
+- [x] Implement ComponentSchemaValidator port in `backend/src/ports/schema_validator.rs`
+- [x] Implement JsonSchemaValidator adapter in `backend/src/adapters/validation/`
+- [DEFERRED] Add schema validation to Cycle.update_component_output() - requires Cycle aggregate
+- [DEFERRED] Add schema validation to DataExtractor.extract() - requires Conversation module
+- [x] Write unit tests for each schema with valid and invalid examples
+- [DEFERRED] Write integration tests for conversation extraction → cycle storage flow - requires cycle and conversation modules
 
 ---
 
