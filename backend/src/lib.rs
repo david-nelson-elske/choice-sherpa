@@ -3,6 +3,7 @@
 //! This crate implements the PrOACT framework for structured decision making
 //! through conversational AI guidance.
 
+pub mod config;
 pub mod domain;
 pub mod ports;
 pub mod adapters;

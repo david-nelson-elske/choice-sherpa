@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: choice-sherpa-postgres
+    # WARNING: Development only - override these in production
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-choice-sherpa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-choice_sherpa}
+    ports:
+      - "5433:5432"  # Use 5433 to avoid conflicts with other postgres instances
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Note: Don't mount migrations to initdb.d - use sqlx migrate run instead
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U choice-sherpa -d choice_sherpa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - choice-sherpa
+
+  redis:
+    image: redis:7-alpine
+    container_name: choice-sherpa-redis
+    ports:
+      - "6380:6379"  # Use 6380 to avoid conflicts with other redis instances
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - choice-sherpa
+    # No volume - data is ephemeral for development
+    # Add volume for persistence if needed:
+    # volumes:
+    #   - redis_data:/data
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  choice-sherpa:
+    driver: bridge
