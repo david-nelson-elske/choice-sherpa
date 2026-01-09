@@ -1,0 +1,56 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConsequencesOutput",
+  "description": "Consequence table with Pugh ratings relative to status quo",
+  "type": "object",
+  "required": ["table"],
+  "properties": {
+    "table": {
+      "type": "object",
+      "required": ["alternative_ids", "objective_ids", "cells"],
+      "properties": {
+        "alternative_ids": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" },
+          "minItems": 2,
+          "description": "All alternatives being compared"
+        },
+        "objective_ids": {
+          "type": "array",
+          "items": { "type": "string", "format": "uuid" },
+          "minItems": 1,
+          "description": "All fundamental objectives being evaluated"
+        },
+        "cells": {
+          "type": "object",
+          "description": "Map of 'alt_id:obj_id' -> Cell",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["alternative_id", "objective_id", "rating"],
+            "properties": {
+              "alternative_id": { "type": "string", "format": "uuid" },
+              "objective_id": { "type": "string", "format": "uuid" },
+              "rating": {
+                "type": "integer",
+                "minimum": -2,
+                "maximum": 2,
+                "description": "Pugh rating: -2 (much worse) to +2 (much better) vs status quo"
+              },
+              "rationale": {
+                "type": "string",
+                "description": "Explanation for this rating"
+              },
+              "uncertainty": {
+                "type": "object",
+                "properties": {
+                  "level": { "type": "string", "enum": ["low", "medium", "high"] },
+                  "driver": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

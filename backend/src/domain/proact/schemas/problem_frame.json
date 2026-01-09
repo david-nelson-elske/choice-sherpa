@@ -1,0 +1,94 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ProblemFrameOutput",
+  "description": "Structured framing of the decision context",
+  "type": "object",
+  "required": ["decision_maker", "focal_decision", "decision_hierarchy"],
+  "properties": {
+    "decision_maker": {
+      "type": "object",
+      "description": "Primary person making this decision",
+      "required": ["name", "role"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "role": { "type": "string" }
+      }
+    },
+    "focal_decision": {
+      "type": "object",
+      "description": "The specific decision being addressed",
+      "required": ["statement", "scope"],
+      "properties": {
+        "statement": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Clear statement of the decision question"
+        },
+        "scope": {
+          "type": "string",
+          "description": "Boundaries of what's in/out of this decision"
+        },
+        "constraints": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Limitations or fixed parameters"
+        },
+        "trigger": {
+          "type": "string",
+          "description": "What prompted this decision now"
+        }
+      }
+    },
+    "decision_hierarchy": {
+      "type": "object",
+      "description": "Linked decisions in the hierarchy",
+      "required": ["already_made", "focal", "deferred"],
+      "properties": {
+        "already_made": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LinkedDecision" },
+          "description": "Decisions that constrain this one"
+        },
+        "focal": {
+          "$ref": "#/definitions/LinkedDecision",
+          "description": "The current decision"
+        },
+        "deferred": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/LinkedDecision" },
+          "description": "Decisions that depend on this one"
+        }
+      }
+    },
+    "parties": {
+      "type": "array",
+      "description": "People involved in or affected by this decision",
+      "items": {
+        "type": "object",
+        "required": ["name", "role"],
+        "properties": {
+          "name": { "type": "string" },
+          "role": {
+            "type": "string",
+            "enum": ["stakeholder", "advisor", "decision_maker", "affected_party"]
+          },
+          "influence": { "type": "string" }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "LinkedDecision": {
+      "type": "object",
+      "required": ["id", "statement"],
+      "properties": {
+        "id": { "type": "string", "format": "uuid" },
+        "statement": { "type": "string", "minLength": 1 },
+        "outcome": {
+          "type": "string",
+          "description": "Result of decision (for already_made only)"
+        }
+      }
+    }
+  }
+}
