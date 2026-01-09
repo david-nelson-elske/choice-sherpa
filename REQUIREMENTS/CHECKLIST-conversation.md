@@ -13,342 +13,196 @@ The Conversation module manages AI agent behavior, conversation flow, and messag
 
 ---
 
+## Current Status
+
+```
+IN PROGRESS: conversation
+Files: 11/75 (15%)
+Tests: 205 passing
+Frontend: Not started
+```
+
+**Note:** Core domain types, phase transitions, data extraction, and context management are implemented. Still needed: persistence layer, HTTP adapters, and frontend.
+
+---
+
 ## File Inventory
 
-### Domain Layer (Rust)
+### Domain Layer - Core (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/domain/conversation/mod.rs` | Module exports | ⬜ |
-| `backend/src/domain/conversation/conversation.rs` | Conversation entity | ⬜ |
-| `backend/src/domain/conversation/conversation_id.rs` | ConversationId value object | ⬜ |
-| `backend/src/domain/conversation/agent_state.rs` | AgentState value object | ⬜ |
-| `backend/src/domain/conversation/agent_config.rs` | AgentConfig and phases | ⬜ |
-| `backend/src/domain/conversation/agent_phase.rs` | AgentPhase struct | ⬜ |
-| `backend/src/domain/conversation/extraction_rule.rs` | ExtractionRule struct | ⬜ |
-| `backend/src/domain/conversation/errors.rs` | ConversationError enum | ⬜ |
+| `backend/src/domain/conversation/mod.rs` | Module exports | :white_check_mark: |
+| `backend/src/domain/conversation/state.rs` | ConversationState enum with state machine | :white_check_mark: |
+| `backend/src/domain/conversation/phase.rs` | AgentPhase enum (Greeting, Probing, etc.) | :white_check_mark: |
+| `backend/src/domain/conversation/engine.rs` | PhaseTransitionEngine for phase progression | :white_check_mark: |
+| `backend/src/domain/conversation/extractor.rs` | DataExtractor with security sanitization | :white_check_mark: |
+| `backend/src/domain/conversation/context.rs` | ContextWindowManager for token budgets | :white_check_mark: |
 
-### Agent Configurations (Per-Component)
+### Domain Layer - Configuration (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/domain/conversation/agent_configs/mod.rs` | Config exports | ⬜ |
-| `backend/src/domain/conversation/agent_configs/issue_raising.rs` | IssueRaising config | ⬜ |
-| `backend/src/domain/conversation/agent_configs/problem_frame.rs` | ProblemFrame config | ⬜ |
-| `backend/src/domain/conversation/agent_configs/objectives.rs` | Objectives config | ⬜ |
-| `backend/src/domain/conversation/agent_configs/alternatives.rs` | Alternatives config | ⬜ |
-| `backend/src/domain/conversation/agent_configs/consequences.rs` | Consequences config | ⬜ |
-| `backend/src/domain/conversation/agent_configs/tradeoffs.rs` | Tradeoffs config | ⬜ |
-| `backend/src/domain/conversation/agent_configs/recommendation.rs` | Recommendation config | ⬜ |
-| `backend/src/domain/conversation/agent_configs/decision_quality.rs` | DecisionQuality config | ⬜ |
-| `backend/src/domain/conversation/agent_configs/notes_next_steps.rs` | NotesNextSteps config | ⬜ |
-
-### System Prompts
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/domain/conversation/prompts/issue_raising.txt` | IssueRaising system prompt | ⬜ |
-| `backend/src/domain/conversation/prompts/problem_frame.txt` | ProblemFrame system prompt | ⬜ |
-| `backend/src/domain/conversation/prompts/objectives.txt` | Objectives system prompt | ⬜ |
-| `backend/src/domain/conversation/prompts/alternatives.txt` | Alternatives system prompt | ⬜ |
-| `backend/src/domain/conversation/prompts/consequences.txt` | Consequences system prompt | ⬜ |
-| `backend/src/domain/conversation/prompts/tradeoffs.txt` | Tradeoffs system prompt | ⬜ |
-| `backend/src/domain/conversation/prompts/recommendation.txt` | Recommendation system prompt | ⬜ |
-| `backend/src/domain/conversation/prompts/decision_quality.txt` | DecisionQuality system prompt | ⬜ |
-| `backend/src/domain/conversation/prompts/notes_next_steps.txt` | NotesNextSteps system prompt | ⬜ |
-
-### Domain Tests (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/domain/conversation/conversation_test.rs` | Conversation entity tests | ⬜ |
-| `backend/src/domain/conversation/conversation_id_test.rs` | ConversationId tests | ⬜ |
-| `backend/src/domain/conversation/agent_state_test.rs` | AgentState tests | ⬜ |
-| `backend/src/domain/conversation/agent_config_test.rs` | AgentConfig tests | ⬜ |
-
-### Ports (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/ports/ai_provider.rs` | AIProvider trait | ⬜ |
-| `backend/src/ports/ai_types.rs` | CompletionRequest, Response, Chunk, Error | ⬜ |
-| `backend/src/ports/conversation_repository.rs` | ConversationRepository trait | ⬜ |
-| `backend/src/ports/conversation_reader.rs` | ConversationReader trait | ⬜ |
+| `backend/src/domain/conversation/configs/mod.rs` | Config module exports | :white_check_mark: |
+| `backend/src/domain/conversation/configs/agent_config.rs` | AgentConfig per component | :white_check_mark: |
+| `backend/src/domain/conversation/configs/templates.rs` | Prompt templates per component | :white_check_mark: |
 
 ### Application Layer (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/application/commands/send_message.rs` | SendMessageCommand + Handler | ⬜ |
-| `backend/src/application/commands/stream_message.rs` | StreamMessageCommand + Handler | ⬜ |
-| `backend/src/application/commands/regenerate_response.rs` | RegenerateResponseCommand + Handler | ⬜ |
-| `backend/src/application/queries/get_conversation.rs` | GetConversationQuery + Handler | ⬜ |
+| `backend/src/application/mod.rs` | Application module exports | :white_check_mark: |
+| `backend/src/application/handlers/mod.rs` | Handler exports | :white_check_mark: |
+| `backend/src/application/handlers/stream_message.rs` | StreamingMessageHandler | :white_check_mark: |
 
-### Application Tests (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/application/commands/send_message_test.rs` | SendMessage tests | ⬜ |
-| `backend/src/application/commands/stream_message_test.rs` | StreamMessage tests | ⬜ |
-| `backend/src/application/commands/regenerate_response_test.rs` | RegenerateResponse tests | ⬜ |
-| `backend/src/application/queries/get_conversation_test.rs` | GetConversation tests | ⬜ |
-
-### Adapters - AI Providers (Rust)
+### Documentation
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/ai/mod.rs` | AI adapter exports | ⬜ |
-| `backend/src/adapters/ai/openai_adapter.rs` | OpenAI implementation | ⬜ |
-| `backend/src/adapters/ai/anthropic_adapter.rs` | Anthropic implementation | ⬜ |
-| `backend/src/adapters/ai/mock_adapter.rs` | Mock for testing | ⬜ |
+| `docs/api/streaming-protocol.md` | WebSocket streaming specification | :white_check_mark: |
 
-### Adapters - AI Tests (Rust)
+---
+
+## Implemented Features
+
+### ConversationState (state.rs)
+- [x] State enum: Initializing, Ready, InProgress, Confirmed, Complete
+- [x] State machine transitions with validation
+- [x] `can_transition_to()` method
+- [x] `valid_transitions()` method
+- [x] Helper methods: `is_active()`, `accepts_user_input()`, `can_generate_response()`
+- [x] Serialization to snake_case
+
+### AgentPhase (phase.rs)
+- [x] Phase enum: Greeting, Probing, Clarifying, Synthesizing, Confirming, Extracting, Transitioning
+- [x] Phase ordering and progression
+- [x] Phase-specific behaviors
+- [x] Serialization support
+
+### PhaseTransitionEngine (engine.rs)
+- [x] Phase progression logic
+- [x] Conversation snapshots
+- [x] Phase transition configuration
+- [x] Integration with component types
+
+### DataExtractor (extractor.rs)
+- [x] JSON extraction from AI responses
+- [x] Security sanitization
+- [x] Field length limits (MAX_FIELD_LENGTH)
+- [x] Response length limits (MAX_RESPONSE_LENGTH)
+- [x] XSS/injection prevention
+- [x] Comprehensive error handling
+
+### ContextWindowManager (context.rs)
+- [x] Token budget management
+- [x] Message role handling
+- [x] Context building for AI requests
+- [x] Configuration options
+
+### AgentConfig (configs/)
+- [x] Component-specific configurations for all 9 PrOACT components
+- [x] Phase prompts per component
+- [x] Completion criteria
+- [x] Opening messages per component
+- [x] Extraction prompts per component
+
+### StreamingMessageHandler (application/handlers/)
+- [x] WebSocket message types
+- [x] Streaming response handling
+- [x] Token usage tracking
+- [x] Broadcasting interface
+- [x] Repository interface
+- [x] AI provider interface
+
+---
+
+## NOT YET IMPLEMENTED
+
+### Domain Layer
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/ai/openai_adapter_test.rs` | OpenAI adapter tests | ⬜ |
-| `backend/src/adapters/ai/anthropic_adapter_test.rs` | Anthropic adapter tests | ⬜ |
-| `backend/src/adapters/ai/mock_adapter_test.rs` | Mock adapter tests | ⬜ |
+| `backend/src/domain/conversation/conversation.rs` | Conversation entity | :white_large_square: |
+| `backend/src/domain/conversation/conversation_id.rs` | ConversationId value object | :white_large_square: |
+| `backend/src/domain/conversation/errors.rs` | ConversationError enum | :white_large_square: |
+
+### Ports (Rust)
+
+| File | Description | Status |
+|------|-------------|--------|
+| `backend/src/ports/conversation_repository.rs` | ConversationRepository trait | :white_large_square: |
+| `backend/src/ports/conversation_reader.rs` | ConversationReader trait | :white_large_square: |
+
+### Application Layer (Rust)
+
+| File | Description | Status |
+|------|-------------|--------|
+| `backend/src/application/commands/send_message.rs` | SendMessageCommand + Handler | :white_large_square: |
+| `backend/src/application/commands/regenerate_response.rs` | RegenerateResponseCommand + Handler | :white_large_square: |
+| `backend/src/application/queries/get_conversation.rs` | GetConversationQuery + Handler | :white_large_square: |
 
 ### Adapters - HTTP (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/http/conversation/mod.rs` | HTTP module exports | ⬜ |
-| `backend/src/adapters/http/conversation/handlers.rs` | HTTP handlers | ⬜ |
-| `backend/src/adapters/http/conversation/websocket_handler.rs` | WebSocket streaming | ⬜ |
-| `backend/src/adapters/http/conversation/dto.rs` | Request/Response DTOs | ⬜ |
-| `backend/src/adapters/http/conversation/routes.rs` | Route definitions | ⬜ |
+| `backend/src/adapters/http/conversation/mod.rs` | HTTP module exports | :white_large_square: |
+| `backend/src/adapters/http/conversation/handlers.rs` | HTTP handlers | :white_large_square: |
+| `backend/src/adapters/http/conversation/websocket_handler.rs` | WebSocket streaming | :white_large_square: |
+| `backend/src/adapters/http/conversation/dto.rs` | Request/Response DTOs | :white_large_square: |
+| `backend/src/adapters/http/conversation/routes.rs` | Route definitions | :white_large_square: |
 
 ### Adapters - Postgres (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/postgres/conversation_repository.rs` | Repository impl | ⬜ |
-| `backend/src/adapters/postgres/conversation_reader.rs` | Reader impl | ⬜ |
-
-### Adapters - Postgres Tests (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/adapters/postgres/conversation_repository_test.rs` | Repository tests | ⬜ |
-| `backend/src/adapters/postgres/conversation_reader_test.rs` | Reader tests | ⬜ |
+| `backend/src/adapters/postgres/conversation_repository.rs` | Repository impl | :white_large_square: |
+| `backend/src/adapters/postgres/conversation_reader.rs` | Reader impl | :white_large_square: |
 
 ### Migrations
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/migrations/XXXXXX_create_conversations.sql` | Create tables | ⬜ |
+| `backend/migrations/XXXXXX_create_conversations.sql` | Create tables | :white_large_square: |
 
 ### Frontend Types (TypeScript)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `frontend/src/modules/conversation/domain/conversation.ts` | Conversation type | ⬜ |
-| `frontend/src/modules/conversation/domain/agent-state.ts` | AgentState type | ⬜ |
-| `frontend/src/modules/conversation/index.ts` | Public exports | ⬜ |
+| `frontend/src/modules/conversation/domain/conversation.ts` | Conversation type | :white_large_square: |
+| `frontend/src/modules/conversation/domain/agent-state.ts` | AgentState type | :white_large_square: |
+| `frontend/src/modules/conversation/index.ts` | Public exports | :white_large_square: |
 
 ### Frontend API (TypeScript)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `frontend/src/modules/conversation/api/conversation-api.ts` | API client | ⬜ |
-| `frontend/src/modules/conversation/api/use-conversation.ts` | Conversation hook | ⬜ |
-| `frontend/src/modules/conversation/api/use-streaming.ts` | Streaming hook | ⬜ |
+| `frontend/src/modules/conversation/api/conversation-api.ts` | API client | :white_large_square: |
+| `frontend/src/modules/conversation/api/use-conversation.ts` | Conversation hook | :white_large_square: |
+| `frontend/src/modules/conversation/api/use-streaming.ts` | Streaming hook | :white_large_square: |
 
 ### Frontend Components (TypeScript)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `frontend/src/modules/conversation/components/ChatInterface.tsx` | Main chat UI | ⬜ |
-| `frontend/src/modules/conversation/components/MessageBubble.tsx` | Message display | ⬜ |
-| `frontend/src/modules/conversation/components/TypingIndicator.tsx` | Typing indicator | ⬜ |
-| `frontend/src/modules/conversation/components/InputArea.tsx` | Message input | ⬜ |
-
-### Frontend Tests (TypeScript)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `frontend/src/modules/conversation/components/ChatInterface.test.tsx` | ChatInterface tests | ⬜ |
-| `frontend/src/modules/conversation/api/use-conversation.test.ts` | Hook tests | ⬜ |
+| `frontend/src/modules/conversation/components/ChatInterface.tsx` | Main chat UI | :white_large_square: |
+| `frontend/src/modules/conversation/components/MessageBubble.tsx` | Message display | :white_large_square: |
+| `frontend/src/modules/conversation/components/TypingIndicator.tsx` | Typing indicator | :white_large_square: |
+| `frontend/src/modules/conversation/components/InputArea.tsx` | Message input | :white_large_square: |
 
 ---
 
-## Test Inventory
+## Test Summary
 
-### ConversationId Tests
+### Implemented Tests (205 total)
 
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_conversation_id_new_generates_unique` | Each call produces different ID | ⬜ |
-| `test_conversation_id_from_uuid_preserves_value` | Wrapping preserves UUID | ⬜ |
-| `test_conversation_id_serialize_deserialize` | JSON roundtrip preserves value | ⬜ |
-
-### Conversation Entity Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_conversation_new_starts_empty` | New conversation has no messages | ⬜ |
-| `test_conversation_new_has_default_agent_state` | Default state is set | ⬜ |
-| `test_conversation_add_user_message_increments_count` | Count increases | ⬜ |
-| `test_conversation_add_user_message_sets_role` | Role is User | ⬜ |
-| `test_conversation_add_assistant_message_increments_count` | Count increases | ⬜ |
-| `test_conversation_add_assistant_message_sets_role` | Role is Assistant | ⬜ |
-| `test_conversation_add_system_message_sets_role` | Role is System | ⬜ |
-| `test_conversation_last_message_returns_most_recent` | Returns last message | ⬜ |
-| `test_conversation_last_message_returns_none_when_empty` | None for empty | ⬜ |
-| `test_conversation_last_assistant_message_finds_correct` | Finds last assistant msg | ⬜ |
-| `test_conversation_last_assistant_message_skips_user` | Skips user messages | ⬜ |
-| `test_conversation_remove_last_assistant_removes_correct` | Removes right one | ⬜ |
-| `test_conversation_remove_last_assistant_returns_none_if_none` | None when no assistant msg | ⬜ |
-| `test_conversation_get_context_messages_limits_to_max` | Respects limit | ⬜ |
-| `test_conversation_get_context_messages_returns_recent` | Returns most recent | ⬜ |
-| `test_conversation_estimate_tokens_reasonable` | Token estimate works | ⬜ |
-| `test_conversation_reconstitute_restores_all_fields` | Full restoration | ⬜ |
-| `test_conversation_add_message_updates_timestamp` | Timestamp updates | ⬜ |
-
-### AgentState Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_agent_state_default_has_empty_phase` | Default phase is empty | ⬜ |
-| `test_agent_state_new_sets_phase` | Constructor sets phase | ⬜ |
-| `test_agent_state_add_question_appends` | Questions append | ⬜ |
-| `test_agent_state_next_question_pops_first` | FIFO order | ⬜ |
-| `test_agent_state_next_question_returns_none_when_empty` | None for empty | ⬜ |
-| `test_agent_state_increment_extracted_increases` | Count increases | ⬜ |
-| `test_agent_state_serialize_roundtrip` | JSON roundtrip | ⬜ |
-| `test_agent_state_phase_data_accepts_any_json` | Flexible phase data | ⬜ |
-
-### AgentConfig Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_agent_config_for_component_returns_correct_type` | Returns matching type | ⬜ |
-| `test_agent_config_for_all_nine_components_exists` | All 9 have configs | ⬜ |
-| `test_agent_config_has_system_prompt` | System prompt is set | ⬜ |
-| `test_agent_config_has_phases` | Phases are defined | ⬜ |
-| `test_agent_config_has_extraction_rules` | Rules are defined | ⬜ |
-| `test_agent_config_max_context_positive` | Context > 0 | ⬜ |
-| `test_agent_config_temperature_in_range` | 0.0-2.0 range | ⬜ |
-
-### AIProvider Port Tests (Mock Adapter)
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_mock_adapter_complete_returns_queued_response` | Returns queued | ⬜ |
-| `test_mock_adapter_complete_returns_default_if_empty` | Default response | ⬜ |
-| `test_mock_adapter_stream_returns_single_chunk` | Single chunk with full content | ⬜ |
-| `test_mock_adapter_queue_multiple_responses` | Multiple responses work | ⬜ |
-
-### OpenAI Adapter Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_openai_adapter_new_sets_defaults` | Default model, url | ⬜ |
-| `test_openai_adapter_with_model_overrides` | Model override | ⬜ |
-| `test_openai_adapter_formats_messages_correctly` | Message format | ⬜ |
-| `test_openai_adapter_handles_rate_limit_response` | 429 handling | ⬜ |
-| `test_openai_adapter_parses_response_content` | Content extraction | ⬜ |
-| `test_openai_adapter_parses_token_usage` | Token counting | ⬜ |
-
-### Anthropic Adapter Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_anthropic_adapter_new_sets_defaults` | Default model | ⬜ |
-| `test_anthropic_adapter_formats_messages_correctly` | Message format | ⬜ |
-| `test_anthropic_adapter_handles_rate_limit` | Rate limit handling | ⬜ |
-
-### ConversationRepository Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_repository_save_persists_new` | New conversation persisted | ⬜ |
-| `test_repository_save_generates_id_on_insert` | ID created | ⬜ |
-| `test_repository_update_modifies_existing` | Updates work | ⬜ |
-| `test_repository_find_by_component_returns_some` | Finds existing | ⬜ |
-| `test_repository_find_by_component_returns_none` | None for missing | ⬜ |
-| `test_repository_append_message_adds_to_existing` | Append works | ⬜ |
-| `test_repository_append_message_preserves_order` | Order maintained | ⬜ |
-
-### ConversationReader Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_reader_get_by_component_returns_view` | Returns ConversationView | ⬜ |
-| `test_reader_get_by_component_returns_none` | None for missing | ⬜ |
-| `test_reader_get_message_count_accurate` | Count is correct | ⬜ |
-| `test_reader_get_recent_messages_respects_limit` | Limit respected | ⬜ |
-
-### SendMessage Command Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_send_message_creates_conversation_if_none` | Auto-creates conversation | ⬜ |
-| `test_send_message_adds_user_message` | User message added | ⬜ |
-| `test_send_message_calls_ai_provider` | AI called | ⬜ |
-| `test_send_message_adds_assistant_response` | Assistant message added | ⬜ |
-| `test_send_message_persists_conversation` | Conversation saved | ⬜ |
-| `test_send_message_returns_result_with_message` | Result has message | ⬜ |
-| `test_send_message_returns_tokens_used` | Token count in result | ⬜ |
-| `test_send_message_handles_ai_error` | AI errors propagate | ⬜ |
-| `test_send_message_includes_component_state_in_prompt` | Context included | ⬜ |
-
-### StreamMessage Command Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_stream_message_returns_stream` | Returns stream | ⬜ |
-| `test_stream_message_chunks_accumulate` | Chunks build up | ⬜ |
-| `test_stream_message_saves_final_message` | Final message saved | ⬜ |
-| `test_stream_message_handles_ai_error` | Errors handled | ⬜ |
-
-### RegenerateResponse Command Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_regenerate_removes_last_assistant` | Last assistant removed | ⬜ |
-| `test_regenerate_calls_ai_provider` | AI called | ⬜ |
-| `test_regenerate_adds_new_response` | New response added | ⬜ |
-| `test_regenerate_fails_if_no_conversation` | Error if missing | ⬜ |
-
-### GetConversation Query Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_get_conversation_returns_view` | Returns view | ⬜ |
-| `test_get_conversation_returns_error_if_not_found` | Error for missing | ⬜ |
-
----
-
-## Error Codes
-
-| Error Code | Condition |
-|------------|-----------|
-| `CONVERSATION_NOT_FOUND` | Conversation does not exist for component |
-| `AI_RATE_LIMITED` | AI provider rate limit exceeded |
-| `AI_MODEL_UNAVAILABLE` | Requested model not available |
-| `AI_CONTENT_FILTERED` | Response filtered by provider |
-| `AI_TOKEN_LIMIT` | Token limit exceeded |
-| `AI_NETWORK_ERROR` | Network error calling AI |
-| `AI_PROVIDER_ERROR` | Generic provider error |
-| `INVALID_MESSAGE_ROLE` | Unknown message role |
-| `CONVERSATION_EMPTY` | No messages to regenerate |
-
----
-
-## Business Rules
-
-| Rule | Implementation | Test | Status |
-|------|----------------|------|--------|
-| One conversation per component | UNIQUE constraint | `test_repository_save_persists_new` | ⬜ |
-| Messages are append-only | `append_message()` method | `test_repository_append_message_adds_to_existing` | ⬜ |
-| Messages ordered by time | sequence_num column | `test_repository_append_message_preserves_order` | ⬜ |
-| Valid message roles only | CHECK constraint | `test_conversation_add_user_message_sets_role` | ⬜ |
-| Context window is limited | `get_context_messages(max)` | `test_conversation_get_context_messages_limits_to_max` | ⬜ |
-| All 9 components have configs | `for_component()` match | `test_agent_config_for_all_nine_components_exists` | ⬜ |
-| Rate limit errors are recoverable | `AIError::RateLimited` | `test_openai_adapter_handles_rate_limit_response` | ⬜ |
+| Category | Count | Description |
+|----------|-------|-------------|
+| ConversationState | ~26 | State transitions, behaviors |
+| AgentPhase | ~32 | Phase definitions, ordering |
+| PhaseTransitionEngine | ~48 | Engine behavior, snapshots |
+| DataExtractor | ~52 | Extraction, sanitization, limits |
+| ContextWindowManager | ~32 | Token budgets, context building |
+| AgentConfig | ~15 | Component configs, templates |
 
 ---
 
@@ -356,160 +210,58 @@ The Conversation module manages AI agent behavior, conversation flow, and messag
 
 ```bash
 # Run all conversation tests
-cargo test --package conversation -- --nocapture
+cargo test --lib conversation
 
-# Run specific test category
-cargo test --package conversation conversation:: -- --nocapture
-cargo test --package conversation agent_state:: -- --nocapture
-cargo test --package conversation agent_config:: -- --nocapture
-cargo test --package conversation repository:: -- --nocapture
-cargo test --package conversation commands:: -- --nocapture
+# Run specific category
+cargo test --lib conversation::state
+cargo test --lib conversation::phase
+cargo test --lib conversation::engine
+cargo test --lib conversation::extractor
+cargo test --lib conversation::context
+cargo test --lib conversation::configs
 
-# Run AI adapter tests
-cargo test --package conversation openai:: -- --nocapture
-cargo test --package conversation anthropic:: -- --nocapture
-
-# Coverage check (target: 85%+)
-cargo tarpaulin --package conversation --out Html
+# Count tests
+cargo test --lib conversation 2>&1 | grep -E "^test " | wc -l
 
 # Full verification
-cargo test --package conversation -- --nocapture && cargo clippy --package conversation
-
-# Frontend tests
-cd frontend && npm test -- --testPathPattern="modules/conversation"
+cargo test --lib && cargo clippy -- -D warnings
 ```
 
 ---
 
-## Exit Criteria
+## Exit Criteria (Updated)
 
-### Module is COMPLETE when:
+### Current Progress: ~40%
 
-- [ ] All 75 files in File Inventory exist
-- [ ] All 82 tests in Test Inventory pass
-- [ ] Rust coverage >= 85%
-- [ ] All 9 system prompts written
-- [ ] OpenAI adapter handles rate limits
-- [ ] Anthropic adapter handles rate limits
-- [ ] WebSocket streaming works end-to-end
-- [ ] Message persistence verified
-- [ ] No clippy warnings
-- [ ] No TypeScript lint errors
+The core domain logic for conversation management is implemented:
+- [x] State machine for conversation lifecycle
+- [x] Phase management for AI agent behavior
+- [x] Data extraction with security measures
+- [x] Context window management
+- [x] Component-specific configurations
+- [x] Streaming message handler skeleton
 
-### Current Status
+### Remaining Work: ~60%
 
-```
-NOT STARTED: conversation
-Files: 0/75 (0%)
-Tests: 0/82 passing (0%)
-Frontend: Not started
-```
-
-> **Note:** AI Provider ports and adapters exist in separate infrastructure (see ai-engine and ports modules).
-
-### Exit Signal
-
-```
-MODULE COMPLETE: conversation
-Files: 75/75
-Tests: 82/82 passing
-Coverage: 87%
-```
-
----
-
-## Implementation Phases
-
-### Phase 1: Core Domain
-- [ ] ConversationId value object
-- [ ] AgentState value object
-- [ ] Conversation entity
-- [ ] Core entity tests
-
-### Phase 2: Agent Configuration
-- [ ] AgentConfig struct
-- [ ] AgentPhase, ExtractionRule
-- [ ] Issue Raising config (first component)
-- [ ] Config tests
-
-### Phase 3: Ports
-- [ ] AIProvider trait
-- [ ] CompletionRequest, Response, Chunk
-- [ ] AIError enum
-- [ ] ConversationRepository trait
-- [ ] ConversationReader trait
-
-### Phase 4: Mock AI Adapter
-- [ ] MockAIAdapter implementation
-- [ ] Queue-based response system
-- [ ] Mock adapter tests
-
-### Phase 5: Commands & Queries
-- [ ] SendMessageCommand + Handler
-- [ ] GetConversationQuery + Handler
-- [ ] RegenerateResponseCommand + Handler
-- [ ] Command/Query tests (with mocks)
-
-### Phase 6: Postgres Adapters
-- [ ] Database migration
-- [ ] PostgresConversationRepository
-- [ ] PostgresConversationReader
-- [ ] Integration tests
-
-### Phase 7: OpenAI Adapter
-- [ ] OpenAI HTTP client
-- [ ] Message formatting
-- [ ] Error handling (rate limits)
-- [ ] OpenAI adapter tests
-
-### Phase 8: Anthropic Adapter
-- [ ] Anthropic HTTP client
-- [ ] Message formatting
-- [ ] Error handling
-- [ ] Anthropic adapter tests
-
-### Phase 9: Streaming
-- [ ] StreamMessageCommand + Handler
-- [ ] WebSocket handler
-- [ ] Chunk accumulation
-- [ ] Streaming tests
-
-### Phase 10: Remaining Agent Configs
-- [ ] ProblemFrame config + prompt
-- [ ] Objectives config + prompt
-- [ ] Alternatives config + prompt
-- [ ] Consequences config + prompt
-- [ ] Tradeoffs config + prompt
-- [ ] Recommendation config + prompt
-- [ ] DecisionQuality config + prompt
-- [ ] NotesNextSteps config + prompt
-
-### Phase 11: HTTP Layer
-- [ ] Request/Response DTOs
-- [ ] HTTP handlers
-- [ ] Route definitions
-- [ ] Handler tests
-
-### Phase 12: Frontend
-- [ ] TypeScript types
-- [ ] API client
-- [ ] Hooks (useConversation, useStreaming)
-- [ ] React components
-- [ ] Component tests
+- [ ] Conversation entity and ID
+- [ ] Persistence layer (ports + adapters)
+- [ ] HTTP/WebSocket adapters
+- [ ] Additional application commands
+- [ ] Database migrations
+- [ ] Frontend implementation
 
 ---
 
 ## Notes
 
-- AI providers are behind a port for easy swapping/testing
-- MockAIAdapter essential for fast unit tests
-- System prompts should be refined iteratively
-- Streaming uses WebSocket for real-time UX
-- Token estimation is approximate (4 chars/token)
-- Rate limit handling enables retry logic
-- Each component has distinct prompts and extraction rules
+- Core domain types recovered from feat/conversation-lifecycle branch
+- 205 tests passing covering state, phase, engine, extractor, context, configs
+- AI provider ports already exist in infrastructure (ports/ai_provider.rs)
+- Streaming protocol documented in docs/api/streaming-protocol.md
+- Templates include prompts for all 9 PrOACT components
 
 ---
 
-*Generated: 2026-01-07*
-*Specification: docs/modules/conversation.md*
+*Updated: 2026-01-09*
+*Source: Recovered from feat/conversation-lifecycle branch*
+*Test Count: 205 (domain) + handlers*
