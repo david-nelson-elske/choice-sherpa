@@ -5,4 +5,4 @@
 
 pub mod events;
 
-pub use events::InMemoryEventBus;
+pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
