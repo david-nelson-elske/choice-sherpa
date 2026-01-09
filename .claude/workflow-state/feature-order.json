@@ -1,0 +1,126 @@
+{
+  "created": "2026-01-08",
+  "source": "DEV-ROADMAP.md",
+  "total_features": 17,
+  "features": [
+    {
+      "index": 1,
+      "path": "features/membership/subscription-state-machine.md",
+      "module": "membership",
+      "estimated_tasks": 23,
+      "status": "pending"
+    },
+    {
+      "index": 2,
+      "path": "features/membership/stripe-webhook-handling.md",
+      "module": "membership",
+      "estimated_tasks": 35,
+      "status": "pending"
+    },
+    {
+      "index": 3,
+      "path": "features/session/session-events.md",
+      "module": "session",
+      "estimated_tasks": 13,
+      "status": "pending"
+    },
+    {
+      "index": 4,
+      "path": "features/cycle/component-status-validation.md",
+      "module": "cycle",
+      "estimated_tasks": 9,
+      "status": "pending"
+    },
+    {
+      "index": 5,
+      "path": "features/proact-types/component-schemas.md",
+      "module": "proact-types",
+      "estimated_tasks": 7,
+      "status": "pending"
+    },
+    {
+      "index": 6,
+      "path": "features/analysis/algorithm-specifications.md",
+      "module": "analysis",
+      "estimated_tasks": 0,
+      "status": "pending"
+    },
+    {
+      "index": 7,
+      "path": "features/integrations/ai-provider-integration.md",
+      "module": "integrations",
+      "estimated_tasks": 30,
+      "status": "pending"
+    },
+    {
+      "index": 8,
+      "path": "features/integrations/authentication-identity.md",
+      "module": "integrations",
+      "estimated_tasks": 17,
+      "status": "pending"
+    },
+    {
+      "index": 9,
+      "path": "features/integrations/membership-access-control.md",
+      "module": "integrations",
+      "estimated_tasks": 22,
+      "status": "pending"
+    },
+    {
+      "index": 10,
+      "path": "features/integrations/websocket-dashboard.md",
+      "module": "integrations",
+      "estimated_tasks": 16,
+      "status": "pending"
+    },
+    {
+      "index": 11,
+      "path": "features/dashboard/consequences-table-ui.md",
+      "module": "dashboard",
+      "estimated_tasks": 9,
+      "status": "pending"
+    },
+    {
+      "index": 12,
+      "path": "features/dashboard/frontend-accessibility.md",
+      "module": "dashboard",
+      "estimated_tasks": 16,
+      "status": "pending"
+    },
+    {
+      "index": 13,
+      "path": "features/integrations/notification-service.md",
+      "module": "integrations",
+      "estimated_tasks": 25,
+      "status": "pending"
+    },
+    {
+      "index": 14,
+      "path": "features/integrations/rate-limiting.md",
+      "module": "integrations",
+      "estimated_tasks": 25,
+      "status": "pending"
+    },
+    {
+      "index": 15,
+      "path": "features/integrations/observability.md",
+      "module": "integrations",
+      "estimated_tasks": 25,
+      "status": "pending"
+    },
+    {
+      "index": 16,
+      "path": "features/integrations/event-versioning.md",
+      "module": "integrations",
+      "estimated_tasks": 35,
+      "status": "pending"
+    },
+    {
+      "index": 17,
+      "path": "features/integrations/full-proact-journey.md",
+      "module": "integrations",
+      "estimated_tasks": 26,
+      "status": "pending"
+    }
+  ]
+}
