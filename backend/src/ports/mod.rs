@@ -3,6 +3,10 @@
 //! Following hexagonal architecture, ports define the contracts between
 //! the domain and the outside world. Adapters implement these ports.
 //!
+//! ## Access Control Port
+//!
+//! - `AccessChecker` - Port for membership-based access control
+//!
 //! ## Event Ports
 //!
 //! - `EventPublisher` - Port for publishing domain events
@@ -22,6 +26,7 @@
 //!
 //! See `docs/architecture/SCALING-READINESS.md` for architectural details.
 
+mod access_checker;
 mod ai_provider;
 mod event_publisher;
 mod event_subscriber;
@@ -31,6 +36,7 @@ mod circuit_breaker;
 mod processed_event_store;
 mod schema_validator;
 
+pub use access_checker::{AccessChecker, AccessResult, AccessDeniedReason, UsageStats};
 pub use ai_provider::{
     AIError, AIProvider, CompletionRequest, CompletionResponse, FinishReason, Message,
     MessageRole, ProviderInfo, RequestMetadata, StreamChunk, TokenUsage,
