@@ -469,13 +469,16 @@ impl MembershipStatus {
 
 ### Integration Tests
 
-- [ ] `webhook_checkout_complete_activates_pending`
-- [ ] `webhook_payment_failed_marks_past_due`
-- [ ] `webhook_payment_recovered_clears_past_due`
-- [ ] `scheduled_job_expires_old_pending`
-- [ ] `scheduled_job_expires_cancelled_at_period_end`
-- [ ] `reactivation_before_period_end_succeeds`
-- [ ] `reactivation_after_period_end_fails`
+> **Note:** These tests depend on infrastructure from `stripe-webhook-handling.md` feature.
+> They will be implemented as part of that feature.
+
+- [ ] `webhook_checkout_complete_activates_pending` _(requires: webhook handler)_
+- [ ] `webhook_payment_failed_marks_past_due` _(requires: webhook handler)_
+- [ ] `webhook_payment_recovered_clears_past_due` _(requires: webhook handler)_
+- [ ] `scheduled_job_expires_old_pending` _(requires: scheduled jobs)_
+- [ ] `scheduled_job_expires_cancelled_at_period_end` _(requires: scheduled jobs)_
+- [ ] `reactivation_before_period_end_succeeds` _(requires: Membership aggregate)_
+- [ ] `reactivation_after_period_end_fails` _(requires: Membership aggregate)_
 
 ---
 
