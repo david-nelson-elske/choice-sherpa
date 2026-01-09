@@ -2,6 +2,50 @@
 
 Execute features using TDD, with commits per task and PR on completion.
 
+## Workflow State Persistence
+
+This skill persists state to survive context compaction. On invocation:
+
+```bash
+source .claude/lib/workflow-state.sh
+RESUME=$(workflow_init "dev" "$FEATURE_FILE")
+
+if [ "$RESUME" = "resume" ]; then
+    # Display resume prompt and continue from saved state
+    workflow_display_resume_prompt
+    PHASE=$(workflow_current_phase)
+    # Resume from: load_feature, create_branch, task_execution, verification, pr_creation
+else
+    # Initialize new workflow with phases
+    workflow_add_phase "load_feature" "pending"
+    workflow_add_phase "create_branch" "pending"
+    workflow_add_phase "task_execution" "pending"
+    workflow_add_phase "verification" "pending"
+    workflow_add_phase "pr_creation" "pending"
+    workflow_checkpoint "lint" "pending"
+    workflow_checkpoint "test" "pending"
+    workflow_checkpoint "security_review" "pending"
+    workflow_checkpoint "code_simplifier" "pending"
+    workflow_checkpoint "pr" "pending"
+fi
+```
+
+**State transitions during execution:**
+- After loading feature: `workflow_phase_complete "load_feature"` → `workflow_transition "create_branch"`
+- After branch creation: `workflow_phase_complete "create_branch"` → `workflow_transition "task_execution"`
+- Before each task: `workflow_task_start $INDEX` → `workflow_tdd_phase $INDEX "red"`
+- After TDD phases: `workflow_tdd_phase_complete $INDEX "red|green|refactor"`
+- After task commit: `workflow_task_complete $INDEX "$COMMIT_SHA"`
+- After all tasks: `workflow_phase_complete "task_execution"` → `workflow_transition "verification"`
+- During verification: `workflow_checkpoint "lint|test|security_review|code_simplifier" "running|passed|failed"`
+- After PR: `workflow_complete "$PR_URL"`
+
+**State file location:** `.claude/workflow-state/active/dev-{hash}.json`
+
+See `.claude/templates/WORKFLOW-STATE-SPEC.md` for full specification.
+
+---
+
 ## Usage
 ```
 /dev <path>
@@ -354,15 +398,34 @@ DEV_BLOCKED: Test failure requires manual fix
 
 ## Resumability
 
-Progress is tracked via checkboxes in feature files:
+Progress is tracked in two ways:
+
+### 1. Feature File Checkboxes (Persistent)
 - `- [ ]` = Not started
 - `- [x]` = Completed
 
-If interrupted:
+### 2. Workflow State Files (Session State)
+State files in `.claude/workflow-state/active/` track:
+- Current phase (load_feature, create_branch, task_execution, verification, pr_creation)
+- TDD phase within each task (red, green, refactor)
+- Verification checkpoint status (lint, test, security_review, code_simplifier)
+- Branch name, commit SHAs, timestamps
+
+**If interrupted mid-session:**
 ```bash
-/dev features/user-auth.md  # Resumes from first unchecked task
-/dev features/              # Resumes folder from first incomplete file
-/dev                        # Auto-detects and resumes
+/dev features/user-auth.md  # Checks state file first, resumes from exact point
+/dev features/              # Resumes folder from saved state
+/dev                        # Auto-detects active workflow state
+```
+
+**After context compaction:**
+- State file persists with full workflow context
+- Skill detects resume scenario and displays prompt
+- User can continue or start fresh
+
+**View active workflows:**
+```bash
+cat .claude/workflow-state/active/*.json | jq '.workflow.status, .state_machine.current_phase'
 ```
 
 ---
