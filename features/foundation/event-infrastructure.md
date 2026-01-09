@@ -48,11 +48,11 @@ Choice Sherpa's modules need to coordinate without tight coupling. Currently, th
 - [x] Implement EventOutboxRepository port for transactional outbox
 - [x] Implement ProcessedEventStore port for idempotency tracking
 - [x] Implement IdempotentHandler wrapper
-- [ ] Implement OutboxPublisher background service
+- [x] Implement OutboxPublisher background service
 - [x] Add unit tests for EventId, EventEnvelope, EventMetadata
 - [x] Add unit tests for InMemoryEventBus publish, subscribe, and handler invocation
-- [ ] Add unit tests for idempotency behavior
-- [ ] Add integration tests for outbox pattern
+- [x] Add unit tests for idempotency behavior
+- [x] Add integration tests for outbox pattern
 
 ---
 
