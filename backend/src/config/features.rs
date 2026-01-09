@@ -3,7 +3,7 @@
 use serde::Deserialize;
 
 /// Feature flags for enabling/disabling functionality
-#[derive(Debug, Clone, Deserialize, Default)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct FeatureFlags {
     /// Enable WebSocket streaming for conversations
     #[serde(default)]
@@ -17,9 +17,20 @@ pub struct FeatureFlags {
     #[serde(default)]
     pub verbose_errors: bool,
 
-    /// Enable request tracing
+    /// Enable request tracing (defaults to true)
     #[serde(default = "default_enable_tracing")]
     pub enable_tracing: bool,
+}
+
+impl Default for FeatureFlags {
+    fn default() -> Self {
+        Self {
+            enable_streaming: false,
+            enable_ai_fallback: false,
+            verbose_errors: false,
+            enable_tracing: true,
+        }
+    }
 }
 
 fn default_enable_tracing() -> bool {
@@ -36,8 +47,7 @@ mod tests {
         assert!(!flags.enable_streaming);
         assert!(!flags.enable_ai_fallback);
         assert!(!flags.verbose_errors);
-        // enable_tracing defaults to true but Default trait won't pick it up
-        // since it uses bool::default() which is false
+        assert!(flags.enable_tracing);
     }
 
     #[test]
