@@ -4,10 +4,11 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: choice-sherpa-postgres
+    # WARNING: Development only - override these in production
     environment:
-      POSTGRES_USER: choice-sherpa
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: choice_sherpa
+      POSTGRES_USER: ${POSTGRES_USER:-choice-sherpa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-choice_sherpa}
     ports:
       - "5433:5432"  # Use 5433 to avoid conflicts with other postgres instances
     volumes:
