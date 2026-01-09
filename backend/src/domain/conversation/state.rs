@@ -14,10 +14,11 @@ use crate::domain::foundation::StateMachine;
 /// - `InProgress`: Active dialogue with user
 /// - `Confirmed`: Data extracted and awaiting save
 /// - `Complete`: Read-only, component finished
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum ConversationState {
     /// Conversation created, loading configuration.
+    #[default]
     Initializing,
 
     /// System prompt set, opening message added, awaiting first user input.
@@ -52,12 +53,6 @@ impl ConversationState {
     /// Returns true if this is a terminal state.
     pub fn is_terminal(&self) -> bool {
         matches!(self, Self::Complete)
-    }
-}
-
-impl Default for ConversationState {
-    fn default() -> Self {
-        Self::Initializing
     }
 }
 

@@ -12,11 +12,12 @@ use serde::{Deserialize, Serialize};
 /// - `Intro` → `Gather` → `Clarify` (optional) → `Extract` → `Confirm`
 ///
 /// Each phase has a distinct directive that guides the AI's responses.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum AgentPhase {
     /// Initial greeting and context setting.
     /// AI explains what this step covers and makes user comfortable.
+    #[default]
     Intro,
 
     /// Actively gathering information through questions.
@@ -95,12 +96,6 @@ impl AgentPhase {
     /// Returns true if transition to target phase is valid.
     pub fn can_transition_to(&self, target: &Self) -> bool {
         self.valid_next_phases().contains(target)
-    }
-}
-
-impl Default for AgentPhase {
-    fn default() -> Self {
-        Self::Intro
     }
 }
 

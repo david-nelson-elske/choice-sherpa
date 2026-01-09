@@ -74,6 +74,7 @@ impl Session {
     }
 
     /// Reconstitute a session from persistence (no validation, no events).
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: SessionId,
         user_id: UserId,
