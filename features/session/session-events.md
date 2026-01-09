@@ -73,17 +73,17 @@ Without events, these modules would need to poll or be tightly coupled to sessio
 
 ## Tasks
 
-- [ ] Create session events module (backend/src/domain/session/events.rs)
-- [ ] Implement SessionCreated event with DomainEvent trait
-- [ ] Implement SessionRenamed event with DomainEvent trait
-- [ ] Implement SessionDescriptionUpdated event with DomainEvent trait
-- [ ] Implement SessionArchived event with DomainEvent trait
-- [ ] Implement CycleAddedToSession event with DomainEvent trait
+- [x] Create session events module (backend/src/domain/session/events.rs)
+- [x] Implement SessionCreated event with DomainEvent trait
+- [x] Implement SessionRenamed event with DomainEvent trait
+- [x] Implement SessionDescriptionUpdated event with DomainEvent trait
+- [x] Implement SessionArchived event with DomainEvent trait
+- [x] Implement CycleAddedToSession event with DomainEvent trait
 - [ ] Update CreateSessionHandler to inject EventPublisher and publish SessionCreated
 - [ ] Update RenameSessionHandler to inject EventPublisher and publish SessionRenamed
 - [ ] Update ArchiveSessionHandler to inject EventPublisher and publish SessionArchived
 - [ ] Implement SessionCycleTracker event handler for CycleCreated events
-- [ ] Add unit tests for session event types and serialization
+- [x] Add unit tests for session event types and serialization
 - [ ] Add unit tests for command handlers verifying event publishing
 - [ ] Add unit tests for SessionCycleTracker handler
 
