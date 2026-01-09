@@ -2,6 +2,53 @@
 
 Execute the complete Red-Green-Refactor cycle for a single task.
 
+## Workflow State Persistence
+
+This skill persists state to survive context compaction. On invocation:
+
+```bash
+source .claude/lib/workflow-state.sh
+RESUME=$(workflow_init "tdd" "$TASK_DESCRIPTION")
+
+if [ "$RESUME" = "resume" ]; then
+    # Display resume prompt and continue from saved state
+    PHASE=$(workflow_current_phase)
+    echo "Resuming TDD from: $PHASE phase"
+
+    case "$PHASE" in
+        "red")    echo "Continue writing failing test..." ;;
+        "green")  echo "Continue implementing to make test pass..." ;;
+        "refactor") echo "Continue refactoring..." ;;
+        "commit") echo "Ready to commit..." ;;
+    esac
+else
+    # Initialize new TDD workflow
+    workflow_add_phase "red" "pending"
+    workflow_add_phase "green" "pending"
+    workflow_add_phase "refactor" "pending"
+    workflow_add_phase "commit" "pending"
+    workflow_add_task "$TASK_DESCRIPTION"
+    workflow_task_start 1
+    workflow_transition "red"
+fi
+```
+
+**State transitions during execution:**
+- Starting RED: `workflow_tdd_phase 1 "red"`
+- After test written: `workflow_set '.test_state.test_file' "$TEST_FILE"`
+- After failure confirmed: `workflow_tdd_phase_complete 1 "red"` → `workflow_transition "green"`
+- Starting GREEN: `workflow_tdd_phase 1 "green"`
+- After test passes: `workflow_tdd_phase_complete 1 "green"` → `workflow_transition "refactor"`
+- Starting REFACTOR: `workflow_tdd_phase 1 "refactor"`
+- After refactor: `workflow_tdd_phase_complete 1 "refactor"` → `workflow_transition "commit"`
+- After commit: `workflow_task_complete 1 "$COMMIT_SHA"` → `workflow_complete`
+
+**State file location:** `.claude/workflow-state/active/tdd-{hash}.json`
+
+See `.claude/templates/WORKFLOW-STATE-SPEC.md` for full specification.
+
+---
+
 ## Usage
 ```
 /tdd <task-description>
