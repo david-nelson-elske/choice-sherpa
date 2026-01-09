@@ -34,6 +34,30 @@ reqwest = { version = "0.11", features = ["json", "stream"] }
 # Secret handling (API keys)
 secrecy = { version = "0.8", features = ["serde"] }
 
+# ============================================
+# Infrastructure Dependencies
+# ============================================
+
+# Database (PostgreSQL)
+sqlx = { version = "0.7", features = ["postgres", "uuid", "chrono", "runtime-tokio", "migrate"] }
+
+# HTTP Framework
+axum = "0.7"
+tower = "0.4"
+tower-http = { version = "0.5", features = ["trace", "cors", "timeout", "request-id", "compression-gzip"] }
+http = "1.0"
+
+# Cache/PubSub
+redis = { version = "0.24", features = ["aio", "tokio-comp"] }
+
+# Configuration
+config = "0.14"
+dotenvy = "0.15"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
 [dev-dependencies]
 # Testing - pinned for Rust 1.72 compatibility
 proptest = "1.4"

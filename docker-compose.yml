@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: choice-sherpa-postgres
+    environment:
+      POSTGRES_USER: choice-sherpa
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: choice_sherpa
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U choice-sherpa -d choice_sherpa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - choice-sherpa
+
+  redis:
+    image: redis:7-alpine
+    container_name: choice-sherpa-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - choice-sherpa
+    # No volume - data is ephemeral for development
+    # Add volume for persistence if needed:
+    # volumes:
+    #   - redis_data:/data
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  choice-sherpa:
+    driver: bridge
