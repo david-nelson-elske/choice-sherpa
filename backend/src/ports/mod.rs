@@ -10,6 +10,10 @@
 //! - `EventHandler` - Handler that processes incoming events
 //! - `ProcessedEventStore` - Idempotency tracking for event handlers
 //!
+//! ## Webhook Ports
+//!
+//! - `WebhookEventRepository` - Stripe webhook idempotency tracking
+//!
 //! ## Scaling Infrastructure Ports
 //!
 //! - `OutboxWriter` - Transactional event persistence for guaranteed delivery
@@ -24,6 +28,7 @@ mod outbox_writer;
 mod connection_registry;
 mod circuit_breaker;
 mod processed_event_store;
+mod webhook_event_repository;
 
 pub use event_publisher::EventPublisher;
 pub use event_subscriber::{EventBus, EventHandler, EventSubscriber};
@@ -31,3 +36,4 @@ pub use outbox_writer::{OutboxWriter, OutboxEntry, OutboxStatus};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use processed_event_store::ProcessedEventStore;
+pub use webhook_event_repository::{WebhookEventRepository, WebhookEventRecord, WebhookResult, SaveResult};
