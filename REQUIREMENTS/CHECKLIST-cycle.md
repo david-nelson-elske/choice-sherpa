@@ -19,11 +19,13 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/domain/cycle/mod.rs` | Module exports | ⬜ |
-| `backend/src/domain/cycle/cycle.rs` | Cycle aggregate | ⬜ |
+| `backend/src/domain/cycle/mod.rs` | Module exports | ✅ |
+| `backend/src/domain/cycle/aggregate.rs` | Cycle aggregate (38 tests inline) | ✅ |
 | `backend/src/domain/cycle/progress.rs` | CycleProgress value object | ⬜ |
-| `backend/src/domain/cycle/events.rs` | CycleEvent enum | ⬜ |
+| `backend/src/domain/cycle/events.rs` | CycleEvent enum | ✅ |
 | `backend/src/domain/cycle/errors.rs` | Cycle-specific errors | ⬜ |
+
+> **Note:** Tests are inline in implementation files using `#[cfg(test)] mod tests` (Rust convention). The file `cycle.rs` was renamed to `aggregate.rs`.
 
 ### Domain Tests (Rust)
 
@@ -382,6 +384,15 @@ cd frontend && npm test -- --testPathPattern="modules/cycle"
 - [ ] Frontend components render correctly
 - [ ] No TypeScript lint errors
 
+### Current Status
+
+```
+RUST BACKEND IN PROGRESS: cycle
+Files: 3/58 (5%)
+Tests: 38/82 passing (46%)
+Frontend: Not started
+```
+
 ### Exit Signal
 
 ```
@@ -395,13 +406,13 @@ Coverage: Domain 91%, Application 86%, Adapters 81%
 
 ## Implementation Phases
 
-### Phase 1: Domain Layer
-- [ ] Cycle aggregate implementation
+### Phase 1: Domain Layer (In Progress)
+- [x] Cycle aggregate implementation (aggregate.rs - 38 tests)
 - [ ] CycleProgress value object
-- [ ] CycleEvent enum
+- [x] CycleEvent enum
 - [ ] Component lifecycle management
 - [ ] Branching logic
-- [ ] Domain layer tests
+- [ ] Domain layer tests (partial - aggregate.rs)
 
 ### Phase 2: Ports
 - [ ] CycleRepository trait
