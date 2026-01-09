@@ -2,32 +2,11 @@
 //!
 //! Command and query handlers that orchestrate domain operations.
 
-pub mod stream_message;
+pub mod session;
 
-pub use stream_message::{
-    // Handler
-    StreamingMessageHandler,
-    StreamingHandlerConfig,
-    // Commands and Results
-    StreamMessageCommand,
-    StreamMessageResult,
-    StreamMessageError,
-    // Types
-    MessageId,
-    MessageRole,
-    StoredMessage,
-    TokenUsage,
-    // WebSocket messages
-    StreamWebSocketMessage,
-    // Ports
-    AIProvider,
-    AIProviderError,
-    CompletionRequest,
-    StreamChunk,
-    StreamingResponse,
-    WebSocketBroadcaster,
-    BroadcastError,
-    ConversationRepository,
-    ConversationRecord,
-    RepositoryError,
+pub use session::{
+    ArchiveSessionCommand, ArchiveSessionHandler, ArchiveSessionResult,
+    CreateSessionCommand, CreateSessionHandler, CreateSessionResult,
+    CycleCreated, SessionCycleTracker,
+    RenameSessionCommand, RenameSessionHandler, RenameSessionResult,
 };

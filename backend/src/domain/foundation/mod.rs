@@ -14,6 +14,7 @@ mod session_status;
 mod state_machine;
 mod errors;
 mod events;
+mod command;
 
 pub use ids::{SessionId, CycleId, ComponentId, ConversationId, UserId, MembershipId};
 pub use timestamp::Timestamp;
@@ -26,3 +27,4 @@ pub use session_status::SessionStatus;
 pub use state_machine::StateMachine;
 pub use errors::{DomainError, ErrorCode, ValidationError};
 pub use events::{DomainEvent, SerializableDomainEvent, EventId, EventMetadata, EventEnvelope, domain_event};
+pub use command::CommandMetadata;
