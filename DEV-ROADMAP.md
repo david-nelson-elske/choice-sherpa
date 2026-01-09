@@ -7,12 +7,15 @@
 
 ## Current Status
 
-### Completed (Phase 1-2 Partial)
+### Completed (Phase 1-2)
 - [x] foundation (32/32 tasks)
 - [x] proact-types (37/37 tasks)
 - [x] event-infrastructure (17/17 tasks)
 - [x] conversation-lifecycle (11/11 tasks)
-- [x] subscription-state-machine (16/16 unit tests) - integration tests deferred to stripe-webhook-handling
+- [x] subscription-state-machine (PR #2) - MembershipStatus enum + state transitions
+- [x] stripe-webhook-handling (PR #3) - WebhookError, StripeEvent, signature verification, idempotency
+- [x] session-events (PR #4) - SessionCreated, SessionRenamed, SessionArchived, CycleAddedToSession domain events
+- [x] component-status-validation (PR #5) - Cycle aggregate, status transitions, branching, prerequisite checking
 
 ### Remaining Work
 

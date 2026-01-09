@@ -68,6 +68,10 @@ pub enum ErrorCode {
     SessionArchived,
     CycleArchived,
     ComponentLocked,
+    ComponentAlreadyStarted,
+    PreviousComponentRequired,
+    InvalidComponentOutput,
+    CannotBranch,
 
     // Authorization errors
     Unauthorized,
@@ -98,6 +102,10 @@ impl fmt::Display for ErrorCode {
             ErrorCode::SessionArchived => "SESSION_ARCHIVED",
             ErrorCode::CycleArchived => "CYCLE_ARCHIVED",
             ErrorCode::ComponentLocked => "COMPONENT_LOCKED",
+            ErrorCode::ComponentAlreadyStarted => "COMPONENT_ALREADY_STARTED",
+            ErrorCode::PreviousComponentRequired => "PREVIOUS_COMPONENT_REQUIRED",
+            ErrorCode::InvalidComponentOutput => "INVALID_COMPONENT_OUTPUT",
+            ErrorCode::CannotBranch => "CANNOT_BRANCH",
             ErrorCode::Unauthorized => "UNAUTHORIZED",
             ErrorCode::Forbidden => "FORBIDDEN",
             ErrorCode::AIProviderError => "AI_PROVIDER_ERROR",
@@ -126,6 +134,16 @@ impl DomainError {
             message: message.into(),
             details: HashMap::new(),
         }
+    }
+
+    /// Creates a validation error for a specific field.
+    pub fn validation(field: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            code: ErrorCode::ValidationFailed,
+            message: message.into(),
+            details: HashMap::new(),
+        }
+        .with_detail("field", field.into())
     }
 
     /// Adds a detail to the error.
