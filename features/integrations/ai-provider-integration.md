@@ -911,11 +911,11 @@ async fn test_real_openai_streaming() {
 
 ### Phase 4: Failover & Cost Tracking
 
-- [ ] Implement FailoverAIProvider wrapper
-- [ ] Emit AITokensUsed events
+- [x] Implement FailoverAIProvider wrapper
+- [x] Emit AITokensUsed events
 - [ ] Implement AIUsageHandler for cost tracking
 - [ ] Daily/session cost limit enforcement
-- [ ] Emit ProviderFallback events
+- [x] Emit ProviderFallback events
 
 ### Phase 5: Conversation Integration
 
