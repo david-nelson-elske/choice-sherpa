@@ -903,11 +903,11 @@ async fn test_real_openai_streaming() {
 
 ### Phase 3: Anthropic Adapter
 
-- [ ] Implement AnthropicProvider
-- [ ] Handle Anthropic message format differences
-- [ ] SSE stream parsing
-- [ ] Cost calculation for Claude models
-- [ ] Integration tests
+- [x] Implement AnthropicProvider
+- [x] Handle Anthropic message format differences
+- [x] SSE stream parsing (event: prefixed format)
+- [x] Cost calculation for Claude models (Opus/Sonnet/Haiku)
+- [x] Unit tests
 
 ### Phase 4: Failover & Cost Tracking
 
