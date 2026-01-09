@@ -133,6 +133,48 @@ impl FromStr for ComponentId {
     }
 }
 
+/// Unique identifier for a conversation within a component.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ConversationId(Uuid);
+
+impl ConversationId {
+    /// Creates a new random ConversationId.
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+
+    /// Creates a ConversationId from an existing UUID.
+    pub fn from_uuid(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
+
+    /// Returns the inner UUID.
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+impl Default for ConversationId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for ConversationId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for ConversationId {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(Uuid::parse_str(s)?))
+    }
+}
+
 /// User identifier (typically from auth provider).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct UserId(String);
@@ -226,5 +268,26 @@ mod tests {
     fn user_id_displays_correctly() {
         let id = UserId::new("user-456").unwrap();
         assert_eq!(format!("{}", id), "user-456");
+    }
+
+    #[test]
+    fn conversation_id_generates_unique_values() {
+        let id1 = ConversationId::new();
+        let id2 = ConversationId::new();
+        assert_ne!(id1, id2);
+    }
+
+    #[test]
+    fn conversation_id_parses_from_valid_string() {
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let id: ConversationId = uuid_str.parse().unwrap();
+        assert_eq!(id.to_string(), uuid_str);
+    }
+
+    #[test]
+    fn conversation_id_from_uuid_preserves_value() {
+        let uuid = Uuid::new_v4();
+        let id = ConversationId::from_uuid(uuid);
+        assert_eq!(id.as_uuid(), &uuid);
     }
 }

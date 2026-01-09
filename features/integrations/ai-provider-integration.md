@@ -886,36 +886,36 @@ async fn test_real_openai_streaming() {
 
 ### Phase 1: Core Infrastructure (Foundation)
 
-- [ ] Define AIProvider port interface
-- [ ] Define domain types (CompletionRequest, StreamChunk, etc.)
-- [ ] Define AIError types
-- [ ] Create mock AIProvider for testing
-- [ ] Write unit tests for port contract
+- [x] Define AIProvider port interface
+- [x] Define domain types (CompletionRequest, StreamChunk, etc.)
+- [x] Define AIError types
+- [x] Create mock AIProvider for testing
+- [x] Write unit tests for port contract
 
 ### Phase 2: OpenAI Adapter
 
-- [ ] Implement OpenAIProvider
-- [ ] SSE stream parsing for streaming completions
-- [ ] Token counting (tiktoken)
-- [ ] Cost calculation
-- [ ] Rate limit handling with exponential backoff
-- [ ] Integration tests with mock server
+- [x] Implement OpenAIProvider
+- [x] SSE stream parsing for streaming completions
+- [x] Token counting (char/4 estimate)
+- [x] Cost calculation
+- [x] Rate limit handling with exponential backoff
+- [x] Unit tests for provider
 
 ### Phase 3: Anthropic Adapter
 
-- [ ] Implement AnthropicProvider
-- [ ] Handle Anthropic message format differences
-- [ ] SSE stream parsing
-- [ ] Cost calculation for Claude models
-- [ ] Integration tests
+- [x] Implement AnthropicProvider
+- [x] Handle Anthropic message format differences
+- [x] SSE stream parsing (event: prefixed format)
+- [x] Cost calculation for Claude models (Opus/Sonnet/Haiku)
+- [x] Unit tests
 
 ### Phase 4: Failover & Cost Tracking
 
-- [ ] Implement FailoverAIProvider wrapper
-- [ ] Emit AITokensUsed events
+- [x] Implement FailoverAIProvider wrapper
+- [x] Emit AITokensUsed events
 - [ ] Implement AIUsageHandler for cost tracking
 - [ ] Daily/session cost limit enforcement
-- [ ] Emit ProviderFallback events
+- [x] Emit ProviderFallback events
 
 ### Phase 5: Conversation Integration
 
