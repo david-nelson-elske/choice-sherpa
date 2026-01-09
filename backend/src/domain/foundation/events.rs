@@ -118,7 +118,7 @@ macro_rules! domain_event {
         occurred_at = $occurred_field:ident,
         event_id = $event_id_field:ident
     ) => {
-        impl $crate::domain::foundation::events::DomainEvent for $event_name {
+        impl $crate::domain::foundation::DomainEvent for $event_name {
             fn event_type(&self) -> &'static str {
                 $event_type
             }
@@ -135,7 +135,7 @@ macro_rules! domain_event {
                 self.$occurred_field
             }
 
-            fn event_id(&self) -> $crate::domain::foundation::events::EventId {
+            fn event_id(&self) -> $crate::domain::foundation::EventId {
                 self.$event_id_field.clone()
             }
         }
