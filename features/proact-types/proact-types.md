@@ -53,3 +53,85 @@
 - [x] Message factory methods (user, assistant, system) set correct roles
 - [x] Unit tests cover all status transitions and output mutations
 - [x] All code compiles with no warnings
+
+---
+
+## Security Requirements
+
+| Requirement | Value |
+|-------------|-------|
+| Authentication | Not Required (shared types, no endpoints) |
+| Authorization Model | N/A - types used by authenticated modules |
+| Sensitive Data | Message.content (Confidential), Component outputs (Confidential) |
+| Rate Limiting | Not Required (no endpoints) |
+| Audit Logging | N/A - types only, logging handled by consuming modules |
+
+### Data Classification
+
+| Field/Entity | Classification | Handling Requirements |
+|--------------|----------------|----------------------|
+| Message.content | Confidential | User decision data - never log, encrypt at rest |
+| Message.id | Internal | Opaque identifier |
+| ComponentBase.output | Confidential | Structured user decision data - never log |
+| All component output types | Confidential | Contains user's decision analysis |
+| MessageMetadata | Internal | May contain extraction hints, do not expose |
+
+### Validation Requirements
+
+1. **Message Length Validation**: Implement `MAX_MESSAGE_LENGTH` to prevent DoS via oversized messages:
+
+```rust
+pub const MAX_MESSAGE_LENGTH: usize = 50_000; // 50KB max per message
+
+impl Message {
+    pub fn new(role: Role, content: impl Into<String>) -> Result<Self, ValidationError> {
+        let content = content.into();
+        if content.len() > MAX_MESSAGE_LENGTH {
+            return Err(ValidationError::field_error(
+                "content",
+                format!("Message exceeds maximum length of {} bytes", MAX_MESSAGE_LENGTH),
+            ));
+        }
+        // ... rest of construction
+    }
+}
+```
+
+2. **Output Size Limits**: Component outputs should have size limits to prevent storage DoS:
+
+```rust
+pub const MAX_OUTPUT_SIZE: usize = 500_000; // 500KB max per component output
+```
+
+### Security Guidelines
+
+1. **Logging Prohibition**: Message content and component outputs MUST NOT be logged:
+
+```rust
+// CORRECT: Log message metadata only
+tracing::debug!(
+    message_id = %message.id,
+    role = ?message.role,
+    "Processing message"
+);
+
+// INCORRECT: Never log content
+tracing::debug!("Message: {:?}", message); // DO NOT DO THIS if Debug includes content
+```
+
+2. **Custom Debug Implementation**: Consider implementing custom `Debug` for `Message` that redacts content:
+
+```rust
+impl fmt::Debug for Message {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Message")
+            .field("id", &self.id)
+            .field("role", &self.role)
+            .field("content", &format!("[{} bytes]", self.content.len()))
+            .field("created_at", &self.created_at)
+            .finish()
+    }
+}
+```
+
+3. **Serialization**: When serializing for API transport, ensure Message content is only sent to authorized users (the session owner)

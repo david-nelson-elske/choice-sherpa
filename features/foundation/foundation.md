@@ -48,3 +48,46 @@
 - [x] DomainError supports method chaining via with_detail()
 - [x] All tests pass with `cargo test`
 - [x] Code compiles with no warnings
+
+---
+
+## Security Requirements
+
+| Requirement | Value |
+|-------------|-------|
+| Authentication | Not Required (shared types, no endpoints) |
+| Authorization Model | N/A - types used by authenticated modules |
+| Sensitive Data | UserId (Internal), EventMetadata.user_id (Internal) |
+| Rate Limiting | Not Required (no endpoints) |
+| Audit Logging | N/A - types only, logging handled by consuming modules |
+
+### Data Classification
+
+| Field/Entity | Classification | Handling Requirements |
+|--------------|----------------|----------------------|
+| UserId | Internal | Do not expose in public API responses without authorization |
+| SessionId | Internal | Opaque identifier, safe to include in URLs |
+| CycleId | Internal | Opaque identifier, safe to include in URLs |
+| ComponentId | Internal | Opaque identifier, safe to include in URLs |
+| EventMetadata.user_id | Internal | Implement custom `Debug` trait to redact in logs |
+
+### Implementation Notes
+
+1. **Custom Debug for EventMetadata**: The `user_id` field in `EventMetadata` should be redacted when logged:
+
+```rust
+impl fmt::Debug for EventMetadata {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("EventMetadata")
+            .field("correlation_id", &self.correlation_id)
+            .field("causation_id", &self.causation_id)
+            .field("user_id", &self.user_id.as_ref().map(|_| "[REDACTED]"))
+            .field("trace_id", &self.trace_id)
+            .finish()
+    }
+}
+```
+
+2. **ID Opacity**: All ID types use UUIDs to prevent enumeration attacks. IDs should not encode any user-identifiable information.
+
+3. **Serialization Security**: All types implement `Serialize`/`Deserialize` for API transport. Ensure deserialization validates input bounds (e.g., Percentage 0-100, Rating -2 to +2)
