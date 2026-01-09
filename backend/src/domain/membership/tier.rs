@@ -44,6 +44,17 @@ impl MembershipTier {
             MembershipTier::Annual => "Annual",
         }
     }
+
+    /// Returns the numeric rank of this tier for comparison.
+    ///
+    /// Higher rank = more features. Used for upgrade validation.
+    pub fn rank(&self) -> u8 {
+        match self {
+            MembershipTier::Free => 0,
+            MembershipTier::Monthly => 1,
+            MembershipTier::Annual => 2,
+        }
+    }
 }
 
 impl std::fmt::Display for MembershipTier {

@@ -332,15 +332,17 @@ impl AccessChecker for StubAccessChecker {
 ### 2.3 Loop 2 Deliverables
 
 ```
-[ ] Create backend/src/ports/access_checker.rs
-[ ] Create backend/src/adapters/membership/stub_access_checker.rs
+[x] Create backend/src/ports/access_checker.rs (DONE - 348 lines)
+[x] Create backend/src/adapters/membership/stub_access_checker.rs (DONE - 308 lines)
+[x] Create backend/src/domain/membership/tier.rs (DONE - MembershipTier enum)
+[x] Create backend/src/domain/membership/tier_limits.rs (DONE - TierLimits value object)
+[x] Update backend/src/ports/mod.rs to export AccessChecker (DONE)
 [ ] Create backend/src/ports/membership_repository.rs
 [ ] Create backend/src/ports/membership_reader.rs
 [ ] Create backend/src/ports/session_repository.rs
 [ ] Create backend/src/ports/session_reader.rs
 [ ] Create backend/src/ports/payment_provider.rs
-[ ] Update backend/src/ports/mod.rs to export all ports
-[ ] Verify `cargo test` passes (510+ tests)
+[ ] Verify `cargo test` passes (619 tests currently passing)
 ```
 
 ---

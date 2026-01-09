@@ -4,12 +4,14 @@
 //! according to the subscription lifecycle.
 
 use crate::domain::foundation::StateMachine;
+use serde::{Deserialize, Serialize};
 
 /// Membership subscription status.
 ///
 /// Represents the current state of a user's subscription in the
 /// payment lifecycle.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum MembershipStatus {
     /// Initial state for paid subscriptions awaiting first payment.
     /// No access until payment completes.

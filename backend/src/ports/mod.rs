@@ -28,23 +28,40 @@
 
 mod access_checker;
 mod ai_provider;
+mod circuit_breaker;
+mod connection_registry;
 mod event_publisher;
 mod event_subscriber;
+mod membership_reader;
+mod membership_repository;
 mod outbox_writer;
-mod connection_registry;
-mod circuit_breaker;
+mod payment_provider;
 mod processed_event_store;
 mod schema_validator;
+mod session_reader;
+mod session_repository;
 
-pub use access_checker::{AccessChecker, AccessResult, AccessDeniedReason, UsageStats};
+pub use access_checker::{AccessChecker, AccessDeniedReason, AccessResult, UsageStats};
 pub use ai_provider::{
     AIError, AIProvider, CompletionRequest, CompletionResponse, FinishReason, Message,
     MessageRole, ProviderInfo, RequestMetadata, StreamChunk, TokenUsage,
 };
+pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
+pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
 pub use event_publisher::EventPublisher;
 pub use event_subscriber::{EventBus, EventHandler, EventSubscriber};
-pub use outbox_writer::{OutboxWriter, OutboxEntry, OutboxStatus};
-pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
-pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
+pub use membership_reader::{
+    MembershipReader, MembershipStatistics, MembershipSummary, MembershipView, StatusCounts,
+    TierCounts,
+};
+pub use membership_repository::MembershipRepository;
+pub use outbox_writer::{OutboxEntry, OutboxStatus, OutboxWriter};
+pub use payment_provider::{
+    CheckoutSession, CreateCheckoutRequest, CreateCustomerRequest, CreateSubscriptionRequest,
+    Customer, PaymentError, PaymentErrorCode, PaymentProvider, PortalSession, Subscription,
+    SubscriptionStatus, WebhookEvent, WebhookEventData, WebhookEventType,
+};
 pub use processed_event_store::ProcessedEventStore;
 pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};
+pub use session_reader::{ListOptions, SessionList, SessionReader, SessionSummary, SessionView};
+pub use session_repository::SessionRepository;
