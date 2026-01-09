@@ -258,6 +258,53 @@ impl Membership {
         self.days_remaining() <= days && self.days_remaining() > 0
     }
 
+    /// Check if this membership can be reactivated.
+    ///
+    /// Returns true only if:
+    /// - Status is Cancelled
+    /// - Current time is before period_end (billing period hasn't ended)
+    pub fn can_reactivate(&self) -> bool {
+        self.status == MembershipStatus::Cancelled && Timestamp::now() <= self.current_period_end
+    }
+
+    /// Reactivate a cancelled membership.
+    ///
+    /// This un-cancels the membership before the billing period ends,
+    /// resuming the subscription without requiring a new checkout.
+    ///
+    /// # Errors
+    ///
+    /// Returns error if:
+    /// - Status is not Cancelled (must be cancelled to reactivate)
+    /// - Current time is past period_end (billing period has expired)
+    pub fn reactivate(&mut self) -> Result<(), DomainError> {
+        // Check status first
+        if self.status != MembershipStatus::Cancelled {
+            return Err(DomainError::new(
+                ErrorCode::InvalidStateTransition,
+                format!(
+                    "Cannot reactivate membership: expected Cancelled status, got {:?}",
+                    self.status
+                ),
+            ));
+        }
+
+        // Check if period hasn't ended
+        let now = Timestamp::now();
+        if now > self.current_period_end {
+            return Err(DomainError::new(
+                ErrorCode::InvalidStateTransition,
+                "Cannot reactivate membership: billing period has expired. Please create a new subscription.",
+            ));
+        }
+
+        // Perform the state transition
+        self.transition_to(MembershipStatus::Active)?;
+        self.cancelled_at = None;
+        self.updated_at = Timestamp::now();
+        Ok(())
+    }
+
     /// Transition to a new status using the state machine.
     fn transition_to(&mut self, target: MembershipStatus) -> Result<(), DomainError> {
         use crate::domain::foundation::StateMachine;
@@ -546,5 +593,191 @@ mod tests {
         let new_end = new_start.add_days(30);
         membership.renew(new_start, new_end).unwrap();
         assert!(membership.cancelled_at.is_none());
+    }
+
+    // Reactivation integration tests
+
+    #[test]
+    fn reactivation_before_period_end_succeeds() {
+        // Create membership with period_end 30 days in future
+        let mut membership = Membership::create_free(
+            test_membership_id(),
+            test_user_id(),
+            MembershipTier::Monthly,
+            "PROMO".to_string(),
+            period_start(),
+            Timestamp::now().add_days(30), // period ends in 30 days
+        );
+
+        // Cancel the membership
+        membership.cancel().unwrap();
+        assert_eq!(membership.status, MembershipStatus::Cancelled);
+        assert!(membership.cancelled_at.is_some());
+
+        // Reactivate should succeed (before period end)
+        let result = membership.reactivate();
+        assert!(result.is_ok());
+        assert_eq!(membership.status, MembershipStatus::Active);
+        assert!(membership.cancelled_at.is_none());
+    }
+
+    #[test]
+    fn reactivation_after_period_end_fails() {
+        // Create membership with period_end in the past
+        let past_start = Timestamp::now().add_days(-60);
+        let past_end = Timestamp::now().add_days(-30); // ended 30 days ago
+
+        let mut membership = Membership {
+            id: test_membership_id(),
+            user_id: test_user_id(),
+            tier: MembershipTier::Monthly,
+            status: MembershipStatus::Cancelled, // Start as cancelled
+            current_period_start: past_start,
+            current_period_end: past_end,
+            promo_code: Some("PROMO".to_string()),
+            stripe_customer_id: None,
+            stripe_subscription_id: None,
+            created_at: past_start,
+            updated_at: Timestamp::now().add_days(-30),
+            cancelled_at: Some(Timestamp::now().add_days(-35)),
+        };
+
+        // Reactivate should fail (period has ended)
+        let result = membership.reactivate();
+        assert!(result.is_err());
+
+        // Verify error message
+        let err = result.unwrap_err();
+        assert!(err.message().contains("billing period has expired"));
+
+        // Status should remain Cancelled
+        assert_eq!(membership.status, MembershipStatus::Cancelled);
+    }
+
+    #[test]
+    fn reactivation_only_valid_from_cancelled_status() {
+        // Test from Active status
+        let mut active_membership = Membership::create_free(
+            test_membership_id(),
+            test_user_id(),
+            MembershipTier::Monthly,
+            "PROMO".to_string(),
+            period_start(),
+            period_end(),
+        );
+        assert_eq!(active_membership.status, MembershipStatus::Active);
+
+        let result = active_membership.reactivate();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message().contains("expected Cancelled status"));
+
+        // Test from Pending status
+        let mut pending_membership = Membership::create_paid(
+            test_membership_id(),
+            test_user_id(),
+            MembershipTier::Monthly,
+            "cus_123".to_string(),
+        );
+        assert_eq!(pending_membership.status, MembershipStatus::Pending);
+
+        let result = pending_membership.reactivate();
+        assert!(result.is_err());
+
+        // Test from PastDue status
+        let mut past_due_membership = Membership::create_free(
+            test_membership_id(),
+            test_user_id(),
+            MembershipTier::Monthly,
+            "PROMO".to_string(),
+            period_start(),
+            period_end(),
+        );
+        past_due_membership.mark_past_due().unwrap();
+        assert_eq!(past_due_membership.status, MembershipStatus::PastDue);
+
+        let result = past_due_membership.reactivate();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn reactivation_not_valid_from_expired_status() {
+        let mut membership = Membership::create_free(
+            test_membership_id(),
+            test_user_id(),
+            MembershipTier::Monthly,
+            "PROMO".to_string(),
+            period_start(),
+            period_end(),
+        );
+
+        // Cancel then expire
+        membership.cancel().unwrap();
+        membership.expire().unwrap();
+        assert_eq!(membership.status, MembershipStatus::Expired);
+
+        // Reactivate should fail from Expired
+        let result = membership.reactivate();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().message().contains("expected Cancelled status"));
+    }
+
+    #[test]
+    fn can_reactivate_returns_correct_values() {
+        // Active membership - cannot reactivate
+        let active = Membership::create_free(
+            test_membership_id(),
+            test_user_id(),
+            MembershipTier::Monthly,
+            "PROMO".to_string(),
+            period_start(),
+            period_end(),
+        );
+        assert!(!active.can_reactivate());
+
+        // Pending membership - cannot reactivate
+        let pending = Membership::create_paid(
+            test_membership_id(),
+            test_user_id(),
+            MembershipTier::Monthly,
+            "cus_123".to_string(),
+        );
+        assert!(!pending.can_reactivate());
+
+        // Cancelled with future period_end - CAN reactivate
+        let mut cancelled_future = Membership::create_free(
+            test_membership_id(),
+            test_user_id(),
+            MembershipTier::Monthly,
+            "PROMO".to_string(),
+            period_start(),
+            Timestamp::now().add_days(30), // ends in future
+        );
+        cancelled_future.cancel().unwrap();
+        assert!(cancelled_future.can_reactivate());
+    }
+
+    #[test]
+    fn can_reactivate_false_when_period_ended() {
+        // Create cancelled membership with past period_end
+        let past_start = Timestamp::now().add_days(-60);
+        let past_end = Timestamp::now().add_days(-30);
+
+        let membership = Membership {
+            id: test_membership_id(),
+            user_id: test_user_id(),
+            tier: MembershipTier::Monthly,
+            status: MembershipStatus::Cancelled,
+            current_period_start: past_start,
+            current_period_end: past_end,
+            promo_code: Some("PROMO".to_string()),
+            stripe_customer_id: None,
+            stripe_subscription_id: None,
+            created_at: past_start,
+            updated_at: Timestamp::now().add_days(-30),
+            cancelled_at: Some(Timestamp::now().add_days(-35)),
+        };
+
+        // Cannot reactivate because period has ended
+        assert!(!membership.can_reactivate());
     }
 }

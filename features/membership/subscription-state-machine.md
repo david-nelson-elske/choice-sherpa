@@ -477,8 +477,8 @@ impl MembershipStatus {
 - [ ] `webhook_payment_recovered_clears_past_due` _(requires: webhook handler)_
 - [ ] `scheduled_job_expires_old_pending` _(requires: scheduled jobs)_
 - [ ] `scheduled_job_expires_cancelled_at_period_end` _(requires: scheduled jobs)_
-- [ ] `reactivation_before_period_end_succeeds` _(requires: Membership aggregate)_
-- [ ] `reactivation_after_period_end_fails` _(requires: Membership aggregate)_
+- [x] `reactivation_before_period_end_succeeds` _(requires: Membership aggregate)_
+- [x] `reactivation_after_period_end_fails` _(requires: Membership aggregate)_
 
 ---
 
