@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AlternativesOutput",
+  "description": "Options being considered with status quo baseline",
+  "type": "object",
+  "required": ["alternatives", "status_quo_id"],
+  "properties": {
+    "alternatives": {
+      "type": "array",
+      "minItems": 2,
+      "description": "All options including status quo",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "description"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Short name for display"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of this option"
+          },
+          "is_status_quo": {
+            "type": "boolean",
+            "default": false,
+            "description": "True if this is the do-nothing baseline"
+          }
+        }
+      }
+    },
+    "status_quo_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "ID of the alternative designated as status quo (baseline for Pugh)"
+    },
+    "strategy_table": {
+      "type": "object",
+      "description": "Optional strategy table for complex decisions",
+      "properties": {
+        "decision_columns": {
+          "type": "array",
+          "description": "Sub-decisions that make up each alternative",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "options"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "options": {
+                "type": "array",
+                "items": { "type": "string" },
+                "minItems": 1
+              }
+            }
+          }
+        },
+        "strategies": {
+          "type": "array",
+          "description": "Mapping of alternatives to strategy selections",
+          "items": {
+            "type": "object",
+            "required": ["alternative_id", "selections"],
+            "properties": {
+              "alternative_id": { "type": "string", "format": "uuid" },
+              "selections": {
+                "type": "object",
+                "description": "Map of column_id -> selected option",
+                "additionalProperties": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

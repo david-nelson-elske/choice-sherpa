@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IssueRaisingOutput",
+  "description": "Categorized initial thoughts from user's decision context",
+  "type": "object",
+  "required": ["potential_decisions", "objectives", "uncertainties", "considerations"],
+  "properties": {
+    "potential_decisions": {
+      "type": "array",
+      "description": "Decision questions identified from initial discussion",
+      "items": {
+        "type": "object",
+        "required": ["id", "description"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "description": { "type": "string", "minLength": 1 },
+          "priority": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+            "default": "medium"
+          },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "objectives": {
+      "type": "array",
+      "description": "Goals and values mentioned by the user",
+      "items": {
+        "type": "object",
+        "required": ["id", "description"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "description": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "description": "Unknown factors and risks identified",
+      "items": {
+        "type": "object",
+        "required": ["id", "description"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "description": { "type": "string", "minLength": 1 },
+          "driver": {
+            "type": "string",
+            "description": "What's causing this uncertainty"
+          }
+        }
+      }
+    },
+    "considerations": {
+      "type": "array",
+      "description": "General thoughts and context not fitting other categories",
+      "items": {
+        "type": "object",
+        "required": ["id", "text"],
+        "properties": {
+          "id": { "type": "string", "format": "uuid" },
+          "text": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

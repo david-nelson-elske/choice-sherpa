@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TradeoffsOutput",
+  "description": "Analysis results identifying dominated alternatives and tensions",
+  "type": "object",
+  "properties": {
+    "dominated_alternatives": {
+      "type": "array",
+      "description": "Alternatives that are strictly worse than another",
+      "items": {
+        "type": "object",
+        "required": ["alternative_id", "dominated_by"],
+        "properties": {
+          "alternative_id": { "type": "string", "format": "uuid" },
+          "dominated_by": { "type": "string", "format": "uuid" },
+          "explanation": { "type": "string" }
+        }
+      }
+    },
+    "irrelevant_objectives": {
+      "type": "array",
+      "description": "Objectives where all alternatives score the same",
+      "items": {
+        "type": "object",
+        "required": ["objective_id", "reason"],
+        "properties": {
+          "objective_id": { "type": "string", "format": "uuid" },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "tensions": {
+      "type": "array",
+      "description": "Key tradeoffs between alternatives",
+      "items": {
+        "type": "object",
+        "required": ["alternative_id", "gains", "losses"],
+        "properties": {
+          "alternative_id": { "type": "string", "format": "uuid" },
+          "gains": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" },
+            "description": "Objective IDs where this alternative excels"
+          },
+          "losses": {
+            "type": "array",
+            "items": { "type": "string", "format": "uuid" },
+            "description": "Objective IDs where this alternative is weakest"
+          },
+          "net_score": {
+            "type": "integer",
+            "description": "Sum of all Pugh ratings for this alternative"
+          }
+        }
+      }
+    }
+  }
+}

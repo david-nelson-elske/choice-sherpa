@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DecisionQualityOutput",
+  "description": "Assessment of decision quality across 7 elements",
+  "type": "object",
+  "required": ["elements"],
+  "properties": {
+    "elements": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "description": "Scores for each DQ element",
+      "items": {
+        "type": "object",
+        "required": ["name", "score"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "Helpful Problem Frame",
+              "Clear Objectives",
+              "Creative Alternatives",
+              "Reliable Consequence Information",
+              "Logically Correct Reasoning",
+              "Clear Tradeoffs",
+              "Commitment to Follow Through"
+            ]
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "0-100 percentage score"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this score was given"
+          },
+          "improvement_path": {
+            "type": "string",
+            "description": "What would increase this score"
+          }
+        }
+      }
+    },
+    "overall_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Computed as minimum of all element scores (weakest link)"
+    }
+  }
+}
