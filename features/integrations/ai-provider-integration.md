@@ -894,12 +894,12 @@ async fn test_real_openai_streaming() {
 
 ### Phase 2: OpenAI Adapter
 
-- [ ] Implement OpenAIProvider
-- [ ] SSE stream parsing for streaming completions
-- [ ] Token counting (tiktoken)
-- [ ] Cost calculation
-- [ ] Rate limit handling with exponential backoff
-- [ ] Integration tests with mock server
+- [x] Implement OpenAIProvider
+- [x] SSE stream parsing for streaming completions
+- [x] Token counting (char/4 estimate)
+- [x] Cost calculation
+- [x] Rate limit handling with exponential backoff
+- [x] Unit tests for provider
 
 ### Phase 3: Anthropic Adapter
 

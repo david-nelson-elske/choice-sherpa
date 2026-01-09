@@ -9,6 +9,6 @@ pub mod ai;
 pub mod events;
 pub mod validation;
 
-pub use ai::{MockAIProvider, MockError, MockResponse};
+pub use ai::{MockAIProvider, MockError, MockResponse, OpenAIConfig, OpenAIProvider};
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use validation::JsonSchemaValidator;

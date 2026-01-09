@@ -5,7 +5,10 @@
 //! ## Available Adapters
 //!
 //! - `MockAIProvider` - Configurable mock for testing
+//! - `OpenAIProvider` - OpenAI GPT models (GPT-4, GPT-3.5)
 
 mod mock_provider;
+mod openai_provider;
 
 pub use mock_provider::{MockAIProvider, MockError, MockResponse};
+pub use openai_provider::{OpenAIConfig, OpenAIProvider};
