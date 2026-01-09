@@ -30,8 +30,8 @@ This feature addresses the first and third blockers by establishing:
 | Adapters | AI adapters only | No Postgres, HTTP adapters |
 | HTTP | Dependencies added | axum/tower/tower-http in Cargo.toml |
 | Config | Implemented | 52 config tests passing, .env.example created |
-| Docker | Configured | docker-compose.yml ready (port conflicts with other projects) |
-| Migrations | Schema files created | Pending sqlx-cli install and migration run |
+| Docker | Running | PostgreSQL (5433), Redis (6380) healthy |
+| Migrations | Applied | 3 migrations: extensions, outbox, memberships |
 
 ### Target State
 
@@ -83,17 +83,17 @@ These specifications document the infrastructure being implemented:
 - [x] Add Redis 7 service to `docker-compose.yml`
 - [x] Add healthchecks for both services
 - [x] Add persistent volume for PostgreSQL data
-- [x] Verify `docker-compose up -d` starts both services (ports 5432/6379 in use by other projects - config valid)
-- [x] Verify services are accessible (pg_isready, redis-cli ping) - use docker-compose.test.yml with ports 5433/6380 when main ports occupied
+- [x] Verify `docker-compose up -d` starts both services
+- [x] Verify services are accessible (pg_isready, redis-cli ping)
 
 #### 1.4 Database Migrations Foundation
 
 - [x] Create `backend/migrations/` directory
 - [x] Create `001_foundation.sql` - outbox table, processed_events table, extensions (uuid-ossp, pgcrypto)
 - [x] Create `002_membership.sql` - memberships table, billing_history table
-- [ ] Install sqlx-cli if not present
-- [ ] Verify `sqlx migrate run` applies migrations
-- [ ] Verify `sqlx migrate revert` can rollback
+- [x] Install sqlx-cli if not present
+- [x] Verify `sqlx migrate run` applies migrations
+- [x] Verify `sqlx migrate revert` can rollback (N/A - using non-reversible migrations by design)
 
 ---
 

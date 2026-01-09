@@ -9,10 +9,10 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: choice_sherpa
     ports:
-      - "5432:5432"
+      - "5433:5432"  # Use 5433 to avoid conflicts with other postgres instances
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/migrations:/docker-entrypoint-initdb.d:ro
+      # Note: Don't mount migrations to initdb.d - use sqlx migrate run instead
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U choice-sherpa -d choice_sherpa"]
       interval: 5s
@@ -26,7 +26,7 @@ services:
     image: redis:7-alpine
     container_name: choice-sherpa-redis
     ports:
-      - "6379:6379"
+      - "6380:6379"  # Use 6380 to avoid conflicts with other redis instances
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
