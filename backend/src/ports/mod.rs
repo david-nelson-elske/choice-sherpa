@@ -40,6 +40,7 @@ mod processed_event_store;
 mod schema_validator;
 mod session_reader;
 mod session_repository;
+mod usage_tracker;
 
 pub use access_checker::{AccessChecker, AccessDeniedReason, AccessResult, UsageStats};
 pub use ai_provider::{
@@ -65,3 +66,6 @@ pub use processed_event_store::ProcessedEventStore;
 pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};
 pub use session_reader::{ListOptions, SessionList, SessionReader, SessionSummary, SessionView};
 pub use session_repository::SessionRepository;
+pub use usage_tracker::{
+    ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
+};

@@ -8,8 +8,10 @@
 //! - `session` - Decision session lifecycle and events
 //! - `cycle` - Decision cycle aggregate and lifecycle management
 //! - `analysis` - Pure domain services for decision analysis (Pugh, DQ, tradeoffs)
+//! - `conversation` - AI-guided dialogues within PrOACT components
 
 pub mod analysis;
+pub mod conversation;
 pub mod cycle;
 pub mod foundation;
 pub mod membership;

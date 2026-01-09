@@ -12,8 +12,8 @@ pub mod membership;
 pub mod validation;
 
 pub use ai::{
-    ai_events, AIEventCallback, AnthropicConfig, AnthropicProvider, FailoverAIProvider,
-    MockAIProvider, MockError, MockResponse, OpenAIConfig, OpenAIProvider,
+    ai_events, AIEventCallback, AIUsageHandler, AnthropicConfig, AnthropicProvider,
+    FailoverAIProvider, MockAIProvider, MockError, MockResponse, OpenAIConfig, OpenAIProvider,
 };
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;

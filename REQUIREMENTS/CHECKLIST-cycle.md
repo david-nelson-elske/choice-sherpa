@@ -25,15 +25,17 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 | `backend/src/domain/cycle/events.rs` | CycleEvent enum | ✅ |
 | `backend/src/domain/cycle/errors.rs` | Cycle-specific errors | ⬜ |
 
-> **Note:** Tests are inline in implementation files using `#[cfg(test)] mod tests` (Rust convention). The file `cycle.rs` was renamed to `aggregate.rs`.
+> **Note:** Tests are inline in implementation files using `#[cfg(test)] mod tests` (Rust convention). The file `cycle.rs` was renamed to `aggregate.rs`. Separate test files (`*_test.rs`) are not used.
 
 ### Domain Tests (Rust)
 
+> **Note:** Domain tests are inline in implementation files (see aggregate.rs). Separate test files are not used.
+
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/domain/cycle/cycle_test.rs` | Cycle aggregate tests | ⬜ |
-| `backend/src/domain/cycle/progress_test.rs` | CycleProgress tests | ⬜ |
-| `backend/src/domain/cycle/events_test.rs` | CycleEvent tests | ⬜ |
+| `backend/src/domain/cycle/aggregate.rs` (inline tests) | Cycle aggregate tests (38 tests) | ✅ |
+| `backend/src/domain/cycle/progress.rs` (inline tests) | CycleProgress tests | ⬜ |
+| `backend/src/domain/cycle/events.rs` (inline tests) | CycleEvent tests | ⬜ |
 
 ### Ports (Rust)
 
@@ -162,52 +164,59 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 
 ## Test Inventory
 
-### Cycle Aggregate Tests
+> **Note:** Test names in aggregate.rs use shortened names (e.g., `new_cycle_is_active` instead of `test_cycle_new_has_active_status`). The mapping below shows the actual test function names.
+
+### Cycle Aggregate Tests (in aggregate.rs)
 
 | Test Name | Description | Status |
 |-----------|-------------|--------|
-| `test_cycle_new_creates_all_nine_components` | All components initialized | ⬜ |
-| `test_cycle_new_starts_at_issue_raising` | Current step is first | ⬜ |
-| `test_cycle_new_has_active_status` | Status is active | ⬜ |
-| `test_cycle_new_is_root` | No parent cycle | ⬜ |
-| `test_cycle_new_emits_created_event` | Event is recorded | ⬜ |
-| `test_cycle_reconstitute_preserves_all_fields` | Reconstitution works | ⬜ |
-| `test_cycle_reconstitute_no_events` | No events on reconstitute | ⬜ |
-| `test_cycle_branch_at_copies_components_up_to_point` | Branch inherits correctly | ⬜ |
-| `test_cycle_branch_at_has_fresh_remaining_components` | Remaining are new | ⬜ |
-| `test_cycle_branch_at_sets_parent_and_branch_point` | Parent reference set | ⬜ |
-| `test_cycle_branch_at_emits_branched_event` | Event is recorded | ⬜ |
-| `test_cycle_cannot_branch_at_not_started_component` | Validation error | ⬜ |
-| `test_cycle_cannot_branch_when_archived` | Archived rejection | ⬜ |
-| `test_cycle_get_component_returns_correct_type` | Accessor works | ⬜ |
-| `test_cycle_current_component_matches_current_step` | Current accessor | ⬜ |
+| `new_cycle_has_all_components_not_started` | All components initialized | ✅ |
+| `new_cycle_current_step_is_issue_raising` | Current step is first | ✅ |
+| `new_cycle_is_active` | Status is active | ✅ |
+| `new_cycle_is_not_a_branch` | No parent cycle | ✅ |
+| `new_cycle_records_created_event` | Event is recorded | ✅ |
+| ~~`test_cycle_reconstitute_preserves_all_fields`~~ | Reconstitution works | ⬜ |
+| ~~`test_cycle_reconstitute_no_events`~~ | No events on reconstitute | ⬜ |
+| `branch_inherits_components_before_branch_point` | Branch inherits correctly | ✅ |
+| `branch_components_after_branch_point_are_fresh` | Remaining are new | ✅ |
+| `can_branch_at_started_component` | Parent reference set | ✅ |
+| `branch_records_event` | Event is recorded | ✅ |
+| `cannot_branch_at_not_started_component` | Validation error | ✅ |
+| ~~`test_cycle_cannot_branch_when_archived`~~ | Archived rejection (covered by cannot_modify_archived_cycle) | ✅ |
+| ~~`test_cycle_get_component_returns_correct_type`~~ | Accessor works | ⬜ |
+| ~~`test_cycle_current_component_matches_current_step`~~ | Current accessor | ⬜ |
 
-### Component Lifecycle Tests
-
-| Test Name | Description | Status |
-|-----------|-------------|--------|
-| `test_cycle_start_component_changes_status` | Status becomes in_progress | ⬜ |
-| `test_cycle_start_component_sets_current_step` | Current step updated | ⬜ |
-| `test_cycle_start_component_emits_event` | Event is recorded | ⬜ |
-| `test_cycle_start_first_component_succeeds` | IssueRaising can start | ⬜ |
-| `test_cycle_cannot_start_without_previous_started` | Order enforcement | ⬜ |
-| `test_cycle_complete_component_changes_status` | Status becomes complete | ⬜ |
-| `test_cycle_complete_component_auto_advances` | Current step advances | ⬜ |
-| `test_cycle_complete_component_emits_event` | Event is recorded | ⬜ |
-| `test_cycle_update_component_output_persists` | Output saved | ⬜ |
-| `test_cycle_update_component_output_emits_event` | Event is recorded | ⬜ |
-| `test_cycle_component_lifecycle_fails_when_archived` | Archived rejection | ⬜ |
-
-### Navigation Tests
+### Component Lifecycle Tests (in aggregate.rs)
 
 | Test Name | Description | Status |
 |-----------|-------------|--------|
-| `test_cycle_navigate_to_started_component_succeeds` | Can return to started | ⬜ |
-| `test_cycle_navigate_to_next_available_succeeds` | Can advance | ⬜ |
-| `test_cycle_navigate_cannot_skip_unstarted` | Order enforcement | ⬜ |
-| `test_cycle_navigate_updates_current_step` | Current step updated | ⬜ |
+| `can_start_issue_raising` | Status becomes in_progress | ✅ |
+| `starting_component_updates_current_step` | Current step updated | ✅ |
+| `starting_component_records_event` | Event is recorded | ✅ |
+| `can_start_issue_raising` | IssueRaising can start | ✅ |
+| `cannot_start_problem_frame_before_issue_raising` | Order enforcement | ✅ |
+| `can_start_problem_frame_after_issue_raising_started` | Can start after prereq | ✅ |
+| `cannot_start_already_started_component` | Already started rejection | ✅ |
+| `can_complete_in_progress_component` | Status becomes complete | ✅ |
+| ~~`test_cycle_complete_component_auto_advances`~~ | Current step advances | ⬜ |
+| `completing_component_records_event` | Event is recorded | ✅ |
+| ~~`test_cycle_update_component_output_persists`~~ | Output saved | ⬜ |
+| ~~`test_cycle_update_component_output_emits_event`~~ | Event is recorded | ⬜ |
+| `cannot_modify_archived_cycle` | Archived rejection | ✅ |
+| `can_mark_complete_component_for_revision` | Mark for revision works | ✅ |
+| `marking_for_revision_updates_current_step` | Revision updates step | ✅ |
+| `cannot_complete_not_started_component` | Cannot complete not started | ✅ |
 
-### CycleProgress Tests
+### Navigation Tests (in aggregate.rs)
+
+| Test Name | Description | Status |
+|-----------|-------------|--------|
+| `can_navigate_to_started_component` | Can return to started | ✅ |
+| `can_navigate_to_next_not_started_component_if_prereq_started` | Can advance | ✅ |
+| `cannot_navigate_to_not_started_component_without_prereq` | Order enforcement | ✅ |
+| `navigating_records_event` | Navigation records event | ✅ |
+
+### CycleProgress Tests (requires progress.rs)
 
 | Test Name | Description | Status |
 |-----------|-------------|--------|
@@ -217,23 +226,33 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 | `test_cycle_progress_first_incomplete_finds_correct` | First incomplete finder | ⬜ |
 | `test_cycle_progress_step_statuses_map_all_components` | All 9 present | ⬜ |
 
-### Cycle Lifecycle Tests
+### Cycle Lifecycle Tests (in aggregate.rs)
 
 | Test Name | Description | Status |
 |-----------|-------------|--------|
-| `test_cycle_complete_changes_status_to_completed` | Status changes | ⬜ |
-| `test_cycle_complete_emits_event` | Event is recorded | ⬜ |
-| `test_cycle_cannot_complete_when_archived` | Archived rejection | ⬜ |
-| `test_cycle_archive_changes_status_to_archived` | Status changes | ⬜ |
-| `test_cycle_archive_emits_event` | Event is recorded | ⬜ |
+| `can_complete_cycle_with_decision_quality_complete` | Status changes | ✅ |
+| `completing_cycle_records_event` | Event is recorded | ✅ |
+| `cannot_complete_cycle_without_decision_quality` | Requires DQ complete | ✅ |
+| `can_archive_active_cycle` | Status changes | ✅ |
+| `can_archive_completed_cycle` | Archive completed works | ✅ |
 
-### CycleEvent Tests
+### CycleEvent Tests (requires events.rs inline tests)
 
 | Test Name | Description | Status |
 |-----------|-------------|--------|
 | `test_cycle_event_cycle_id_returns_id` | ID accessor works | ⬜ |
 | `test_cycle_event_serializes_to_json` | JSON serialization | ⬜ |
 | `test_cycle_event_deserializes_from_json` | JSON deserialization | ⬜ |
+
+### Component Validation Tests (in aggregate.rs)
+
+| Test Name | Description | Status |
+|-----------|-------------|--------|
+| `alternatives_validation_requires_at_least_two` | Min 2 alternatives | ✅ |
+| `alternatives_validation_requires_valid_status_quo` | Valid status quo | ✅ |
+| `alternatives_validation_passes_with_valid_data` | Valid data passes | ✅ |
+| `objectives_validation_requires_at_least_one_fundamental` | Min 1 fundamental | ✅ |
+| `decision_quality_validation_requires_seven_elements` | Exactly 7 DQ elements | ✅ |
 
 ### CreateCycle Command Tests
 
@@ -328,12 +347,12 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 
 | Rule | Implementation | Test | Status |
 |------|----------------|------|--------|
-| Cycle belongs to session | Constructor requires session_id | `test_create_cycle_handler_links_to_session` | ⬜ |
-| All 9 components exist | Created in constructor | `test_cycle_new_creates_all_nine_components` | ⬜ |
-| Components follow order | validate_can_start() check | `test_cycle_cannot_start_without_previous_started` | ⬜ |
-| Branch point must be started | can_branch_at() check | `test_cycle_cannot_branch_at_not_started_component` | ⬜ |
-| Branch inherits state | branch_at() copies components | `test_cycle_branch_at_copies_components_up_to_point` | ⬜ |
-| Completed/archived immutable | ensure_mutable() check | `test_cycle_component_lifecycle_fails_when_archived` | ⬜ |
+| Cycle belongs to session | Constructor requires session_id | `new_cycle_*` tests | ✅ |
+| All 9 components exist | Created in constructor | `new_cycle_has_all_components_not_started` | ✅ |
+| Components follow order | validate_can_start() check | `cannot_start_problem_frame_before_issue_raising` | ✅ |
+| Branch point must be started | can_branch_at() check | `cannot_branch_at_not_started_component` | ✅ |
+| Branch inherits state | branch_at() copies components | `branch_inherits_components_before_branch_point` | ✅ |
+| Completed/archived immutable | ensure_mutable() check | `cannot_modify_archived_cycle` | ✅ |
 
 ---
 
@@ -371,8 +390,10 @@ cd frontend && npm test -- --testPathPattern="modules/cycle"
 
 ### Module is COMPLETE when:
 
-- [ ] All 58 files in File Inventory exist
-- [ ] All 82 tests in Test Inventory pass
+- [ ] All 53 backend files in File Inventory exist (3/53 complete)
+- [ ] All 14 frontend files in File Inventory exist (0/14 complete)
+- [ ] All domain tests pass (38/46 complete - progress.rs and events.rs tests needed)
+- [ ] All application/adapter tests pass (0/67 complete)
 - [ ] Domain layer coverage >= 90%
 - [ ] Application layer coverage >= 85%
 - [ ] Adapter layer coverage >= 80%
@@ -388,9 +409,19 @@ cd frontend && npm test -- --testPathPattern="modules/cycle"
 
 ```
 RUST BACKEND IN PROGRESS: cycle
-Files: 3/58 (5%)
-Tests: 38/82 passing (46%)
-Frontend: Not started
+Files: 3/53 backend files exist (6%)
+  - Domain Layer: 3/5 (mod.rs, aggregate.rs, events.rs)
+  - Ports: 0/2
+  - Application: 0/23
+  - Adapters: 0/10
+  - Migrations: 0/2
+Tests: 38 domain tests passing (in aggregate.rs)
+  - Aggregate tests: 38/38
+  - Progress tests: 0/5 (progress.rs not created)
+  - Event tests: 0/3 (events.rs has no tests)
+  - Application tests: 0/50
+  - Adapter tests: 0/17
+Frontend: 0/14 files exist
 ```
 
 ### Exit Signal
@@ -408,11 +439,12 @@ Coverage: Domain 91%, Application 86%, Adapters 81%
 
 ### Phase 1: Domain Layer (In Progress)
 - [x] Cycle aggregate implementation (aggregate.rs - 38 tests)
-- [ ] CycleProgress value object
-- [x] CycleEvent enum
-- [ ] Component lifecycle management
-- [ ] Branching logic
-- [ ] Domain layer tests (partial - aggregate.rs)
+- [ ] CycleProgress value object (progress.rs)
+- [x] CycleEvent enum (events.rs - no tests yet)
+- [x] Component lifecycle management (in aggregate.rs)
+- [x] Branching logic (in aggregate.rs)
+- [ ] errors.rs - Cycle-specific errors
+- [x] Domain layer tests (aggregate.rs has 38 tests, events.rs needs tests)
 
 ### Phase 2: Ports
 - [ ] CycleRepository trait
@@ -468,4 +500,5 @@ Coverage: Domain 91%, Application 86%, Adapters 81%
 ---
 
 *Generated: 2026-01-07*
+*Last synced: 2026-01-09*
 *Specification: docs/modules/cycle.md*

@@ -16,9 +16,11 @@
 //! - `CycleAddedToSession` - Published when a cycle is linked to the session
 
 mod aggregate;
+mod errors;
 mod events;
 
 pub use aggregate::{Session, MAX_TITLE_LENGTH};
+pub use errors::SessionError;
 pub use events::{
     CycleAddedToSession, SessionArchived, SessionCreated, SessionDescriptionUpdated,
     SessionRenamed,
