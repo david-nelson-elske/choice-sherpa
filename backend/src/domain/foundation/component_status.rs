@@ -33,6 +33,20 @@ impl ComponentStatus {
         )
     }
 
+    /// Returns true if this component can accept new output.
+    ///
+    /// Components accept output when they are actively being worked on or flagged for revision.
+    pub fn accepts_output(&self) -> bool {
+        matches!(self, ComponentStatus::InProgress | ComponentStatus::NeedsRevision)
+    }
+
+    /// Returns true if this component is locked for modification.
+    ///
+    /// Completed components are locked; they must be put into NeedsRevision to modify.
+    pub fn is_locked(&self) -> bool {
+        matches!(self, ComponentStatus::Complete)
+    }
+
     /// Validates a transition from this status to another.
     ///
     /// Valid transitions:
@@ -41,6 +55,7 @@ impl ComponentStatus {
     /// - InProgress -> NeedsRevision
     /// - Complete -> NeedsRevision
     /// - NeedsRevision -> InProgress
+    /// - NeedsRevision -> Complete
     pub fn can_transition_to(&self, target: &ComponentStatus) -> bool {
         use ComponentStatus::*;
         matches!(
@@ -52,8 +67,9 @@ impl ComponentStatus {
             // Can mark for revision from complete or in progress
             (Complete, NeedsRevision) |
             (InProgress, NeedsRevision) |
-            // Can restart work on revision
-            (NeedsRevision, InProgress)
+            // Can restart work on revision or complete directly
+            (NeedsRevision, InProgress) |
+            (NeedsRevision, Complete)
         )
     }
 }
@@ -101,6 +117,22 @@ mod tests {
         assert!(ComponentStatus::InProgress.needs_work());
         assert!(!ComponentStatus::Complete.needs_work());
         assert!(ComponentStatus::NeedsRevision.needs_work());
+    }
+
+    #[test]
+    fn accepts_output_works_correctly() {
+        assert!(!ComponentStatus::NotStarted.accepts_output());
+        assert!(ComponentStatus::InProgress.accepts_output());
+        assert!(!ComponentStatus::Complete.accepts_output());
+        assert!(ComponentStatus::NeedsRevision.accepts_output());
+    }
+
+    #[test]
+    fn is_locked_works_correctly() {
+        assert!(!ComponentStatus::NotStarted.is_locked());
+        assert!(!ComponentStatus::InProgress.is_locked());
+        assert!(ComponentStatus::Complete.is_locked());
+        assert!(!ComponentStatus::NeedsRevision.is_locked());
     }
 
     #[test]
@@ -154,8 +186,8 @@ mod tests {
     }
 
     #[test]
-    fn needs_revision_cannot_transition_to_complete() {
-        assert!(!ComponentStatus::NeedsRevision.can_transition_to(&ComponentStatus::Complete));
+    fn needs_revision_can_transition_to_complete() {
+        assert!(ComponentStatus::NeedsRevision.can_transition_to(&ComponentStatus::Complete));
     }
 
     #[test]

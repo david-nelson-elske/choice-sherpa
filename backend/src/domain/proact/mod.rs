@@ -10,6 +10,7 @@
 mod errors;
 mod message;
 mod component;
+mod component_sequence;
 mod component_variant;
 mod issue_raising;
 mod problem_frame;
@@ -24,6 +25,7 @@ mod notes_next_steps;
 pub use errors::ComponentError;
 pub use message::{Message, MessageId, MessageMetadata, Role};
 pub use component::{Component, ComponentBase};
+pub use component_sequence::ComponentSequence;
 pub use component_variant::ComponentVariant;
 pub use issue_raising::{IssueRaising, IssueRaisingOutput};
 pub use problem_frame::{
