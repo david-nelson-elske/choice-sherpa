@@ -1103,6 +1103,22 @@ describe('Pugh Matrix Frontend/Backend Parity', () => {
 
 ---
 
+## Tasks
+
+- [x] Create analysis module structure in `backend/src/domain/analysis/`
+- [x] Implement ConsequencesTable struct with builder pattern
+- [x] Implement DQElement struct and DQ_ELEMENT_NAMES constant
+- [x] Implement PughAnalyzer::compute_scores() with edge cases
+- [x] Implement PughAnalyzer::find_dominated() for dominance detection
+- [x] Implement PughAnalyzer::find_irrelevant_objectives()
+- [x] Implement DQCalculator::compute_overall() (minimum of elements)
+- [x] Implement DQCalculator helper methods (has_all_elements, missing_elements, is_acceptable)
+- [x] Implement TradeoffAnalyzer::analyze_tensions()
+- [x] Implement TradeoffAnalyzer::summarize_tradeoffs()
+- [x] Write unit tests for all edge cases per specification
+
+---
+
 *Version: 1.0.0*
 *Created: 2026-01-08*
 *Module: analysis*
