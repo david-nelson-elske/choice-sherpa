@@ -21,14 +21,16 @@ The Membership module manages user subscriptions, access control, and payment in
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/domain/membership/mod.rs` | Module exports | ⬜ |
+| `backend/src/domain/membership/mod.rs` | Module exports | ✅ |
+| `backend/src/domain/membership/status.rs` | MembershipStatus enum (18 tests inline) | ✅ |
 | `backend/src/domain/membership/value_objects/mod.rs` | Value object exports | ⬜ |
 | `backend/src/domain/membership/value_objects/money.rs` | Money value object (CENTS!) | ⬜ |
 | `backend/src/domain/membership/value_objects/tier.rs` | MembershipTier enum | ⬜ |
-| `backend/src/domain/membership/value_objects/status.rs` | MembershipStatus enum | ⬜ |
 | `backend/src/domain/membership/value_objects/billing_period.rs` | BillingPeriod enum | ⬜ |
 | `backend/src/domain/membership/value_objects/promo_code.rs` | PromoCode value object | ⬜ |
 | `backend/src/domain/membership/value_objects/plan_price.rs` | PlanPrice configuration | ⬜ |
+
+> **Note:** Tests are inline in implementation files using `#[cfg(test)] mod tests` (Rust convention).
 
 ### Domain Layer - Value Object Tests (Rust)
 
@@ -491,6 +493,16 @@ cd frontend && npm test -- --testPathPattern="modules/membership"
 - [ ] No TypeScript lint errors
 - [ ] AccessChecker integration with session module verified
 
+### Current Status
+
+```
+STARTED: membership
+Files: 2/65
+Tests: 18/95 passing
+Status: Only MembershipStatus enum implemented
+Next: Money value object, remaining value objects
+```
+
 ### Exit Signal
 
 ```
@@ -505,14 +517,14 @@ Money: All values in cents (integer) ✓
 
 ## Implementation Phases
 
-### Phase 1: Value Objects
+### Phase 1: Value Objects (In Progress)
 - [ ] Money value object (CENTS - CRITICAL)
 - [ ] MembershipTier enum
-- [ ] MembershipStatus enum
+- [x] MembershipStatus enum (18 tests passing)
 - [ ] BillingPeriod enum
 - [ ] PromoCode value object
 - [ ] PlanPrice configuration
-- [ ] Value object tests
+- [x] Value object tests (partial - status.rs)
 
 ### Phase 2: Domain Aggregate
 - [ ] Membership aggregate

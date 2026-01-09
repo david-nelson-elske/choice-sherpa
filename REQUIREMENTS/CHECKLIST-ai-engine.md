@@ -31,9 +31,12 @@ The AI Engine module provides conversational AI capabilities for guiding users t
 
 | File | Description | Status |
 |------|-------------|--------|
+| `backend/src/ports/ai_provider.rs` | AIProvider trait definition | ✅ |
 | `backend/src/ports/ai_engine.rs` | AIEnginePort trait definition | ⬜ |
 | `backend/src/ports/step_agent.rs` | StepAgentPort trait definition | ⬜ |
 | `backend/src/ports/state_storage.rs` | StateStoragePort trait definition | ⬜ |
+
+> **Note:** Core AI provider infrastructure exists. See `backend/src/ports/ai_provider.rs` and `backend/src/adapters/ai/` for implementations.
 
 ### Application Layer
 
@@ -57,23 +60,17 @@ The AI Engine module provides conversational AI capabilities for guiding users t
 | `backend/src/adapters/claude_code/process_manager.rs` | Process lifecycle management | ⬜ |
 | `backend/src/adapters/claude_code/stream_parser.rs` | Parse stdout into StreamChunks | ⬜ |
 
-### Adapters - OpenAI
+### Adapters - AI Providers (Consolidated)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/openai/mod.rs` | Module exports | ⬜ |
-| `backend/src/adapters/openai/adapter.rs` | OpenAIAdapter implementation | ⬜ |
-| `backend/src/adapters/openai/message_builder.rs` | Build chat completion messages | ⬜ |
-| `backend/src/adapters/openai/stream_transformer.rs` | Transform SSE to StreamChunks | ⬜ |
+| `backend/src/adapters/ai/mod.rs` | Module exports | ✅ |
+| `backend/src/adapters/ai/openai_provider.rs` | OpenAI API implementation | ✅ |
+| `backend/src/adapters/ai/anthropic_provider.rs` | Anthropic API implementation | ✅ |
+| `backend/src/adapters/ai/mock_provider.rs` | Mock for testing | ✅ |
+| `backend/src/adapters/ai/failover_provider.rs` | Failover with cost tracking | ✅ |
 
-### Adapters - Anthropic
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/adapters/anthropic/mod.rs` | Module exports | ⬜ |
-| `backend/src/adapters/anthropic/adapter.rs` | AnthropicAdapter implementation | ⬜ |
-| `backend/src/adapters/anthropic/message_builder.rs` | Build Anthropic messages | ⬜ |
-| `backend/src/adapters/anthropic/stream_transformer.rs` | Transform SSE to StreamChunks | ⬜ |
+> **Note:** AI adapters are consolidated under `backend/src/adapters/ai/` rather than separate directories.
 
 ### Adapters - Storage
 
@@ -343,6 +340,21 @@ cargo test --package ai-engine -- --nocapture && cargo clippy --package ai-engin
 - [ ] Configuration loading works
 - [ ] No clippy warnings
 
+### Current Status
+
+```
+INFRASTRUCTURE PARTIALLY COMPLETE: ai-engine
+Files: 6/43 (14%)
+Tests: ~87 adapter tests passing
+- AIProvider port ✅
+- OpenAI adapter ✅
+- Anthropic adapter ✅
+- Mock adapter ✅
+- Failover adapter ✅
+Domain layer: Not started
+Application layer: Not started
+```
+
 ### Exit Signal
 
 ```
@@ -358,9 +370,17 @@ Coverage: Domain 92%, Application 87%, Adapters 82%
 
 ### Phase 1: Domain & Ports (Foundation)
 - [ ] Domain types (Orchestrator, StepAgent, ConversationState)
+- [x] Port traits - AIProvider (partial)
 - [ ] Port traits (AIEnginePort, StepAgentPort, StateStoragePort)
 - [ ] Domain services (IntentClassifier, ContextCompressor)
 - [ ] Domain layer tests
+
+### Phase 4: API Adapters (Complete)
+- [x] OpenAI adapter implementation
+- [x] Anthropic adapter implementation
+- [x] Mock adapter for testing
+- [x] Failover adapter with cost tracking
+- [x] Adapter factory pattern (via mod.rs)
 
 ### Phase 2: File Storage Adapter
 - [ ] FileStorageAdapter implementation
