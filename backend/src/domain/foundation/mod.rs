@@ -11,6 +11,7 @@ mod component_type;
 mod component_status;
 mod cycle_status;
 mod session_status;
+mod state_machine;
 mod errors;
 mod events;
 
@@ -22,5 +23,6 @@ pub use component_type::ComponentType;
 pub use component_status::ComponentStatus;
 pub use cycle_status::CycleStatus;
 pub use session_status::SessionStatus;
+pub use state_machine::StateMachine;
 pub use errors::{DomainError, ErrorCode, ValidationError};
 pub use events::{DomainEvent, SerializableDomainEvent, EventId, EventMetadata, EventEnvelope, domain_event};

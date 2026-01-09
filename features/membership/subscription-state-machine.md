@@ -450,22 +450,22 @@ impl MembershipStatus {
 
 ### Unit Tests
 
-- [ ] `pending_can_transition_to_active`
-- [ ] `pending_can_transition_to_expired`
-- [ ] `pending_cannot_transition_to_cancelled`
-- [ ] `active_can_transition_to_past_due`
-- [ ] `active_can_transition_to_cancelled`
-- [ ] `active_can_renew_to_active`
-- [ ] `past_due_can_recover_to_active`
-- [ ] `past_due_can_expire`
-- [ ] `cancelled_can_reactivate_to_active`
-- [ ] `cancelled_can_expire`
-- [ ] `expired_cannot_directly_activate`
-- [ ] `has_access_true_for_active`
-- [ ] `has_access_true_for_past_due_in_grace`
-- [ ] `has_access_true_for_cancelled_before_period_end`
-- [ ] `has_access_false_for_expired`
-- [ ] `has_access_false_for_pending`
+- [x] `pending_can_transition_to_active`
+- [x] `pending_can_transition_to_expired`
+- [x] `pending_cannot_transition_to_cancelled`
+- [x] `active_can_transition_to_past_due`
+- [x] `active_can_transition_to_cancelled`
+- [x] `active_can_renew_to_active`
+- [x] `past_due_can_recover_to_active`
+- [x] `past_due_can_expire`
+- [x] `cancelled_can_reactivate_to_active`
+- [x] `cancelled_can_expire`
+- [x] `expired_cannot_directly_activate`
+- [x] `has_access_true_for_active`
+- [x] `has_access_true_for_past_due_in_grace`
+- [x] `has_access_true_for_cancelled_before_period_end`
+- [x] `has_access_false_for_expired`
+- [x] `has_access_false_for_pending`
 
 ### Integration Tests
 
