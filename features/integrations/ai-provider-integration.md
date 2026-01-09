@@ -886,11 +886,11 @@ async fn test_real_openai_streaming() {
 
 ### Phase 1: Core Infrastructure (Foundation)
 
-- [ ] Define AIProvider port interface
-- [ ] Define domain types (CompletionRequest, StreamChunk, etc.)
-- [ ] Define AIError types
-- [ ] Create mock AIProvider for testing
-- [ ] Write unit tests for port contract
+- [x] Define AIProvider port interface
+- [x] Define domain types (CompletionRequest, StreamChunk, etc.)
+- [x] Define AIError types
+- [x] Create mock AIProvider for testing
+- [x] Write unit tests for port contract
 
 ### Phase 2: OpenAI Adapter
 
