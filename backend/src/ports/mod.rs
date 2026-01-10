@@ -32,6 +32,9 @@ mod circuit_breaker;
 mod connection_registry;
 mod cycle_reader;
 mod cycle_repository;
+mod document_file_storage;
+mod document_generator;
+mod document_parser;
 mod event_publisher;
 mod event_subscriber;
 mod membership_reader;
@@ -57,6 +60,11 @@ pub use cycle_reader::{
     NextAction, NextActionType, ProgressStep,
 };
 pub use cycle_repository::CycleRepository;
+pub use document_file_storage::{
+    DocumentFileStorage, FileInfo, FileMetadata, FilePath, StorageError,
+};
+pub use document_generator::{DocumentError, DocumentFormat, DocumentGenerator, GenerationOptions};
+pub use document_parser::{DocumentParser, ParseResult, SectionBoundary};
 pub use event_publisher::EventPublisher;
 pub use event_subscriber::{EventBus, EventHandler, EventSubscriber};
 pub use membership_reader::{

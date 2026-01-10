@@ -270,9 +270,14 @@ impl ParsedSection {
         }
     }
 
-    /// Returns true if parsing was successful.
+    /// Returns true if parsing was successful (has data and no errors).
     pub fn is_success(&self) -> bool {
         self.parsed_data.is_some() && self.parse_errors.is_empty()
+    }
+
+    /// Alias for is_success for consistency with ParseResult.
+    pub fn is_successful(&self) -> bool {
+        self.is_success()
     }
 
     /// Returns true if there are any errors.
@@ -299,6 +304,21 @@ pub struct ParseError {
 }
 
 impl ParseError {
+    /// Creates a new parse error.
+    pub fn new(
+        line: usize,
+        column: Option<usize>,
+        message: impl Into<String>,
+        severity: ParseErrorSeverity,
+    ) -> Self {
+        Self {
+            line,
+            column,
+            message: message.into(),
+            severity,
+        }
+    }
+
     /// Creates a warning parse error.
     pub fn warning(line: usize, message: impl Into<String>) -> Self {
         Self {
