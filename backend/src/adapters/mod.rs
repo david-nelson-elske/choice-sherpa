@@ -20,7 +20,7 @@ pub use ai::{
     FailoverAIProvider, InMemoryUsageTracker, MockAIProvider, MockError, MockResponse,
     OpenAIConfig, OpenAIProvider,
 };
-pub use document::TemplateDocumentGenerator;
+pub use document::{LocalDocumentFileStorage, TemplateDocumentGenerator};
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;
 pub use validation::JsonSchemaValidator;

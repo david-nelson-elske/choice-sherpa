@@ -58,10 +58,12 @@ dotenvy = "0.15"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 sha2 = "0.10.9"
+hex = "0.4"
 
 [dev-dependencies]
 # Testing - pinned for Rust 1.72 compatibility
 proptest = "1.4"
+tempfile = "3.10"
 
 [lib]
 path = "src/lib.rs"
