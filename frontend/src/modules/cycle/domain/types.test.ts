@@ -9,10 +9,9 @@ import {
 	getComponentIndex,
 	canStartComponent,
 	getComponentLabel,
-	calculateProgress,
-	type ComponentType,
-	type ComponentStatusItem
+	calculateProgress
 } from './types';
+import type { ComponentStatusItem } from './types';
 
 describe('COMPONENT_ORDER', () => {
 	it('has 9 components', () => {

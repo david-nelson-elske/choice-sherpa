@@ -9,6 +9,7 @@
 	import type { CycleTreeNode, ComponentType } from '../domain/types';
 	import { COMPONENT_LABELS } from '../domain/types';
 	import CycleProgress from './CycleProgress.svelte';
+	import Self from './CycleTree.svelte';
 
 	interface Props {
 		/** The root node of the tree */
@@ -40,7 +41,7 @@
 
 {#if tree}
 	<div class="cycle-tree" role="tree" aria-label="Cycle branches">
-		<div class="tree-node" role="treeitem" aria-expanded={tree.children.length > 0}>
+		<div class="tree-node" role="treeitem" aria-selected={tree.cycle.id === selectedCycleId} aria-expanded={tree.children.length > 0}>
 			<button
 				type="button"
 				class="node-button"
@@ -63,7 +64,7 @@
 				<ul class="tree-children" role="group">
 					{#each tree.children as child}
 						<li>
-							<svelte:self
+							<Self
 								tree={child}
 								{selectedCycleId}
 								{onSelect}

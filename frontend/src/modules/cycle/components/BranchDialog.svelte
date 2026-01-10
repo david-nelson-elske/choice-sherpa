@@ -16,11 +16,9 @@
 	interface Props {
 		/** Whether the dialog is open */
 		open: boolean;
-		/** Current cycle ID */
-		cycleId: string;
 		/** Status of all components (determines valid branch points) */
 		componentStatuses: ComponentStatusItem[];
-		/** Called when branch is confirmed */
+		/** Called when branch is confirmed with the selected branch point */
 		onBranch?: (branchPoint: ComponentType) => void;
 		/** Called when dialog is closed */
 		onClose?: () => void;
@@ -28,7 +26,6 @@
 
 	let {
 		open,
-		cycleId,
 		componentStatuses,
 		onBranch,
 		onClose
@@ -70,12 +67,12 @@
 </script>
 
 {#if open}
-	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="dialog-backdrop"
 		role="dialog"
 		aria-modal="true"
 		aria-labelledby="branch-dialog-title"
+		tabindex="-1"
 		onclick={handleBackdropClick}
 		onkeydown={handleKeyDown}
 	>
