@@ -4,7 +4,7 @@
 //! structured PrOACT component data. The domain depends on this trait, while
 //! adapters (like RegexDocumentParser) provide the implementation.
 
-use crate::domain::cycle::{ParseError, ParseErrorSeverity, ParsedMetadata, ParsedSection};
+use crate::domain::cycle::{ParseError, ParsedMetadata, ParsedSection};
 use crate::domain::foundation::ComponentType;
 
 use super::DocumentError;
@@ -219,6 +219,7 @@ impl SectionBoundary {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::cycle::ParseErrorSeverity;
 
     // ───────────────────────────────────────────────────────────────
     // ParseResult tests

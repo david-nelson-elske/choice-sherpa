@@ -2,12 +2,14 @@
 //!
 //! Adapters connect the domain to external systems:
 //! - `ai` - AI/LLM provider implementations (mock, OpenAI, Anthropic)
+//! - `document` - Document generation and storage implementations
 //! - `events` - Event bus implementations (in-memory, Redis)
 //! - `http` - HTTP/REST API implementations
 //! - `membership` - Membership access control implementations
 //! - `validation` - Schema validation implementations
 
 pub mod ai;
+pub mod document;
 pub mod events;
 pub mod http;
 pub mod membership;
@@ -18,6 +20,7 @@ pub use ai::{
     FailoverAIProvider, InMemoryUsageTracker, MockAIProvider, MockError, MockResponse,
     OpenAIConfig, OpenAIProvider,
 };
+pub use document::TemplateDocumentGenerator;
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;
 pub use validation::JsonSchemaValidator;

@@ -6,7 +6,7 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::cycle::{DocumentVersion, SyncSource, UpdatedBy};
+use crate::domain::cycle::{SyncSource, UpdatedBy};
 use crate::domain::foundation::{
     ComponentType, CycleId, DecisionDocumentId, DomainError, SessionId, Timestamp, UserId,
 };
