@@ -898,6 +898,88 @@ mod tests {
     }
 
     // ───────────────────────────────────────────────────────────────
+    // Component Output Update Tests
+    // ───────────────────────────────────────────────────────────────
+
+    #[test]
+    fn can_update_output_for_in_progress_component() {
+        let mut cycle = create_test_cycle();
+        cycle.start_component(ComponentType::IssueRaising).unwrap();
+        cycle.take_events();
+
+        let output = serde_json::json!({
+            "potential_decisions": ["Option A"],
+            "objectives": [],
+            "uncertainties": [],
+            "considerations": [],
+            "user_confirmed": false
+        });
+
+        assert!(cycle
+            .update_component_output(ComponentType::IssueRaising, output)
+            .is_ok());
+    }
+
+    #[test]
+    fn update_output_records_event() {
+        let mut cycle = create_test_cycle();
+        cycle.start_component(ComponentType::IssueRaising).unwrap();
+        cycle.take_events();
+
+        let output = serde_json::json!({
+            "potential_decisions": ["Option A"],
+            "objectives": [],
+            "uncertainties": [],
+            "considerations": [],
+            "user_confirmed": false
+        });
+
+        cycle
+            .update_component_output(ComponentType::IssueRaising, output)
+            .unwrap();
+
+        let events = cycle.take_events();
+        assert_eq!(events.len(), 1);
+        assert!(matches!(
+            events[0],
+            CycleEvent::ComponentOutputUpdated { .. }
+        ));
+    }
+
+    #[test]
+    fn cannot_update_output_for_not_started_component() {
+        let mut cycle = create_test_cycle();
+
+        let output = serde_json::json!({
+            "potential_decisions": [],
+            "objectives": [],
+            "uncertainties": [],
+            "considerations": [],
+            "user_confirmed": false
+        });
+
+        let result = cycle.update_component_output(ComponentType::IssueRaising, output);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn cannot_update_output_for_archived_cycle() {
+        let mut cycle = create_test_cycle();
+        cycle.start_component(ComponentType::IssueRaising).unwrap();
+        cycle.archive().unwrap();
+        cycle.take_events();
+
+        let output = serde_json::json!({
+            "potential_decisions": [],
+            "objectives": [],
+            "uncertainties": []
+        });
+
+        let result = cycle.update_component_output(ComponentType::IssueRaising, output);
+        assert!(result.is_err());
+    }
+
+    // ───────────────────────────────────────────────────────────────
     // Navigation Tests
     // ───────────────────────────────────────────────────────────────
 

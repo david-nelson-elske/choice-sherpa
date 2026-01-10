@@ -1,0 +1,25 @@
+{
+  "_schema": {
+    "version": "1.0",
+    "skill": "dev"
+  },
+  "workflow": {
+    "id": "dev-ed6828a3",
+    "status": "in_progress",
+    "created_at": "2026-01-09T22:48:30-07:00",
+    "updated_at": "2026-01-09T22:48:30-07:00",
+    "branch": "main"
+  },
+  "context": {
+    "source": "features/foundation/event-infrastructure.md"
+  },
+  "state_machine": {
+    "current_phase": "init",
+    "phases": []
+  },
+  "tasks": [],
+  "checkpoints": {},
+  "history": [
+    {"at": "2026-01-09T22:48:30-07:00", "event": "workflow_started", "context": "features/foundation/event-infrastructure.md"}
+  ]
+}

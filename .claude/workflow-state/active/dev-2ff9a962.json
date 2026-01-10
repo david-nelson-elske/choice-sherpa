@@ -1,0 +1,25 @@
+{
+  "_schema": {
+    "version": "1.0",
+    "skill": "dev"
+  },
+  "workflow": {
+    "id": "dev-2ff9a962",
+    "status": "in_progress",
+    "created_at": "2026-01-09T23:53:23-07:00",
+    "updated_at": "2026-01-09T23:53:23-07:00",
+    "branch": "feat/authentication-identity"
+  },
+  "context": {
+    "source": "features/conversation/atomic-decision-tools"
+  },
+  "state_machine": {
+    "current_phase": "init",
+    "phases": []
+  },
+  "tasks": [],
+  "checkpoints": {},
+  "history": [
+    {"at": "2026-01-09T23:53:23-07:00", "event": "workflow_started", "context": "features/conversation/atomic-decision-tools"}
+  ]
+}

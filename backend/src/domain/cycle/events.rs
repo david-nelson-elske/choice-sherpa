@@ -185,6 +185,16 @@ mod tests {
         assert_eq!(event.cycle_id(), id);
     }
 
+    #[test]
+    fn cycle_id_returns_id_for_component_output_updated() {
+        let id = test_cycle_id();
+        let event = CycleEvent::ComponentOutputUpdated {
+            cycle_id: id,
+            component_type: ComponentType::IssueRaising,
+        };
+        assert_eq!(event.cycle_id(), id);
+    }
+
     // ───────────────────────────────────────────────────────────────
     // event_type accessor tests
     // ───────────────────────────────────────────────────────────────
@@ -219,6 +229,15 @@ mod tests {
             }
             .event_type(),
             "ComponentStarted"
+        );
+
+        assert_eq!(
+            CycleEvent::ComponentOutputUpdated {
+                cycle_id: id,
+                component_type: ComponentType::Objectives
+            }
+            .event_type(),
+            "ComponentOutputUpdated"
         );
     }
 
