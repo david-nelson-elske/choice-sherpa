@@ -19,8 +19,8 @@
         onDismiss,
     }: Props = $props();
 
-    $: message = reason ? getAccessDeniedMessage(reason) : 'Upgrade to unlock more features';
-    $: tierInfo = TIERS[suggestedTier];
+    let message = $derived(reason ? getAccessDeniedMessage(reason) : 'Upgrade to unlock more features');
+    let tierInfo = $derived(TIERS[suggestedTier]);
 
     const variantClasses = {
         inline: 'rounded-xl border border-blue-200 bg-blue-50 p-6',

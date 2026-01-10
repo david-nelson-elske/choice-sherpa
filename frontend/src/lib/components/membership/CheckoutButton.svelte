@@ -21,7 +21,7 @@
     let loading = $state(false);
     let error = $state<string | null>(null);
 
-    const buttonLabel = label || (tier === 'monthly' ? 'Subscribe Monthly' : 'Subscribe Annually');
+    let buttonLabel = $derived(label || (tier === 'monthly' ? 'Subscribe Monthly' : 'Subscribe Annually'));
 
     const variantClasses = {
         primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',

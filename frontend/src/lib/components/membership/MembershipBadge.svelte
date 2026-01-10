@@ -28,9 +28,9 @@
         lg: 'text-base px-3 py-1.5',
     };
 
-    $: tierClass = tierColors[tier];
-    $: statusClass = status ? getStatusColor(status) : '';
-    $: sizeClass = sizeClasses[size];
+    let tierClass = $derived(tierColors[tier]);
+    let statusClass = $derived(status ? getStatusColor(status) : '');
+    let sizeClass = $derived(sizeClasses[size]);
 </script>
 
 <div class="inline-flex items-center gap-2">

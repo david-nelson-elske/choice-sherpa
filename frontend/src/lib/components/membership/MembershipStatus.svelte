@@ -19,13 +19,13 @@
     let loadingPortal = $state(false);
     let portalError = $state<string | null>(null);
 
-    $: tierInfo = TIERS[membership.tier];
-    $: isExpiringSoon = membership.daysRemaining > 0 && membership.daysRemaining <= 7;
-    $: periodEndDate = new Date(membership.periodEnd).toLocaleDateString('en-CA', {
+    let tierInfo = $derived(TIERS[membership.tier]);
+    let isExpiringSoon = $derived(membership.daysRemaining > 0 && membership.daysRemaining <= 7);
+    let periodEndDate = $derived(new Date(membership.periodEnd).toLocaleDateString('en-CA', {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
-    });
+    }));
 
     async function handleManageSubscription() {
         loadingPortal = true;
