@@ -11,11 +11,15 @@ use axum::Json;
 
 use crate::application::handlers::cycle::{
     GenerateDocumentCommand, GenerateDocumentError, GenerateDocumentHandler,
+    RegenerateDocumentCommand, RegenerateDocumentError, RegenerateDocumentHandler,
 };
 use crate::domain::foundation::{CommandMetadata, CycleId, UserId};
-use crate::ports::{CycleRepository, DocumentFormat, DocumentGenerator, SessionRepository};
+use crate::ports::{
+    CycleRepository, DecisionDocumentRepository, DocumentFormat, DocumentGenerator,
+    SessionRepository,
+};
 
-use super::dto::{DocumentResponse, ErrorResponse, GetDocumentQuery};
+use super::dto::{DocumentResponse, ErrorResponse, GetDocumentQuery, RegenerateDocumentResponse};
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Application State
@@ -27,6 +31,7 @@ pub struct CycleAppState {
     pub cycle_repository: Arc<dyn CycleRepository>,
     pub session_repository: Arc<dyn SessionRepository>,
     pub document_generator: Arc<dyn DocumentGenerator>,
+    pub document_repository: Arc<dyn DecisionDocumentRepository>,
 }
 
 impl CycleAppState {
@@ -35,11 +40,13 @@ impl CycleAppState {
         cycle_repository: Arc<dyn CycleRepository>,
         session_repository: Arc<dyn SessionRepository>,
         document_generator: Arc<dyn DocumentGenerator>,
+        document_repository: Arc<dyn DecisionDocumentRepository>,
     ) -> Self {
         Self {
             cycle_repository,
             session_repository,
             document_generator,
+            document_repository,
         }
     }
 
@@ -49,6 +56,16 @@ impl CycleAppState {
             self.cycle_repository.clone(),
             self.session_repository.clone(),
             self.document_generator.clone(),
+        )
+    }
+
+    /// Creates the document regeneration handler.
+    pub fn regenerate_document_handler(&self) -> RegenerateDocumentHandler {
+        RegenerateDocumentHandler::new(
+            self.cycle_repository.clone(),
+            self.session_repository.clone(),
+            self.document_generator.clone(),
+            self.document_repository.clone(),
         )
     }
 }
@@ -165,6 +182,91 @@ fn format_to_string(format: &DocumentFormat) -> String {
     }
 }
 
+/// POST /api/cycles/:id/document/regenerate
+///
+/// Regenerates a decision document from the cycle's current state and persists it.
+///
+/// Returns:
+/// - 200: Regenerated document with metadata
+/// - 404: Cycle not found
+/// - 500: Generation or persistence failed
+pub async fn regenerate_document(
+    State(state): State<CycleAppState>,
+    Path(cycle_id): Path<String>,
+) -> impl IntoResponse {
+    // Parse cycle ID
+    let cycle_id = match cycle_id.parse::<CycleId>() {
+        Ok(id) => id,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::bad_request("Invalid cycle ID format")),
+            )
+                .into_response();
+        }
+    };
+
+    // Create command for full regeneration
+    let cmd = RegenerateDocumentCommand::full(cycle_id);
+
+    // TODO: Extract user ID from authentication context
+    let user_id = UserId::new("system").unwrap();
+    let metadata = CommandMetadata::new(user_id);
+
+    // Execute handler
+    let handler = state.regenerate_document_handler();
+    match handler.handle(cmd, metadata).await {
+        Ok(result) => {
+            let response = RegenerateDocumentResponse {
+                document_id: result.document_id.to_string(),
+                cycle_id: result.cycle_id.to_string(),
+                session_id: result.session_id.to_string(),
+                version: result.version,
+                format: format_to_string(&result.format),
+                is_new: result.is_new,
+                content: result.content,
+            };
+            (StatusCode::OK, Json(response)).into_response()
+        }
+        Err(err) => match err {
+            RegenerateDocumentError::CycleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse::not_found("Cycle", &id.to_string())),
+            )
+                .into_response(),
+            RegenerateDocumentError::SessionNotFound(id) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(format!(
+                    "Data integrity error: session {} not found for cycle",
+                    id
+                ))),
+            )
+                .into_response(),
+            RegenerateDocumentError::GenerationFailed(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(format!(
+                    "Document generation failed: {}",
+                    msg
+                ))),
+            )
+                .into_response(),
+            RegenerateDocumentError::PersistFailed(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(format!(
+                    "Failed to persist document: {}",
+                    msg
+                ))),
+            )
+                .into_response(),
+            RegenerateDocumentError::Domain(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(err.to_string())),
+            )
+                .into_response(),
+        },
+    }
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // Tests
 // ════════════════════════════════════════════════════════════════════════════════
@@ -172,10 +274,10 @@ fn format_to_string(format: &DocumentFormat) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::cycle::Cycle;
-    use crate::domain::foundation::{DomainError, SessionId};
+    use crate::domain::cycle::{Cycle, DecisionDocument};
+    use crate::domain::foundation::{DecisionDocumentId, DomainError, SessionId};
     use crate::domain::session::Session;
-    use crate::ports::{DocumentError, GenerationOptions};
+    use crate::ports::{DocumentError, GenerationOptions, IntegrityStatus, SyncResult};
     use async_trait::async_trait;
     use axum::body::Body;
     use axum::http::Request;
@@ -361,6 +463,48 @@ mod tests {
         }
     }
 
+    struct MockDocumentRepository;
+
+    #[async_trait]
+    impl DecisionDocumentRepository for MockDocumentRepository {
+        async fn save(&self, _document: &DecisionDocument, _content: &str) -> Result<(), DomainError> {
+            Ok(())
+        }
+
+        async fn update(&self, _document: &DecisionDocument, _content: &str) -> Result<(), DomainError> {
+            Ok(())
+        }
+
+        async fn find_by_id(
+            &self,
+            _id: DecisionDocumentId,
+        ) -> Result<Option<DecisionDocument>, DomainError> {
+            Ok(None)
+        }
+
+        async fn find_by_cycle(&self, _cycle_id: CycleId) -> Result<Option<DecisionDocument>, DomainError> {
+            Ok(None)
+        }
+
+        async fn sync_from_file(
+            &self,
+            _document_id: DecisionDocumentId,
+        ) -> Result<SyncResult, DomainError> {
+            Ok(SyncResult::unchanged("abc", 1))
+        }
+
+        async fn verify_integrity(
+            &self,
+            _document_id: DecisionDocumentId,
+        ) -> Result<IntegrityStatus, DomainError> {
+            Ok(IntegrityStatus::InSync)
+        }
+
+        async fn delete(&self, _document_id: DecisionDocumentId) -> Result<(), DomainError> {
+            Ok(())
+        }
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Test helpers
     // ───────────────────────────────────────────────────────────────
@@ -398,6 +542,7 @@ mod tests {
             Arc::new(MockCycleRepository::with_cycle(cycle)),
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test content")),
+            Arc::new(MockDocumentRepository),
         );
 
         let app = create_app(state);
@@ -423,6 +568,7 @@ mod tests {
             Arc::new(MockCycleRepository::empty()),
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test")),
+            Arc::new(MockDocumentRepository),
         );
 
         let app = create_app(state);
@@ -450,6 +596,7 @@ mod tests {
             Arc::new(MockCycleRepository::with_cycle(cycle)),
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test")),
+            Arc::new(MockDocumentRepository),
         );
 
         let app = create_app(state);
@@ -477,6 +624,7 @@ mod tests {
             Arc::new(MockCycleRepository::with_cycle(cycle)),
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test")),
+            Arc::new(MockDocumentRepository),
         );
 
         let app = create_app(state);
@@ -504,6 +652,7 @@ mod tests {
             Arc::new(MockCycleRepository::with_cycle(cycle)),
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test")),
+            Arc::new(MockDocumentRepository),
         );
 
         let app = create_app(state);

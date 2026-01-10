@@ -234,6 +234,25 @@ pub struct DocumentResponse {
     pub format: String,
 }
 
+/// Response containing regenerated document with persistence metadata.
+#[derive(Debug, Clone, Serialize)]
+pub struct RegenerateDocumentResponse {
+    /// The document ID.
+    pub document_id: String,
+    /// The cycle ID.
+    pub cycle_id: String,
+    /// The session ID.
+    pub session_id: String,
+    /// The new version number.
+    pub version: u32,
+    /// The format used.
+    pub format: String,
+    /// Whether this was a new document or an update.
+    pub is_new: bool,
+    /// The regenerated markdown content.
+    pub content: String,
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // Error DTOs
 // ════════════════════════════════════════════════════════════════════════════════

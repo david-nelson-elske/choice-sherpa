@@ -2,10 +2,10 @@
 //!
 //! Configures Axum router with cycle-related routes.
 
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::Router;
 
-use super::handlers::{get_document, CycleAppState};
+use super::handlers::{get_document, regenerate_document, CycleAppState};
 
 /// Creates the cycle router with all endpoints.
 ///
@@ -13,19 +13,22 @@ use super::handlers::{get_document, CycleAppState};
 /// - `GET /api/cycles/:id/document` - Generate decision document
 /// - `GET /api/cycles/:id/document?format=summary` - Generate summary document
 /// - `GET /api/cycles/:id/document?format=export` - Generate export document
+/// - `POST /api/cycles/:id/document/regenerate` - Regenerate and persist document
 pub fn cycle_router() -> Router<CycleAppState> {
-    Router::new().route("/api/cycles/:id/document", get(get_document))
+    Router::new()
+        .route("/api/cycles/:id/document", get(get_document))
+        .route("/api/cycles/:id/document/regenerate", post(regenerate_document))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::cycle::Cycle;
-    use crate::domain::foundation::{DomainError, SessionId, UserId};
+    use crate::domain::cycle::{Cycle, DecisionDocument};
+    use crate::domain::foundation::{CycleId, DecisionDocumentId, DomainError, SessionId, UserId};
     use crate::domain::session::Session;
     use crate::ports::{
-        CycleRepository, DocumentError, DocumentFormat, DocumentGenerator, GenerationOptions,
-        SessionRepository,
+        CycleRepository, DecisionDocumentRepository, DocumentError, DocumentGenerator,
+        GenerationOptions, IntegrityStatus, SessionRepository, SyncResult,
     };
     use async_trait::async_trait;
     use axum::body::Body;
@@ -198,6 +201,48 @@ mod tests {
         }
     }
 
+    struct MockDocumentRepository;
+
+    #[async_trait]
+    impl DecisionDocumentRepository for MockDocumentRepository {
+        async fn save(&self, _document: &DecisionDocument, _content: &str) -> Result<(), DomainError> {
+            Ok(())
+        }
+
+        async fn update(&self, _document: &DecisionDocument, _content: &str) -> Result<(), DomainError> {
+            Ok(())
+        }
+
+        async fn find_by_id(
+            &self,
+            _id: DecisionDocumentId,
+        ) -> Result<Option<DecisionDocument>, DomainError> {
+            Ok(None)
+        }
+
+        async fn find_by_cycle(&self, _cycle_id: CycleId) -> Result<Option<DecisionDocument>, DomainError> {
+            Ok(None)
+        }
+
+        async fn sync_from_file(
+            &self,
+            _document_id: DecisionDocumentId,
+        ) -> Result<SyncResult, DomainError> {
+            Ok(SyncResult::unchanged("abc", 1))
+        }
+
+        async fn verify_integrity(
+            &self,
+            _document_id: DecisionDocumentId,
+        ) -> Result<IntegrityStatus, DomainError> {
+            Ok(IntegrityStatus::InSync)
+        }
+
+        async fn delete(&self, _document_id: DecisionDocumentId) -> Result<(), DomainError> {
+            Ok(())
+        }
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Tests
     // ───────────────────────────────────────────────────────────────
@@ -215,6 +260,7 @@ mod tests {
             Arc::new(MockCycleRepository::with_cycle(cycle)),
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator),
+            Arc::new(MockDocumentRepository),
         );
 
         let app = cycle_router().with_state(state);
