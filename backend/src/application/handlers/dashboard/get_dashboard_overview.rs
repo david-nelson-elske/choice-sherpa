@@ -6,7 +6,7 @@
 use std::sync::Arc;
 
 use crate::domain::dashboard::DashboardOverview;
-use crate::domain::foundation::{CycleId, DomainError, SessionId, UserId};
+use crate::domain::foundation::{CycleId, SessionId, UserId};
 use crate::ports::{DashboardError, DashboardReader};
 
 /// Query to get dashboard overview for a session.
