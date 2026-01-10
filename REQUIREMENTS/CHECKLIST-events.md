@@ -63,7 +63,7 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | Task | Status | File | Tests |
 |------|--------|------|-------|
 | `OutboxWriter` port trait | [x] | `backend/src/ports/outbox_writer.rs` | ✅ |
-| `event_outbox` table migration | [ ] | `backend/migrations/XXXXXX_create_event_outbox.sql` | |
+| `outbox` table migration | [x] | `backend/migrations/20260109000001_create_outbox.sql` | ✅ |
 | PostgreSQL outbox adapter | [ ] | `backend/src/adapters/events/postgres_outbox.rs` | [ ] |
 | `OutboxPublisher` background service | [x] | `backend/src/adapters/events/outbox_publisher.rs` | ✅ |
 | Outbox cleanup job | [ ] | `backend/src/adapters/events/outbox_cleanup.rs` | |
@@ -74,7 +74,7 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | Task | Status | File | Tests |
 |------|--------|------|-------|
 | `ProcessedEventStore` port trait | [x] | `backend/src/ports/processed_event_store.rs` | ✅ |
-| `processed_events` table migration | [ ] | `backend/migrations/XXXXXX_create_processed_events.sql` | |
+| `processed_events` table migration | [x] | `backend/migrations/20260109000001_create_outbox.sql` | ✅ |
 | PostgreSQL processed events adapter | [ ] | `backend/src/adapters/events/postgres_processed.rs` | [ ] |
 | `IdempotentHandler` wrapper | [x] | `backend/src/adapters/events/idempotent_handler.rs` | ✅ |
 | Idempotency integration test | [ ] | `backend/tests/integration/idempotency_test.rs` | |
@@ -329,8 +329,8 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | Phase 1.2: Port Interfaces | 4 | 4 |
 | Phase 1.3: In-Memory Adapter | 11 | 11 |
 | Phase 1.4: Module Exports | 4 | 4 |
-| Phase 1.5: Transactional Outbox | 6 | 2 |
-| Phase 1.6: Idempotency Infrastructure | 5 | 2 |
+| Phase 1.5: Transactional Outbox | 6 | 3 |
+| Phase 1.6: Idempotency Infrastructure | 5 | 3 |
 | Phase 2: Session Events | 12 | 0 |
 | Phase 3: Cycle Events | 20 | 0 |
 | Phase 4: Conversation Events | 10 | 0 |
@@ -339,24 +339,26 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | Phase 7: Redis Adapter | 12 | 0 |
 | Phase 8: WebSocket | 10 | 0 |
 | Frontend | 9 | 0 |
-| **Total** | **130** | **28** |
+| **Total** | **130** | **30** |
 
 ### Current Status
 
 ```
-PHASE 1 COMPLETE: Core event infrastructure implemented
+PHASE 1 NEARLY COMPLETE: Core event infrastructure implemented
 - Domain types: DomainEvent trait, EventId, EventMetadata, EventEnvelope ✅
 - Port interfaces: EventPublisher, EventSubscriber, EventHandler, EventBus ✅
 - In-memory adapter: Full InMemoryEventBus with test helpers ✅
 - Module exports: All properly wired in foundation, ports, adapters ✅
 - Transactional outbox: OutboxWriter port + OutboxPublisher service ✅
 - Idempotency: ProcessedEventStore port + IdempotentHandler wrapper ✅
+- Database migrations: outbox + processed_events tables ✅
 
 REMAINING FOR PHASE 1:
-- Database migrations for outbox and processed_events tables
-- PostgreSQL adapters for persistence
+- PostgreSQL adapters for outbox persistence
+- PostgreSQL adapters for processed events persistence
 - Outbox cleanup job
 - Unit of work integration
+- Idempotency integration test
 ```
 
 ---
