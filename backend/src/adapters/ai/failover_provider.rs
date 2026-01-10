@@ -225,7 +225,7 @@ impl<P: AIProvider, F: AIProvider> FailoverAIProvider<P, F> {
         let info = self.primary.provider_info();
         let event = events::AITokensUsed::new(
             request.metadata.user_id.clone(),
-            request.metadata.session_id.clone(),
+            request.metadata.session_id,
             info.name,
             &response.model,
             response.usage.prompt_tokens,

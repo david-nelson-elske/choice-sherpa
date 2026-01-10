@@ -54,6 +54,29 @@ impl Timestamp {
     pub fn add_months(&self, months: i64) -> Self {
         Self(self.0 + Duration::days(months * 30))
     }
+
+    /// Creates a new timestamp by subtracting the specified number of days.
+    pub fn minus_days(&self, days: i64) -> Self {
+        Self(self.0 - Duration::days(days))
+    }
+
+    /// Creates a new timestamp by adding the specified number of days.
+    ///
+    /// Alias for `add_days` with clearer naming for positive offsets.
+    pub fn plus_days(&self, days: i64) -> Self {
+        Self(self.0 + Duration::days(days))
+    }
+
+    /// Returns a timestamp for the start of today (00:00:00 UTC).
+    pub fn start_of_today() -> Self {
+        let now = Utc::now();
+        let start = now
+            .date_naive()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc();
+        Self(start)
+    }
 }
 
 impl Default for Timestamp {
