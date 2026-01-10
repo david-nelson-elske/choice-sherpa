@@ -32,7 +32,10 @@ fi
 
 **State transitions during execution:**
 - After loading feature: `workflow_phase_complete "load_feature"` → `workflow_transition "create_branch"`
-- After branch creation: `workflow_phase_complete "create_branch"` → `workflow_transition "task_execution"`
+- After branch creation:
+  - `workflow_set '.workflow.parent_branch' "$PARENT_BRANCH"`
+  - `workflow_set '.workflow.child_branch' "$CHILD_BRANCH"`
+  - `workflow_phase_complete "create_branch"` → `workflow_transition "task_execution"`
 - Before each task: `workflow_task_start $INDEX` → `workflow_tdd_phase $INDEX "red"`
 - After TDD phases: `workflow_tdd_phase_complete $INDEX "red|green|refactor"`
 - After task commit: `workflow_task_complete $INDEX "$COMMIT_SHA"`
@@ -248,10 +251,40 @@ Parse the feature file:
 
 ### Step 2: Create/Verify Branch
 
+**Nested Branch Strategy:**
+
+The workflow creates child branches under the current parent branch, enabling focused PRs:
+
 ```bash
-# Derive branch name from feature filename
-# features/user-auth.md → feat/user-auth
-git checkout -b feat/<feature-name>
+# Capture parent branch BEFORE creating child
+PARENT_BRANCH=$(git branch --show-current)
+
+# Derive feature name from filename
+# features/user-auth.md → user-auth
+FEATURE_NAME=$(basename "$FEATURE_FILE" .md)
+
+# Create nested child branch
+# If on main/master: feat/<feature-name>
+# If on feature branch: <parent>/<feature-name>
+if [ "$PARENT_BRANCH" = "main" ] || [ "$PARENT_BRANCH" = "master" ]; then
+    CHILD_BRANCH="feat/$FEATURE_NAME"
+else
+    CHILD_BRANCH="$PARENT_BRANCH/$FEATURE_NAME"
+fi
+
+git checkout -b "$CHILD_BRANCH"
+
+# Store in workflow state for PR creation
+workflow_set '.workflow.parent_branch' "$PARENT_BRANCH"
+workflow_set '.workflow.child_branch' "$CHILD_BRANCH"
+```
+
+**Example:**
+```
+Current branch: agent-enrichment
+Feature file:   features/session/create-session.md
+Child branch:   agent-enrichment/create-session
+PR target:      agent-enrichment (not main)
 ```
 
 ### Step 3: Execute Each Task
@@ -304,20 +337,36 @@ When all tasks complete:
 3. Check coverage
 
 ### Step 5: Create PR
+
+Create PR targeting the parent branch (not main):
+
+```bash
+# Read parent branch from workflow state
+PARENT_BRANCH=$(workflow_get '.workflow.parent_branch')
+
+# Create PR targeting parent branch
+/pr --from-feature <feature-file> --base "$PARENT_BRANCH"
 ```
-/pr --from-feature <feature-file>
+
+**PR Flow:**
+```
+agent-enrichment/create-session  →  PR to → agent-enrichment
+                                              ↓ (later)
+                                           PR to → main
 ```
 
 ---
 
 ## Multi-Feature Session
 
-When processing a folder:
+When processing a folder, child branches are created under the current parent:
 
 ```
+> git checkout agent-enrichment
 > /dev features/auth/
 
 📁 Processing folder: features/auth/
+🌿 Parent branch: agent-enrichment
 
 Found 3 feature files:
   1. user-registration.md (0/4 tasks)
@@ -326,39 +375,53 @@ Found 3 feature files:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Feature 1/3: User Registration
+🌿 Branch: agent-enrichment/user-registration
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [... processes all tasks ...]
 
 ✅ Feature complete: User Registration
-🚀 PR #42 created
+🚀 PR #42 created (→ agent-enrichment)
+
+# Return to parent for next feature
+git checkout agent-enrichment
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Feature 2/3: User Login
+🌿 Branch: agent-enrichment/user-login
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [... processes all tasks ...]
 
 ✅ Feature complete: User Login
-🚀 PR #43 created
+🚀 PR #43 created (→ agent-enrichment)
+
+git checkout agent-enrichment
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Feature 3/3: Password Reset
+🌿 Branch: agent-enrichment/password-reset
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [... processes all tasks ...]
 
 ✅ Feature complete: Password Reset
-🚀 PR #44 created
+🚀 PR #44 created (→ agent-enrichment)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🎉 All features complete!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+Branch structure:
+  agent-enrichment
+  ├── agent-enrichment/user-registration → PR #42 (merged)
+  ├── agent-enrichment/user-login → PR #43 (merged)
+  └── agent-enrichment/password-reset → PR #44 (merged)
+
 Summary:
-  ✅ User Registration → PR #42
-  ✅ User Login → PR #43
-  ✅ Password Reset → PR #44
+  ✅ User Registration → PR #42 (→ agent-enrichment)
+  ✅ User Login → PR #43 (→ agent-enrichment)
+  ✅ Password Reset → PR #44 (→ agent-enrichment)
 
 Total: 12 tasks, 12 commits, 3 PRs
 

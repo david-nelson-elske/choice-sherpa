@@ -110,7 +110,8 @@ Fast lookup without scanning directory:
     "status": "in_progress|completed|blocked|abandoned",
     "created_at": "2025-01-08T20:00:00Z",
     "updated_at": "2025-01-08T22:30:00Z",
-    "branch": "feat/event-infrastructure"
+    "parent_branch": "agent-enrichment",
+    "child_branch": "agent-enrichment/feature-name"
   },
 
   "context": {
@@ -156,7 +157,8 @@ Fast lookup without scanning directory:
     "status": "in_progress",
     "created_at": "2025-01-08T20:00:00Z",
     "updated_at": "2025-01-08T22:30:00Z",
-    "branch": "feat/event-infrastructure"
+    "parent_branch": "agent-enrichment",
+    "child_branch": "agent-enrichment/event-infrastructure"
   },
 
   "context": {
@@ -259,7 +261,8 @@ Fast lookup without scanning directory:
     "status": "in_progress",
     "created_at": "2025-01-08T21:00:00Z",
     "updated_at": "2025-01-08T21:15:00Z",
-    "branch": "feat/user-auth"
+    "parent_branch": "agent-enrichment",
+    "child_branch": "agent-enrichment/user-auth"
   },
 
   "context": {
@@ -535,12 +538,14 @@ fi
 ### Stale State (Branch Mismatch)
 
 ```bash
-STATE_BRANCH=$(jq -r '.workflow.branch' "$STATE_FILE")
+STATE_CHILD_BRANCH=$(jq -r '.workflow.child_branch' "$STATE_FILE")
+STATE_PARENT_BRANCH=$(jq -r '.workflow.parent_branch' "$STATE_FILE")
 CURRENT_BRANCH=$(git branch --show-current)
 
-if [ "$STATE_BRANCH" != "$CURRENT_BRANCH" ]; then
-    echo "⚠️ State is for branch '$STATE_BRANCH' but current branch is '$CURRENT_BRANCH'"
-    echo "Options: 1) Switch to $STATE_BRANCH  2) Abandon state and start fresh"
+if [ "$STATE_CHILD_BRANCH" != "$CURRENT_BRANCH" ]; then
+    echo "⚠️ State is for branch '$STATE_CHILD_BRANCH' but current branch is '$CURRENT_BRANCH'"
+    echo "   Parent branch: $STATE_PARENT_BRANCH"
+    echo "Options: 1) Switch to $STATE_CHILD_BRANCH  2) Abandon state and start fresh"
 fi
 ```
 
@@ -596,9 +601,13 @@ Found active workflow:
   Started: 2 hours ago
   Last activity: 45 minutes ago
 
+  Branch:
+    🌿 Parent: agent-enrichment
+    🌱 Child:  agent-enrichment/user-login (current)
+
   Progress:
     ✅ Load feature (3/5 tasks complete)
-    ✅ Create branch (feat/user-auth)
+    ✅ Create branch (agent-enrichment/user-login)
     🔄 Task execution:
        ✅ Task 1: Add User model (committed: abc123)
        ✅ Task 2: Add password hashing (committed: def456)
@@ -606,7 +615,7 @@ Found active workflow:
        🔄 Task 4: Add login method (GREEN phase - tests failing)
        ⏳ Task 5: Add logout method
     ⏳ Verification (lint, test, security, simplify)
-    ⏳ PR creation
+    ⏳ PR creation (→ agent-enrichment)
 
 Resume from Task 4 (GREEN phase)? [Y/n]
 ```
@@ -616,6 +625,7 @@ Resume from Task 4 (GREEN phase)? [Y/n]
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🔄 Resuming: Task 4/5 - Add login method
+   Branch: agent-enrichment/user-login
    Phase: GREEN (make tests pass)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

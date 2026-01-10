@@ -13,7 +13,48 @@ Create a pull request with proper formatting. Can generate from feature file or 
 - `--from-feature <file>`: Generate PR from feature file
 - `--draft`: Create as draft PR
 - `--no-push`: Don't push, just show PR preview
-- `--base <branch>`: Target branch (default: main)
+- `--base <branch>`: Target branch for PR (see "Base Branch Resolution" below)
+
+---
+
+## Base Branch Resolution
+
+The target branch for PRs follows this priority:
+
+1. **Explicit `--base`**: `--base some-branch` → PR targets `some-branch`
+2. **Workflow state**: If called from `/dev`, uses `parent_branch` from workflow state
+3. **Default**: Falls back to `main`
+
+**Examples:**
+
+```bash
+# Explicit base
+/pr --base agent-enrichment          # → PR targets agent-enrichment
+
+# From /dev workflow (parent stored in state)
+# On branch: agent-enrichment/create-session
+# Workflow state has parent_branch: agent-enrichment
+/pr --from-feature features/create-session.md
+# → PR targets agent-enrichment (from workflow state)
+
+# Standalone (no workflow state)
+# On branch: feat/new-feature
+/pr
+# → PR targets main (default)
+```
+
+**Nested Branch Workflow:**
+```
+main
+  └── agent-enrichment (parent branch)
+        ├── agent-enrichment/feature-1 → PR to agent-enrichment
+        ├── agent-enrichment/feature-2 → PR to agent-enrichment
+        └── agent-enrichment/feature-3 → PR to agent-enrichment
+              ↓
+        agent-enrichment (accumulates all features)
+              ↓
+        → PR to main (when epic complete)
+```
 
 ---
 
@@ -117,7 +158,8 @@ The summary document provides a quick overview of implementation status across a
 ```
 📊 PR Analysis
 
-Branch: feat/user-auth → main
+Branch: agent-enrichment/user-auth → agent-enrichment
+Base:   agent-enrichment (from workflow state)
 Commits: 5
 Files changed: 8
 Lines: +324, -12
@@ -145,10 +187,18 @@ Reads the feature file to generate:
 ### Step 4: Create PR
 
 ```bash
+# Resolve base branch (workflow state → explicit → default)
+if [ -n "$EXPLICIT_BASE" ]; then
+    BASE_BRANCH="$EXPLICIT_BASE"
+elif [ -f ".claude/workflow-state/active/dev-*.json" ]; then
+    BASE_BRANCH=$(workflow_get '.workflow.parent_branch')
+fi
+BASE_BRANCH="${BASE_BRANCH:-main}"
+
 gh pr create \
   --title "[user-auth] User Authentication" \
   --body "$(cat pr-body.md)" \
-  --base main
+  --base "$BASE_BRANCH"
 ```
 
 ---
@@ -316,13 +366,14 @@ Pre-flight checks:
   ✅ Lint passing
   ✅ Security review passed (0 critical, 0 high)
   ✅ Code simplification review passed
-  ✅ Branch up to date with main
+  ✅ Branch up to date with base
   ✅ All changes committed
   ✅ Requirements checklist synced (session: 12/45 files)
   ✅ Implementation summary updated
 
 PR Preview:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Branch: agent-enrichment/user-auth → agent-enrichment
 Title: [user-auth] User Authentication
 
 ## Summary
@@ -342,6 +393,7 @@ Allow users to register and login securely.
 Creating PR...
 
 ✅ PR #42 created: https://github.com/user/repo/pull/42
+   📌 Target: agent-enrichment
 
 Files updated:
   - REQUIREMENTS/CHECKLIST-session.md
