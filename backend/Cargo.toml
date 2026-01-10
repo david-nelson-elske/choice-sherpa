@@ -35,6 +35,11 @@ reqwest = { version = "0.11", features = ["json", "stream"] }
 # Secret handling (API keys)
 secrecy = { version = "0.8", features = ["serde"] }
 
+# Cryptography (HMAC-SHA256 for Stripe webhooks)
+hmac = "0.12"
+sha2 = "0.10"
+subtle = "2.5"
+
 # ============================================
 # Infrastructure Dependencies
 # ============================================
@@ -58,6 +63,9 @@ dotenvy = "0.15"
 # Observability
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# JWT Authentication
+jsonwebtoken = "9.3"
 
 [dev-dependencies]
 # Testing - pinned for Rust 1.72 compatibility

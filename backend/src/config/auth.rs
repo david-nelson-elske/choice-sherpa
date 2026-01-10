@@ -29,6 +29,16 @@ impl AuthConfig {
         Duration::from_secs(self.jwks_cache_ttl_secs)
     }
 
+    /// Get the issuer URL (alias for zitadel_authority for clarity)
+    pub fn issuer_url(&self) -> &str {
+        &self.zitadel_authority
+    }
+
+    /// Get the expected audience
+    pub fn audience(&self) -> &str {
+        &self.zitadel_audience
+    }
+
     /// Validate authentication configuration
     ///
     /// In production, requires HTTPS for the authority URL.

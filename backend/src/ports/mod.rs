@@ -40,6 +40,7 @@
 mod access_checker;
 mod ai_engine;
 mod ai_provider;
+mod auth_provider;
 mod circuit_breaker;
 mod confirmation_request_repository;
 mod connection_registry;
@@ -70,6 +71,7 @@ pub use ai_provider::{
     AIError, AIProvider, CompletionRequest, CompletionResponse, FinishReason, Message,
     MessageRole, ProviderInfo, RequestMetadata, StreamChunk, TokenUsage,
 };
+pub use auth_provider::AuthProvider;
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
 pub use cycle_reader::{
