@@ -7,6 +7,7 @@
 //! - `http` - HTTP/REST API implementations
 //! - `membership` - Membership access control implementations
 //! - `postgres` - PostgreSQL database implementations
+//! - `stripe` - Stripe payment provider implementation
 //! - `validation` - Schema validation implementations
 
 pub mod ai;
@@ -15,6 +16,7 @@ pub mod events;
 pub mod http;
 pub mod membership;
 pub mod postgres;
+pub mod stripe;
 pub mod validation;
 
 pub use ai::{
@@ -25,5 +27,9 @@ pub use ai::{
 pub use auth::{MockAuthProvider, MockSessionValidator};
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;
-pub use postgres::{PostgresCycleReader, PostgresCycleRepository};
+pub use postgres::{
+    PostgresAccessChecker, PostgresCycleReader, PostgresCycleRepository,
+    PostgresMembershipReader, PostgresMembershipRepository,
+};
+pub use stripe::{MockPaymentProvider, StripeConfig, StripePaymentAdapter};
 pub use validation::JsonSchemaValidator;
