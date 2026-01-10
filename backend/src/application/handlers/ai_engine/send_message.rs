@@ -3,9 +3,12 @@
 use std::sync::Arc;
 
 use crate::domain::ai_engine::conversation_state::MessageRole;
-use crate::domain::ai_engine::{ConversationState, Orchestrator};
-use crate::domain::foundation::{CycleId, DomainError};
-use crate::ports::{StateStorage, StateStorageError};
+use crate::domain::ai_engine::{step_agent, ConversationState};
+use crate::domain::foundation::{ComponentType, ConversationId, CycleId, DomainError, UserId};
+use crate::ports::{
+    AIError, AIProvider, CompletionRequest, Message as AIMessage, MessageRole as AIMessageRole,
+    RequestMetadata, StateStorage, StateStorageError,
+};
 
 /// Command to send a message in a conversation
 #[derive(Debug, Clone)]
@@ -32,6 +35,8 @@ pub enum SendMessageError {
     Orchestrator(String),
     /// Domain error
     Domain(DomainError),
+    /// AI Provider error
+    AIProvider(String),
 }
 
 impl std::fmt::Display for SendMessageError {
@@ -43,6 +48,7 @@ impl std::fmt::Display for SendMessageError {
             SendMessageError::Storage(err) => write!(f, "Storage error: {}", err),
             SendMessageError::Orchestrator(err) => write!(f, "Orchestrator error: {}", err),
             SendMessageError::Domain(err) => write!(f, "{}", err),
+            SendMessageError::AIProvider(err) => write!(f, "AI Provider error: {}", err),
         }
     }
 }
@@ -64,14 +70,24 @@ impl From<StateStorageError> for SendMessageError {
     }
 }
 
-/// Handler for sending messages in conversations
-pub struct SendMessageHandler {
-    storage: Arc<dyn StateStorage>,
+impl From<AIError> for SendMessageError {
+    fn from(err: AIError) -> Self {
+        SendMessageError::AIProvider(err.to_string())
+    }
 }
 
-impl SendMessageHandler {
-    pub fn new(storage: Arc<dyn StateStorage>) -> Self {
-        Self { storage }
+/// Handler for sending messages in conversations
+pub struct SendMessageHandler<P: ?Sized + AIProvider> {
+    storage: Arc<dyn StateStorage>,
+    ai_provider: Arc<P>,
+}
+
+impl<P: ?Sized + AIProvider> SendMessageHandler<P> {
+    pub fn new(storage: Arc<dyn StateStorage>, ai_provider: Arc<P>) -> Self {
+        Self {
+            storage,
+            ai_provider,
+        }
     }
 
     pub async fn handle(
@@ -84,8 +100,8 @@ impl SendMessageHandler {
         // 2. Add user message to history
         state.add_message(MessageRole::User, cmd.message.clone());
 
-        // 3. Generate AI response (placeholder - will integrate with AI provider later)
-        let ai_response = self.generate_ai_response(&state, &cmd.message).await;
+        // 3. Generate AI response using real AI provider
+        let ai_response = self.generate_ai_response(&state).await?;
 
         // 4. Add AI response to history
         state.add_message(MessageRole::Assistant, ai_response.clone());
@@ -99,21 +115,92 @@ impl SendMessageHandler {
         })
     }
 
-    /// Generate AI response (placeholder - will be replaced with actual AI integration)
-    async fn generate_ai_response(&self, state: &ConversationState, _message: &str) -> String {
-        // TODO: Integrate with actual AI provider (OpenAI/Anthropic)
-        // For now, return a simple acknowledgment
+    /// Generate AI response using the AI provider
+    async fn generate_ai_response(
+        &self,
+        state: &ConversationState,
+    ) -> Result<String, AIError> {
+        // Build system prompt from step agent spec
+        let system_prompt = self.build_system_prompt(state.current_step);
+
+        // Convert conversation history to AI messages
+        let messages = self.convert_messages_to_ai_format(state);
+
+        // Build request metadata
+        let metadata = RequestMetadata::new(
+            UserId::new("system").unwrap(), // TODO: Get actual user_id from context
+            state.session_id,
+            ConversationId::new(), // TODO: Map CycleId to ConversationId
+            format!("cycle-{}", state.cycle_id),
+        );
+
+        // Build completion request
+        let request = CompletionRequest::new(metadata)
+            .with_system_prompt(system_prompt)
+            .with_max_tokens(2000)
+            .with_temperature(0.7)
+            .with_component_type(state.current_step);
+
+        // Add messages
+        let mut request = request;
+        for msg in messages {
+            request = request.with_message(msg.role, msg.content);
+        }
+
+        // Call AI provider
+        let response = self.ai_provider.complete(request).await?;
+
+        Ok(response.content)
+    }
+
+    /// Build system prompt from step agent specification
+    fn build_system_prompt(&self, component: ComponentType) -> String {
+        let spec = step_agent::agents::get(component)
+            .expect("All component types should have agent specs");
+
         format!(
-            "I understand you're working on {:?}. Let me help you with that.",
-            state.current_step
+            "You are a thoughtful decision professional helping users work through the {} phase of their decision-making process.\n\n\
+            Role: {}\n\n\
+            Objectives:\n{}\n\n\
+            Techniques:\n{}\n\n\
+            Guide the user through this phase with probing questions and thoughtful reflection. \
+            Do not make decisions for them - help them think clearly about their situation.",
+            spec.component.to_string().to_lowercase().replace('_', " "),
+            spec.role,
+            spec.objectives
+                .iter()
+                .map(|o| format!("- {}", o))
+                .collect::<Vec<_>>()
+                .join("\n"),
+            spec.techniques
+                .iter()
+                .map(|t| format!("- {}", t))
+                .collect::<Vec<_>>()
+                .join("\n")
         )
+    }
+
+    /// Convert conversation history to AI provider message format
+    fn convert_messages_to_ai_format(&self, state: &ConversationState) -> Vec<AIMessage> {
+        state
+            .message_history
+            .iter()
+            .map(|msg| {
+                let role = match msg.role {
+                    MessageRole::System => AIMessageRole::System,
+                    MessageRole::User => AIMessageRole::User,
+                    MessageRole::Assistant => AIMessageRole::Assistant,
+                };
+                AIMessage::new(role, msg.content.clone())
+            })
+            .collect()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::InMemoryStateStorage;
+    use crate::adapters::{InMemoryStateStorage, MockAIProvider};
     use crate::domain::foundation::{ComponentType, SessionId};
 
     fn test_cycle_id() -> CycleId {
@@ -139,7 +226,11 @@ mod tests {
         let cycle_id = test_cycle_id();
         setup_conversation(storage.clone(), cycle_id).await;
 
-        let handler = SendMessageHandler::new(storage.clone());
+        let mock_provider = Arc::new(
+            MockAIProvider::new()
+                .with_response("I can help you think through your software architecture decision.")
+        );
+        let handler = SendMessageHandler::new(storage.clone(), mock_provider);
 
         let cmd = SendMessageCommand {
             cycle_id,
@@ -163,7 +254,8 @@ mod tests {
         let cycle_id = test_cycle_id();
         setup_conversation(storage.clone(), cycle_id).await;
 
-        let handler = SendMessageHandler::new(storage.clone());
+        let mock_provider = Arc::new(MockAIProvider::new().with_response("Test response"));
+        let handler = SendMessageHandler::new(storage.clone(), mock_provider);
 
         let cmd = SendMessageCommand {
             cycle_id,
@@ -180,7 +272,8 @@ mod tests {
     #[tokio::test]
     async fn test_send_message_fails_if_not_found() {
         let storage = Arc::new(InMemoryStateStorage::new());
-        let handler = SendMessageHandler::new(storage);
+        let mock_provider = Arc::new(MockAIProvider::new().with_response("Test"));
+        let handler = SendMessageHandler::new(storage, mock_provider);
 
         let cmd = SendMessageCommand {
             cycle_id: test_cycle_id(),
@@ -198,7 +291,13 @@ mod tests {
         let cycle_id = test_cycle_id();
         setup_conversation(storage.clone(), cycle_id).await;
 
-        let handler = SendMessageHandler::new(storage);
+        let mock_provider = Arc::new(
+            MockAIProvider::new()
+                .with_response("First")
+                .with_response("Second")
+                .with_response("Third")
+        );
+        let handler = SendMessageHandler::new(storage, mock_provider);
 
         let messages = vec!["First message", "Second message", "Third message"];
 
@@ -221,7 +320,9 @@ mod tests {
         let cycle_id = test_cycle_id();
         setup_conversation(storage.clone(), cycle_id).await;
 
-        let handler = SendMessageHandler::new(storage);
+        let expected_response = "Let me help you with issue raising";
+        let mock_provider = Arc::new(MockAIProvider::new().with_response(expected_response));
+        let handler = SendMessageHandler::new(storage, mock_provider);
 
         let cmd = SendMessageCommand {
             cycle_id,
@@ -231,6 +332,6 @@ mod tests {
         let result = handler.handle(cmd).await.unwrap();
 
         assert!(!result.ai_response.is_empty());
-        assert!(result.ai_response.contains("IssueRaising"));
+        assert_eq!(result.ai_response, expected_response);
     }
 }

@@ -15,7 +15,7 @@ use crate::application::handlers::{
     StartConversationError, StartConversationHandler,
 };
 use crate::domain::foundation::{ComponentType, CycleId, SessionId};
-use crate::ports::StateStorage;
+use crate::ports::{AIProvider, StateStorage};
 use std::str::FromStr;
 
 use super::dto::{
@@ -31,15 +31,23 @@ use super::dto::{
 #[derive(Clone)]
 pub struct AIEngineAppState {
     pub storage: Arc<dyn StateStorage>,
+    pub ai_provider: Arc<dyn AIProvider>,
 }
 
 impl AIEngineAppState {
+    pub fn new(storage: Arc<dyn StateStorage>, ai_provider: Arc<dyn AIProvider>) -> Self {
+        Self {
+            storage,
+            ai_provider,
+        }
+    }
+
     pub fn start_conversation_handler(&self) -> StartConversationHandler {
         StartConversationHandler::new(self.storage.clone())
     }
 
-    pub fn send_message_handler(&self) -> SendMessageHandler {
-        SendMessageHandler::new(self.storage.clone())
+    pub fn send_message_handler(&self) -> SendMessageHandler<dyn AIProvider> {
+        SendMessageHandler::new(self.storage.clone(), self.ai_provider.clone())
     }
 
     pub fn end_conversation_handler(&self) -> EndConversationHandler {
@@ -162,6 +170,10 @@ pub async fn send_message(
         SendMessageError::Domain(msg) => (
             StatusCode::BAD_REQUEST,
             Json(ErrorResponse::bad_request(msg.to_string())),
+        ),
+        SendMessageError::AIProvider(msg) => (
+            StatusCode::BAD_GATEWAY,
+            Json(ErrorResponse::internal(format!("AI Provider error: {}", msg))),
         ),
     })?;
 
@@ -295,13 +307,14 @@ pub async fn end_conversation(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapters::InMemoryStateStorage;
+    use crate::adapters::{InMemoryStateStorage, MockAIProvider};
     use crate::domain::ai_engine::ConversationState;
     use crate::domain::foundation::ComponentType;
 
     fn test_app_state() -> AIEngineAppState {
         AIEngineAppState {
             storage: Arc::new(InMemoryStateStorage::new()),
+            ai_provider: Arc::new(MockAIProvider::new().with_response("Test AI response")),
         }
     }
 
