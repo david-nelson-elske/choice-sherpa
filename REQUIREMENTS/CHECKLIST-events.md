@@ -195,20 +195,23 @@ This checklist tracks implementation of the event-driven architecture that enabl
 
 | Task | Status | File | Tests |
 |------|--------|------|-------|
-| `PughScoresComputed` event struct | [ ] | `backend/src/domain/analysis/events.rs` | [ ] |
-| `DQScoresComputed` event struct | [ ] | `backend/src/domain/analysis/events.rs` | [ ] |
-| Implement `DomainEvent` for all | [ ] | `backend/src/domain/analysis/events.rs` | |
+| `PughScoresComputed` event struct | [x] | `backend/src/domain/analysis/events.rs` | ✅ |
+| `DQScoresComputed` event struct | [x] | `backend/src/domain/analysis/events.rs` | ✅ |
+| `TradeoffsAnalyzed` event struct | [x] | `backend/src/domain/analysis/events.rs` | ✅ |
+| Implement `DomainEvent` for all | [x] | `backend/src/domain/analysis/events.rs` | ✅ |
 
 ### 5.2 Analysis Trigger Handler
 
 | Task | Status | File | Tests |
 |------|--------|------|-------|
-| `AnalysisTriggerHandler` | [ ] | `backend/src/application/handlers/analysis_trigger.rs` | [ ] |
-| Subscribe to `ComponentCompleted` | [ ] | `backend/src/application/handlers/analysis_trigger.rs` | |
-| Trigger Pugh analysis on Consequences complete | [ ] | `backend/src/application/handlers/analysis_trigger.rs` | [ ] |
-| Trigger DQ analysis on DecisionQuality complete | [ ] | `backend/src/application/handlers/analysis_trigger.rs` | [ ] |
-| Publish `PughScoresComputed` | [ ] | `backend/src/application/handlers/analysis_trigger.rs` | [ ] |
-| Publish `DQScoresComputed` | [ ] | `backend/src/application/handlers/analysis_trigger.rs` | [ ] |
+| `AnalysisTriggerHandler` | [x] | `backend/src/application/handlers/analysis/analysis_trigger_handler.rs` | ✅ |
+| Subscribe to `ComponentCompleted` | [x] | `backend/src/application/handlers/analysis/analysis_trigger_handler.rs` | ✅ |
+| Trigger Pugh analysis on Consequences complete | [x] | `backend/src/application/handlers/analysis/analysis_trigger_handler.rs` | ✅ |
+| Trigger DQ analysis on DecisionQuality complete | [x] | `backend/src/application/handlers/analysis/analysis_trigger_handler.rs` | ✅ |
+| Trigger Tradeoff analysis on Tradeoffs complete | [x] | `backend/src/application/handlers/analysis/analysis_trigger_handler.rs` | ✅ |
+| Publish `PughScoresComputed` | [x] | `backend/src/application/handlers/analysis/analysis_trigger_handler.rs` | ✅ |
+| Publish `DQScoresComputed` | [x] | `backend/src/application/handlers/analysis/analysis_trigger_handler.rs` | ✅ |
+| Publish `TradeoffsAnalyzed` | [x] | `backend/src/application/handlers/analysis/analysis_trigger_handler.rs` | ✅ |
 
 ---
 
@@ -334,12 +337,12 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | Phase 2: Session Events | 12 | 0 |
 | Phase 3: Cycle Events | 20 | 0 |
 | Phase 4: Conversation Events | 10 | 0 |
-| Phase 5: Analysis Events | 9 | 0 |
+| Phase 5: Analysis Events | 12 | 12 |
 | Phase 6: Dashboard Events | 13 | 0 |
 | Phase 7: Redis Adapter | 12 | 0 |
 | Phase 8: WebSocket | 10 | 0 |
 | Frontend | 9 | 0 |
-| **Total** | **130** | **30** |
+| **Total** | **133** | **42** |
 
 ### Current Status
 
@@ -359,9 +362,16 @@ REMAINING FOR PHASE 1:
 - Outbox cleanup job
 - Unit of work integration
 - Idempotency integration test
+
+PHASE 5 COMPLETE: Analysis Events implemented
+- Domain events: PughScoresComputed, DQScoresComputed, TradeoffsAnalyzed ✅
+- AnalysisTriggerHandler: subscribes to ComponentCompleted events ✅
+- Triggers analysis for Consequences, DecisionQuality, Tradeoffs components ✅
+- Publishes computed analysis events via EventPublisher ✅
+- All unit tests passing (19 events + 9 handler tests) ✅
 ```
 
 ---
 
-*Last Updated: 2026-01-09*
-*Version: 1.1.0*
+*Last Updated: 2026-01-10*
+*Version: 1.2.0*
