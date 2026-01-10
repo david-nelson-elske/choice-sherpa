@@ -2,6 +2,7 @@
 //!
 //! Adapters connect the domain to external systems:
 //! - `ai` - AI/LLM provider implementations (mock, OpenAI, Anthropic)
+//! - `auth` - Authentication implementations (mock, Zitadel)
 //! - `events` - Event bus implementations (in-memory, Redis)
 //! - `http` - HTTP/REST API implementations
 //! - `membership` - Membership access control implementations
@@ -9,6 +10,7 @@
 //! - `validation` - Schema validation implementations
 
 pub mod ai;
+pub mod auth;
 pub mod events;
 pub mod http;
 pub mod membership;
@@ -20,6 +22,7 @@ pub use ai::{
     FailoverAIProvider, InMemoryUsageTracker, MockAIProvider, MockError, MockResponse,
     OpenAIConfig, OpenAIProvider,
 };
+pub use auth::{MockAuthProvider, MockSessionValidator};
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;
 pub use postgres::{PostgresCycleReader, PostgresCycleRepository};
