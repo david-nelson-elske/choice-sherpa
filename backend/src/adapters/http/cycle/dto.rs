@@ -294,6 +294,22 @@ pub struct ParseSummaryResponse {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// Export DTOs
+// ════════════════════════════════════════════════════════════════════════════════
+
+/// Query parameters for document export.
+#[derive(Debug, Clone, Deserialize)]
+pub struct ExportDocumentQuery {
+    /// Export format: "markdown" (default), "pdf", or "html".
+    #[serde(default = "default_export_format")]
+    pub format: String,
+}
+
+fn default_export_format() -> String {
+    "markdown".to_string()
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // Branch DTOs
 // ════════════════════════════════════════════════════════════════════════════════
 

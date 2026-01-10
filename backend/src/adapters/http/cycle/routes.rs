@@ -6,7 +6,8 @@ use axum::routing::{get, post, put};
 use axum::Router;
 
 use super::handlers::{
-    branch_cycle, get_document, regenerate_document, update_document, CycleAppState,
+    branch_cycle, export_document, get_document, regenerate_document, update_document,
+    CycleAppState,
 };
 
 /// Creates the cycle router with all endpoints.
@@ -15,12 +16,14 @@ use super::handlers::{
 /// - `GET /api/cycles/:id/document` - Generate decision document
 /// - `GET /api/cycles/:id/document?format=summary` - Generate summary document
 /// - `GET /api/cycles/:id/document?format=export` - Generate export document
+/// - `GET /api/cycles/:id/document/export` - Export document (markdown/pdf/html)
 /// - `POST /api/cycles/:id/document/regenerate` - Regenerate and persist document
 /// - `POST /api/cycles/:id/branch` - Branch cycle at a component
 /// - `PUT /api/documents/:id` - Update document from user edit
 pub fn cycle_router() -> Router<CycleAppState> {
     Router::new()
         .route("/api/cycles/:id/document", get(get_document))
+        .route("/api/cycles/:id/document/export", get(export_document))
         .route("/api/cycles/:id/document/regenerate", post(regenerate_document))
         .route("/api/cycles/:id/branch", post(branch_cycle))
         .route("/api/documents/:id", put(update_document))
@@ -33,8 +36,9 @@ mod tests {
     use crate::domain::foundation::{CycleId, DecisionDocumentId, DomainError, SessionId, UserId};
     use crate::domain::session::Session;
     use crate::ports::{
-        CycleRepository, DecisionDocumentRepository, DocumentError, DocumentGenerator,
-        DocumentParser, GenerationOptions, IntegrityStatus, SessionRepository, SyncResult,
+        CycleRepository, DecisionDocumentRepository, DocumentError, DocumentExportService,
+        DocumentGenerator, DocumentParser, ExportError, GenerationOptions, IntegrityStatus,
+        SessionRepository, SyncResult,
     };
     use async_trait::async_trait;
     use axum::body::Body;
@@ -283,6 +287,23 @@ mod tests {
         }
     }
 
+    struct MockExportService;
+
+    #[async_trait]
+    impl DocumentExportService for MockExportService {
+        async fn to_pdf(&self, _markdown: &str) -> Result<Vec<u8>, ExportError> {
+            Ok(vec![0x25, 0x50, 0x44, 0x46]) // PDF magic bytes
+        }
+
+        async fn to_html(&self, markdown: &str) -> Result<String, ExportError> {
+            Ok(format!("<html><body>{}</body></html>", markdown))
+        }
+
+        async fn is_available(&self) -> bool {
+            true
+        }
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Tests
     // ───────────────────────────────────────────────────────────────
@@ -302,6 +323,7 @@ mod tests {
             Arc::new(MockDocumentGenerator),
             Arc::new(MockDocumentRepository),
             Arc::new(MockDocumentParser),
+            Arc::new(MockExportService),
         );
 
         let app = cycle_router().with_state(state);

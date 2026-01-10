@@ -34,6 +34,7 @@ mod cycle_reader;
 mod cycle_repository;
 mod decision_document_reader;
 mod decision_document_repository;
+mod document_export_service;
 mod document_file_storage;
 mod document_generator;
 mod document_parser;
@@ -72,6 +73,9 @@ pub use decision_document_repository::{
 };
 pub use document_file_storage::{
     DocumentFileStorage, FileInfo, FileMetadata, FilePath, StorageError,
+};
+pub use document_export_service::{
+    DocumentExportService, ExportError, ExportFormat, ExportedDocument,
 };
 pub use document_generator::{DocumentError, DocumentFormat, DocumentGenerator, GenerationOptions};
 pub use document_parser::{DocumentParser, ParseResult, SectionBoundary};

@@ -17,13 +17,14 @@ use crate::application::handlers::cycle::{
 };
 use crate::domain::foundation::{CommandMetadata, CycleId, DecisionDocumentId, UserId};
 use crate::ports::{
-    CycleRepository, DecisionDocumentRepository, DocumentFormat, DocumentGenerator,
-    DocumentParser, SessionRepository,
+    CycleRepository, DecisionDocumentRepository, DocumentExportService, DocumentFormat,
+    DocumentGenerator, DocumentParser, ExportFormat, SessionRepository,
 };
 
 use super::dto::{
-    BranchCycleRequest, BranchCycleResponse, DocumentResponse, ErrorResponse, GetDocumentQuery,
-    ParseSummaryResponse, RegenerateDocumentResponse, UpdateDocumentRequest, UpdateDocumentResponse,
+    BranchCycleRequest, BranchCycleResponse, DocumentResponse, ErrorResponse,
+    ExportDocumentQuery, GetDocumentQuery, ParseSummaryResponse, RegenerateDocumentResponse,
+    UpdateDocumentRequest, UpdateDocumentResponse,
 };
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -38,6 +39,7 @@ pub struct CycleAppState {
     pub document_generator: Arc<dyn DocumentGenerator>,
     pub document_repository: Arc<dyn DecisionDocumentRepository>,
     pub document_parser: Arc<dyn DocumentParser>,
+    pub export_service: Arc<dyn DocumentExportService>,
 }
 
 impl CycleAppState {
@@ -48,6 +50,7 @@ impl CycleAppState {
         document_generator: Arc<dyn DocumentGenerator>,
         document_repository: Arc<dyn DecisionDocumentRepository>,
         document_parser: Arc<dyn DocumentParser>,
+        export_service: Arc<dyn DocumentExportService>,
     ) -> Self {
         Self {
             cycle_repository,
@@ -55,6 +58,7 @@ impl CycleAppState {
             document_generator,
             document_repository,
             document_parser,
+            export_service,
         }
     }
 
@@ -513,6 +517,145 @@ pub async fn branch_cycle(
     }
 }
 
+/// GET /api/cycles/:id/document/export
+///
+/// Exports the decision document in various formats (markdown, PDF, HTML).
+///
+/// Query parameters:
+/// - `format`: "markdown" (default), "pdf", or "html"
+///
+/// Returns:
+/// - 200: Exported file content with appropriate Content-Type header
+/// - 400: Invalid format or cycle ID
+/// - 404: Cycle not found
+/// - 500: Export conversion failed
+/// - 503: Export service unavailable (e.g., Pandoc not installed for PDF)
+pub async fn export_document(
+    State(state): State<CycleAppState>,
+    Path(cycle_id): Path<String>,
+    Query(query): Query<ExportDocumentQuery>,
+) -> impl IntoResponse {
+    use axum::http::header;
+    use crate::ports::ExportedDocument;
+
+    // Parse cycle ID
+    let cycle_id = match cycle_id.parse::<CycleId>() {
+        Ok(id) => id,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::bad_request("Invalid cycle ID format")),
+            )
+                .into_response();
+        }
+    };
+
+    // Parse export format
+    let format = match query.format.parse::<ExportFormat>() {
+        Ok(f) => f,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::bad_request(format!(
+                    "Invalid export format '{}'. Valid formats: markdown, pdf, html",
+                    query.format
+                ))),
+            )
+                .into_response();
+        }
+    };
+
+    // First, generate the markdown content
+    let cmd = GenerateDocumentCommand::export(cycle_id);
+    let user_id = UserId::new("system").unwrap();
+    let metadata = CommandMetadata::new(user_id);
+
+    let handler = state.generate_document_handler();
+    let generate_result = match handler.handle(cmd, metadata).await {
+        Ok(result) => result,
+        Err(err) => {
+            return match err {
+                GenerateDocumentError::CycleNotFound(id) => (
+                    StatusCode::NOT_FOUND,
+                    Json(ErrorResponse::not_found("Cycle", &id.to_string())),
+                )
+                    .into_response(),
+                _ => (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse::internal(format!(
+                        "Document generation failed: {}",
+                        err
+                    ))),
+                )
+                    .into_response(),
+            };
+        }
+    };
+
+    // Convert to requested format
+    let base_filename = format!("decision-{}", cycle_id);
+    let exported = match format {
+        ExportFormat::Markdown => {
+            ExportedDocument::from_markdown(generate_result.content, &base_filename)
+        }
+        ExportFormat::Html => {
+            match state.export_service.to_html(&generate_result.content).await {
+                Ok(html) => ExportedDocument::from_html(html, &base_filename),
+                Err(err) => {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(ErrorResponse::internal(format!(
+                            "HTML conversion failed: {}",
+                            err
+                        ))),
+                    )
+                        .into_response();
+                }
+            }
+        }
+        ExportFormat::Pdf => {
+            match state.export_service.to_pdf(&generate_result.content).await {
+                Ok(pdf) => ExportedDocument::from_pdf(pdf, &base_filename),
+                Err(crate::ports::ExportError::ServiceUnavailable(msg)) => {
+                    return (
+                        StatusCode::SERVICE_UNAVAILABLE,
+                        Json(ErrorResponse {
+                            code: "SERVICE_UNAVAILABLE".to_string(),
+                            message: msg,
+                            details: None,
+                        }),
+                    )
+                        .into_response();
+                }
+                Err(err) => {
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(ErrorResponse::internal(format!(
+                            "PDF conversion failed: {}",
+                            err
+                        ))),
+                    )
+                        .into_response();
+                }
+            }
+        }
+    };
+
+    // Return file with appropriate headers
+    (
+        StatusCode::OK,
+        [
+            (header::CONTENT_TYPE, exported.content_type.as_str()),
+            (
+                header::CONTENT_DISPOSITION,
+                &format!("attachment; filename=\"{}\"", exported.filename),
+            ),
+        ],
+        exported.content,
+    )
+        .into_response()
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // Tests
 // ════════════════════════════════════════════════════════════════════════════════
@@ -785,6 +928,23 @@ mod tests {
         }
     }
 
+    struct MockExportService;
+
+    #[async_trait]
+    impl DocumentExportService for MockExportService {
+        async fn to_pdf(&self, _markdown: &str) -> Result<Vec<u8>, crate::ports::ExportError> {
+            Ok(vec![0x25, 0x50, 0x44, 0x46]) // PDF magic bytes
+        }
+
+        async fn to_html(&self, markdown: &str) -> Result<String, crate::ports::ExportError> {
+            Ok(format!("<html><body>{}</body></html>", markdown))
+        }
+
+        async fn is_available(&self) -> bool {
+            true
+        }
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Test helpers
     // ───────────────────────────────────────────────────────────────
@@ -824,6 +984,7 @@ mod tests {
             Arc::new(MockDocumentGenerator::new("Test content")),
             Arc::new(MockDocumentRepository),
             Arc::new(MockDocumentParser),
+            Arc::new(MockExportService),
         );
 
         let app = create_app(state);
@@ -851,6 +1012,7 @@ mod tests {
             Arc::new(MockDocumentGenerator::new("Test")),
             Arc::new(MockDocumentRepository),
             Arc::new(MockDocumentParser),
+            Arc::new(MockExportService),
         );
 
         let app = create_app(state);
@@ -880,6 +1042,7 @@ mod tests {
             Arc::new(MockDocumentGenerator::new("Test")),
             Arc::new(MockDocumentRepository),
             Arc::new(MockDocumentParser),
+            Arc::new(MockExportService),
         );
 
         let app = create_app(state);
@@ -909,6 +1072,7 @@ mod tests {
             Arc::new(MockDocumentGenerator::new("Test")),
             Arc::new(MockDocumentRepository),
             Arc::new(MockDocumentParser),
+            Arc::new(MockExportService),
         );
 
         let app = create_app(state);
@@ -938,6 +1102,7 @@ mod tests {
             Arc::new(MockDocumentGenerator::new("Test")),
             Arc::new(MockDocumentRepository),
             Arc::new(MockDocumentParser),
+            Arc::new(MockExportService),
         );
 
         let app = create_app(state);
