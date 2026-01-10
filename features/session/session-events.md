@@ -79,13 +79,13 @@ Without events, these modules would need to poll or be tightly coupled to sessio
 - [x] Implement SessionDescriptionUpdated event with DomainEvent trait
 - [x] Implement SessionArchived event with DomainEvent trait
 - [x] Implement CycleAddedToSession event with DomainEvent trait
-- [ ] Update CreateSessionHandler to inject EventPublisher and publish SessionCreated
-- [ ] Update RenameSessionHandler to inject EventPublisher and publish SessionRenamed
-- [ ] Update ArchiveSessionHandler to inject EventPublisher and publish SessionArchived
-- [ ] Implement SessionCycleTracker event handler for CycleCreated events
+- [x] Update CreateSessionHandler to inject EventPublisher and publish SessionCreated
+- [x] Update RenameSessionHandler to inject EventPublisher and publish SessionRenamed
+- [x] Update ArchiveSessionHandler to inject EventPublisher and publish SessionArchived
+- [x] Implement SessionCycleTracker event handler for CycleCreated events
 - [x] Add unit tests for session event types and serialization
-- [ ] Add unit tests for command handlers verifying event publishing
-- [ ] Add unit tests for SessionCycleTracker handler
+- [x] Add unit tests for command handlers verifying event publishing
+- [x] Add unit tests for SessionCycleTracker handler
 
 ---
 
