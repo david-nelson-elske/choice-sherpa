@@ -6,6 +6,7 @@
 //! - `events` - Event bus implementations (in-memory, Redis)
 //! - `http` - HTTP/REST API implementations
 //! - `membership` - Membership access control implementations
+//! - `postgres` - PostgreSQL database implementations
 //! - `validation` - Schema validation implementations
 
 pub mod ai;
@@ -13,6 +14,7 @@ pub mod document;
 pub mod events;
 pub mod http;
 pub mod membership;
+pub mod postgres;
 pub mod validation;
 
 pub use ai::{
@@ -23,4 +25,5 @@ pub use ai::{
 pub use document::{LocalDocumentFileStorage, TemplateDocumentGenerator};
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;
+pub use postgres::PostgresDocumentRepository;
 pub use validation::JsonSchemaValidator;
