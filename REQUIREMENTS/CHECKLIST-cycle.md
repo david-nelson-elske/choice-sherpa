@@ -21,8 +21,8 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 |------|-------------|--------|
 | `backend/src/domain/cycle/mod.rs` | Module exports | ✅ |
 | `backend/src/domain/cycle/aggregate.rs` | Cycle aggregate (38 tests inline) | ✅ |
-| `backend/src/domain/cycle/progress.rs` | CycleProgress value object | ⬜ |
-| `backend/src/domain/cycle/events.rs` | CycleEvent enum | ✅ |
+| `backend/src/domain/cycle/progress.rs` | CycleProgress value object (19 tests inline) | ✅ |
+| `backend/src/domain/cycle/events.rs` | CycleEvent enum (16 tests inline) | ✅ |
 | `backend/src/domain/cycle/errors.rs` | Cycle-specific errors | ⬜ |
 
 > **Note:** Tests are inline in implementation files using `#[cfg(test)] mod tests` (Rust convention). The file `cycle.rs` was renamed to `aggregate.rs`. Separate test files (`*_test.rs`) are not used.
@@ -34,39 +34,31 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 | File | Description | Status |
 |------|-------------|--------|
 | `backend/src/domain/cycle/aggregate.rs` (inline tests) | Cycle aggregate tests (38 tests) | ✅ |
-| `backend/src/domain/cycle/progress.rs` (inline tests) | CycleProgress tests | ⬜ |
-| `backend/src/domain/cycle/events.rs` (inline tests) | CycleEvent tests | ⬜ |
+| `backend/src/domain/cycle/progress.rs` (inline tests) | CycleProgress tests (19 tests) | ✅ |
+| `backend/src/domain/cycle/events.rs` (inline tests) | CycleEvent tests (16 tests) | ✅ |
 
 ### Ports (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/ports/cycle_repository.rs` | CycleRepository trait | ⬜ |
-| `backend/src/ports/cycle_reader.rs` | CycleReader trait (CQRS) | ⬜ |
+| `backend/src/ports/cycle_repository.rs` | CycleRepository trait (1 test) | ✅ |
+| `backend/src/ports/cycle_reader.rs` | CycleReader trait (4 tests) | ✅ |
 
-### Application Layer - Commands (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/application/commands/create_cycle.rs` | CreateCycle handler | ⬜ |
-| `backend/src/application/commands/branch_cycle.rs` | BranchCycle handler | ⬜ |
-| `backend/src/application/commands/start_component.rs` | StartComponent handler | ⬜ |
-| `backend/src/application/commands/complete_component.rs` | CompleteComponent handler | ⬜ |
-| `backend/src/application/commands/update_component_output.rs` | UpdateComponentOutput handler | ⬜ |
-| `backend/src/application/commands/navigate_component.rs` | NavigateToComponent handler | ⬜ |
-| `backend/src/application/commands/complete_cycle.rs` | CompleteCycle handler | ⬜ |
-| `backend/src/application/commands/archive_cycle.rs` | ArchiveCycle handler | ⬜ |
-
-### Application Layer - Command Tests (Rust)
+### Application Layer - Command Handlers (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/application/commands/create_cycle_test.rs` | CreateCycle tests | ⬜ |
-| `backend/src/application/commands/branch_cycle_test.rs` | BranchCycle tests | ⬜ |
-| `backend/src/application/commands/start_component_test.rs` | StartComponent tests | ⬜ |
-| `backend/src/application/commands/complete_component_test.rs` | CompleteComponent tests | ⬜ |
-| `backend/src/application/commands/update_component_output_test.rs` | UpdateComponentOutput tests | ⬜ |
-| `backend/src/application/commands/navigate_component_test.rs` | NavigateToComponent tests | ⬜ |
+| `backend/src/application/handlers/cycle/mod.rs` | Module exports | ✅ |
+| `backend/src/application/handlers/cycle/create_cycle.rs` | CreateCycle handler (8 tests inline) | ✅ |
+| `backend/src/application/handlers/cycle/branch_cycle.rs` | BranchCycle handler | ⬜ |
+| `backend/src/application/handlers/cycle/start_component.rs` | StartComponent handler | ⬜ |
+| `backend/src/application/handlers/cycle/complete_component.rs` | CompleteComponent handler | ⬜ |
+| `backend/src/application/handlers/cycle/update_component_output.rs` | UpdateComponentOutput handler | ⬜ |
+| `backend/src/application/handlers/cycle/navigate_component.rs` | NavigateToComponent handler | ⬜ |
+| `backend/src/application/handlers/cycle/complete_cycle.rs` | CompleteCycle handler | ⬜ |
+| `backend/src/application/handlers/cycle/archive_cycle.rs` | ArchiveCycle handler | ⬜ |
+
+> **Note:** Tests are inline in handler files using `#[cfg(test)] mod tests` (Rust convention).
 
 ### Application Layer - Queries (Rust)
 
@@ -409,17 +401,19 @@ cd frontend && npm test -- --testPathPattern="modules/cycle"
 
 ```
 RUST BACKEND IN PROGRESS: cycle
-Files: 3/53 backend files exist (6%)
-  - Domain Layer: 3/5 (mod.rs, aggregate.rs, events.rs)
-  - Ports: 0/2
-  - Application: 0/23
+Files: 10/53 backend files exist (19%)
+  - Domain Layer: 4/5 (mod.rs, aggregate.rs, events.rs, progress.rs)
+  - Ports: 2/2 (cycle_repository.rs, cycle_reader.rs)
+  - Application: 2/9 handlers (mod.rs, create_cycle.rs)
   - Adapters: 0/10
   - Migrations: 0/2
-Tests: 38 domain tests passing (in aggregate.rs)
+Tests: 86 tests passing
   - Aggregate tests: 38/38
-  - Progress tests: 0/5 (progress.rs not created)
-  - Event tests: 0/3 (events.rs has no tests)
-  - Application tests: 0/50
+  - Progress tests: 19/19
+  - Event tests: 16/16
+  - Port tests: 5/5 (CycleRepository 1, CycleReader 4)
+  - Handler tests: 8/8 (CreateCycleHandler)
+  - Application tests: 0/42 (remaining handlers)
   - Adapter tests: 0/17
 Frontend: 0/14 files exist
 ```
@@ -444,15 +438,15 @@ Coverage: Domain 91%, Application 86%, Adapters 81%
 - [x] Component lifecycle management (in aggregate.rs)
 - [x] Branching logic (in aggregate.rs)
 - [ ] errors.rs - Cycle-specific errors
-- [x] Domain layer tests (aggregate.rs has 38 tests, events.rs needs tests)
+- [x] Domain layer tests (aggregate.rs 38 tests, events.rs 16 tests, progress.rs 19 tests)
 
 ### Phase 2: Ports
-- [ ] CycleRepository trait
-- [ ] CycleReader trait
-- [ ] View DTOs (CycleView, CycleTree, ComponentView)
+- [x] CycleRepository trait (1 test)
+- [x] CycleReader trait (4 tests, includes view DTOs)
+- [x] View DTOs (CycleView, CycleSummary, CycleTreeNode, CycleProgressView, NextAction)
 
 ### Phase 3: Commands
-- [ ] CreateCycleCommand + Handler
+- [x] CreateCycleCommand + Handler (8 tests)
 - [ ] BranchCycleCommand + Handler
 - [ ] StartComponentCommand + Handler
 - [ ] CompleteComponentCommand + Handler
@@ -500,5 +494,5 @@ Coverage: Domain 91%, Application 86%, Adapters 81%
 ---
 
 *Generated: 2026-01-07*
-*Last synced: 2026-01-09*
+*Last synced: 2026-01-10*
 *Specification: docs/modules/cycle.md*

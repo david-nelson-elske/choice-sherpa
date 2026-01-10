@@ -2,9 +2,13 @@
 //!
 //! Command and query handlers that orchestrate domain operations.
 
+pub mod cycle;
 pub mod membership;
 pub mod session;
 
+pub use cycle::{
+    CreateCycleCommand, CreateCycleError, CreateCycleHandler, CreateCycleResult, CycleCreatedEvent,
+};
 pub use membership::{
     // Commands
     CancelMembershipCommand, CancelMembershipHandler, CancelMembershipResult,

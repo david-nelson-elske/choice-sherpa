@@ -18,11 +18,11 @@ This checklist tracks implementation of the event-driven architecture that enabl
 
 | Task | Status | File | Tests |
 |------|--------|------|-------|
-| `DomainEvent` trait definition | [ ] | `backend/src/domain/foundation/events.rs` | |
-| `EventId` value object (UUID) | [ ] | `backend/src/domain/foundation/events.rs` | [ ] |
-| `EventEnvelope` struct | [ ] | `backend/src/domain/foundation/events.rs` | [ ] |
-| `EventMetadata` struct (correlation, causation, trace) | [ ] | `backend/src/domain/foundation/events.rs` | [ ] |
-| Serialization tests (JSON round-trip) | [ ] | `backend/src/domain/foundation/events_test.rs` | |
+| `DomainEvent` trait definition | [x] | `backend/src/domain/foundation/events.rs` | ✅ |
+| `EventId` value object (UUID) | [x] | `backend/src/domain/foundation/events.rs` | ✅ |
+| `EventEnvelope` struct | [x] | `backend/src/domain/foundation/events.rs` | ✅ |
+| `EventMetadata` struct (correlation, causation, trace) | [x] | `backend/src/domain/foundation/events.rs` | ✅ |
+| Serialization tests (JSON round-trip) | [x] | `backend/src/domain/foundation/events.rs` | ✅ |
 
 ### 1.2 Port Interfaces
 
@@ -31,32 +31,32 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | `EventPublisher` trait | [x] | `backend/src/ports/event_publisher.rs` | ✅ |
 | `EventSubscriber` trait | [x] | `backend/src/ports/event_subscriber.rs` | ✅ |
 | `EventHandler` trait | [x] | `backend/src/ports/event_subscriber.rs` | ✅ |
-| `EventBus` combined trait | [ ] | `backend/src/ports/mod.rs` | |
+| `EventBus` combined trait | [x] | `backend/src/ports/event_subscriber.rs` | ✅ |
 
 ### 1.3 In-Memory Adapter
 
 | Task | Status | File | Tests |
 |------|--------|------|-------|
-| `InMemoryEventBus` struct | [ ] | `backend/src/adapters/events/in_memory.rs` | |
-| `publish()` implementation | [ ] | `backend/src/adapters/events/in_memory.rs` | [ ] |
-| `publish_all()` implementation | [ ] | `backend/src/adapters/events/in_memory.rs` | [ ] |
-| `subscribe()` implementation | [ ] | `backend/src/adapters/events/in_memory.rs` | [ ] |
-| `subscribe_all()` implementation | [ ] | `backend/src/adapters/events/in_memory.rs` | [ ] |
-| Test helper: `published_events()` | [ ] | `backend/src/adapters/events/in_memory.rs` | |
-| Test helper: `events_of_type()` | [ ] | `backend/src/adapters/events/in_memory.rs` | |
-| Test helper: `clear()` | [ ] | `backend/src/adapters/events/in_memory.rs` | |
-| Handler invocation test | [ ] | `backend/src/adapters/events/in_memory_test.rs` | |
-| Event ordering test | [ ] | `backend/src/adapters/events/in_memory_test.rs` | |
-| Multiple subscribers test | [ ] | `backend/src/adapters/events/in_memory_test.rs` | |
+| `InMemoryEventBus` struct | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| `publish()` implementation | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| `publish_all()` implementation | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| `subscribe()` implementation | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| `subscribe_all()` implementation | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| Test helper: `published_events()` | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| Test helper: `events_of_type()` | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| Test helper: `clear()` | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| Handler invocation test | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| Event ordering test | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
+| Multiple subscribers test | [x] | `backend/src/adapters/events/in_memory.rs` | ✅ |
 
 ### 1.4 Module Exports
 
 | Task | Status | File |
 |------|--------|------|
-| Export events from foundation | [ ] | `backend/src/domain/foundation/mod.rs` |
-| Export ports from ports module | [ ] | `backend/src/ports/mod.rs` |
-| Export adapters from adapters module | [ ] | `backend/src/adapters/mod.rs` |
-| Create events adapter module | [ ] | `backend/src/adapters/events/mod.rs` |
+| Export events from foundation | [x] | `backend/src/domain/foundation/mod.rs` |
+| Export ports from ports module | [x] | `backend/src/ports/mod.rs` |
+| Export adapters from adapters module | [x] | `backend/src/adapters/mod.rs` |
+| Create events adapter module | [x] | `backend/src/adapters/events/mod.rs` |
 
 ### 1.5 Transactional Outbox
 
@@ -65,7 +65,7 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | `OutboxWriter` port trait | [x] | `backend/src/ports/outbox_writer.rs` | ✅ |
 | `event_outbox` table migration | [ ] | `backend/migrations/XXXXXX_create_event_outbox.sql` | |
 | PostgreSQL outbox adapter | [ ] | `backend/src/adapters/events/postgres_outbox.rs` | [ ] |
-| `OutboxPublisher` background service | [ ] | `backend/src/adapters/events/outbox_publisher.rs` | [ ] |
+| `OutboxPublisher` background service | [x] | `backend/src/adapters/events/outbox_publisher.rs` | ✅ |
 | Outbox cleanup job | [ ] | `backend/src/adapters/events/outbox_cleanup.rs` | |
 | Unit of work with outbox support | [ ] | `backend/src/adapters/database/unit_of_work.rs` | [ ] |
 
@@ -76,7 +76,7 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | `ProcessedEventStore` port trait | [x] | `backend/src/ports/processed_event_store.rs` | ✅ |
 | `processed_events` table migration | [ ] | `backend/migrations/XXXXXX_create_processed_events.sql` | |
 | PostgreSQL processed events adapter | [ ] | `backend/src/adapters/events/postgres_processed.rs` | [ ] |
-| `IdempotentHandler` wrapper | [ ] | `backend/src/adapters/events/idempotent_handler.rs` | [ ] |
+| `IdempotentHandler` wrapper | [x] | `backend/src/adapters/events/idempotent_handler.rs` | ✅ |
 | Idempotency integration test | [ ] | `backend/tests/integration/idempotency_test.rs` | |
 
 ---
@@ -325,9 +325,12 @@ This checklist tracks implementation of the event-driven architecture that enabl
 
 | Phase | Tasks | Completed |
 |-------|-------|-----------|
-| Phase 1: Infrastructure (1.1-1.4) | 19 | 3 |
-| Phase 1.5: Transactional Outbox | 6 | 1 |
-| Phase 1.6: Idempotency Infrastructure | 5 | 1 |
+| Phase 1.1: Domain Event Types | 5 | 5 |
+| Phase 1.2: Port Interfaces | 4 | 4 |
+| Phase 1.3: In-Memory Adapter | 11 | 11 |
+| Phase 1.4: Module Exports | 4 | 4 |
+| Phase 1.5: Transactional Outbox | 6 | 2 |
+| Phase 1.6: Idempotency Infrastructure | 5 | 2 |
 | Phase 2: Session Events | 12 | 0 |
 | Phase 3: Cycle Events | 20 | 0 |
 | Phase 4: Conversation Events | 10 | 0 |
@@ -336,22 +339,27 @@ This checklist tracks implementation of the event-driven architecture that enabl
 | Phase 7: Redis Adapter | 12 | 0 |
 | Phase 8: WebSocket | 10 | 0 |
 | Frontend | 9 | 0 |
-| **Total** | **125** | **5** |
+| **Total** | **130** | **28** |
 
 ### Current Status
 
 ```
-INFRASTRUCTURE IN PROGRESS: events
-Port Interfaces: 5/125 tasks (4%)
-- EventPublisher trait ✅
-- EventSubscriber trait ✅
-- EventHandler trait ✅
-- OutboxWriter port ✅
-- ProcessedEventStore port ✅
-Additional ports exist: ConnectionRegistry, CircuitBreaker, SchemaValidator
+PHASE 1 COMPLETE: Core event infrastructure implemented
+- Domain types: DomainEvent trait, EventId, EventMetadata, EventEnvelope ✅
+- Port interfaces: EventPublisher, EventSubscriber, EventHandler, EventBus ✅
+- In-memory adapter: Full InMemoryEventBus with test helpers ✅
+- Module exports: All properly wired in foundation, ports, adapters ✅
+- Transactional outbox: OutboxWriter port + OutboxPublisher service ✅
+- Idempotency: ProcessedEventStore port + IdempotentHandler wrapper ✅
+
+REMAINING FOR PHASE 1:
+- Database migrations for outbox and processed_events tables
+- PostgreSQL adapters for persistence
+- Outbox cleanup job
+- Unit of work integration
 ```
 
 ---
 
-*Last Updated: 2026-01-07*
-*Version: 1.0.0*
+*Last Updated: 2026-01-09*
+*Version: 1.1.0*

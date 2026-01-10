@@ -5,6 +5,8 @@
 
 mod aggregate;
 mod events;
+mod progress;
 
 pub use aggregate::Cycle;
 pub use events::CycleEvent;
+pub use progress::CycleProgress;
