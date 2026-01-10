@@ -38,13 +38,11 @@
 //! See `docs/architecture/SCALING-READINESS.md` for architectural details.
 
 mod access_checker;
+mod ai_engine;
 mod ai_provider;
 mod circuit_breaker;
 mod confirmation_request_repository;
 mod connection_registry;
-mod revisit_suggestion_repository;
-mod tool_executor;
-mod tool_invocation_repository;
 mod cycle_reader;
 mod cycle_repository;
 mod event_publisher;
@@ -55,13 +53,19 @@ mod outbox_writer;
 mod payment_provider;
 mod processed_event_store;
 mod promo_code_validator;
+mod revisit_suggestion_repository;
 mod schema_validator;
 mod session_reader;
 mod session_repository;
 mod session_validator;
+mod state_storage;
+mod step_agent;
+mod tool_executor;
+mod tool_invocation_repository;
 mod usage_tracker;
 
 pub use access_checker::{AccessChecker, AccessDeniedReason, AccessResult, UsageStats};
+pub use ai_engine::{AIEngine, ResponseChunk, SessionHandle};
 pub use ai_provider::{
     AIError, AIProvider, CompletionRequest, CompletionResponse, FinishReason, Message,
     MessageRole, ProviderInfo, RequestMetadata, StreamChunk, TokenUsage,
@@ -91,6 +95,8 @@ pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};
 pub use session_reader::{ListOptions, SessionList, SessionReader, SessionSummary, SessionView};
 pub use session_repository::SessionRepository;
 pub use session_validator::SessionValidator;
+pub use state_storage::{StateStorage, StateStorageError};
+pub use step_agent::{StepAgent, ToolDefinition};
 pub use promo_code_validator::{
     PromoCodeInvalidReason, PromoCodeValidation, PromoCodeValidator,
 };
