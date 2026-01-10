@@ -3,6 +3,7 @@
 //! Contains value objects, identifiers, enums, and error types
 //! that form the vocabulary of the Choice Sherpa domain.
 
+mod auth;
 mod ids;
 mod timestamp;
 mod percentage;
@@ -16,7 +17,11 @@ mod errors;
 mod events;
 mod command;
 
-pub use ids::{SessionId, CycleId, ComponentId, ConversationId, UserId, MembershipId};
+pub use auth::{AuthenticatedUser, AuthError};
+pub use ids::{
+    SessionId, CycleId, ComponentId, ConversationId, UserId, MembershipId,
+    ToolInvocationId, RevisitSuggestionId, ConfirmationRequestId,
+};
 pub use timestamp::Timestamp;
 pub use percentage::Percentage;
 pub use rating::Rating;

@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "updated_at": "2026-01-09T23:53:23-07:00",
+  "active_workflows": [
+    {
+      "id": "dev-ed6828a3",
+      "skill": "dev",
+      "context": "features/foundation/event-infrastructure.md",
+      "started_at": "2026-01-09T22:48:30-07:00",
+      "last_activity": "2026-01-09T22:48:30-07:00"
+    },
+    {
+      "id": "dev-2ff9a962",
+      "skill": "dev",
+      "context": "features/conversation/atomic-decision-tools",
+      "started_at": "2026-01-09T23:53:23-07:00",
+      "last_activity": "2026-01-09T23:53:23-07:00"
+    }
+  ]
+}

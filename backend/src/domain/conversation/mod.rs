@@ -9,6 +9,7 @@ mod engine;
 mod extractor;
 mod context;
 pub mod configs;
+pub mod tools;
 
 pub use state::ConversationState;
 pub use phase::AgentPhase;

@@ -1526,6 +1526,122 @@ async fn test_tool_invocation_is_logged() {
 
 ---
 
+## Tasks
+
+### Phase 1: Core Infrastructure
+- [x] Create ToolInvocationId, RevisitSuggestionId, ConfirmationRequestId value objects in foundation/ids.rs
+- [ ] Create ToolResult enum and ToolInvocation entity in domain/conversation/tools/
+- [ ] Create ToolCall and ToolResponse types for tool execution
+- [ ] Create ToolExecutor port trait with execute, available_tools, and validate methods
+- [ ] Create ToolDefinition struct with JSON Schema for parameters and returns
+- [ ] Create ToolRegistry with component-specific and cross-cutting tool registration
+- [ ] Create ToolInvocationRepository port trait
+- [ ] Create RevisitSuggestion entity with SuggestionStatus enum
+- [ ] Create ConfirmationRequest entity with ConfirmationStatus enum
+
+### Phase 2: Issue Raising & Problem Frame Tools
+- [ ] Define add_potential_decision tool schema and handler
+- [ ] Define add_objective_idea tool schema and handler
+- [ ] Define add_uncertainty tool schema and handler
+- [ ] Define add_consideration tool schema and handler
+- [ ] Define set_focal_decision tool schema and handler
+- [ ] Define set_decision_maker tool schema and handler
+- [ ] Define set_focal_statement tool schema and handler
+- [ ] Define set_scope tool schema and handler
+- [ ] Define add_constraint tool schema and handler
+- [ ] Define add_party tool schema and handler
+- [ ] Define set_deadline tool schema and handler
+- [ ] Define add_hierarchy_decision tool schema and handler
+
+### Phase 3: Objectives & Alternatives Tools
+- [ ] Define add_objective tool with ObjectiveDirection enum
+- [ ] Define link_means_to_fundamental tool schema and handler
+- [ ] Define update_objective_measure tool schema and handler
+- [ ] Define remove_objective tool schema and handler
+- [ ] Define promote_to_fundamental tool schema and handler
+- [ ] Define add_alternative tool schema and handler
+- [ ] Define update_alternative tool schema and handler
+- [ ] Define remove_alternative tool schema and handler
+- [ ] Define add_strategy_dimension tool schema and handler
+- [ ] Define set_alternative_strategy tool schema and handler
+
+### Phase 4: Consequences & Analysis Tools
+- [ ] Define rate_consequence tool with PughRating enum
+- [ ] Define batch_rate_consequences tool for matrix updates
+- [ ] Define add_consequence_uncertainty tool schema and handler
+- [ ] Define update_rating_reasoning tool schema and handler
+- [ ] Define compute_pugh_totals analysis tool
+- [ ] Define find_dominated_alternatives analysis tool
+- [ ] Define find_irrelevant_objectives analysis tool
+- [ ] Define sensitivity_check analysis tool
+
+### Phase 5: Tradeoffs, Recommendation & DQ Tools
+- [ ] Define mark_dominated tool schema and handler
+- [ ] Define mark_irrelevant_objective tool schema and handler
+- [ ] Define add_tension tool schema and handler
+- [ ] Define clear_dominated tool schema and handler
+- [ ] Define set_synthesis tool schema and handler
+- [ ] Define set_standout tool schema and handler
+- [ ] Define add_key_consideration tool schema and handler
+- [ ] Define add_remaining_uncertainty tool schema and handler
+- [ ] Define rate_dq_element tool with DQElement enum
+- [ ] Define add_quality_improvement tool schema and handler
+- [ ] Define calculate_overall_dq tool schema and handler
+
+### Phase 6: Cross-Cutting Tools
+- [ ] Define flag_uncertainty cross-cutting tool
+- [ ] Define resolve_uncertainty cross-cutting tool
+- [ ] Define list_uncertainties cross-cutting tool
+- [ ] Define suggest_revisit tool with RevisitPriority enum
+- [ ] Define get_pending_revisits query tool
+- [ ] Define dismiss_revisit tool schema and handler
+- [ ] Define request_confirmation tool with ConfirmationOption
+- [ ] Define record_user_choice tool schema and handler
+- [ ] Define get_document_section query tool
+- [ ] Define get_document_summary query tool
+- [ ] Define add_note tool schema and handler
+
+### Phase 7: AI Provider Integration
+- [ ] Implement to_openai_format method on ToolDefinition
+- [ ] Implement to_anthropic_format method on ToolDefinition
+- [ ] Add tool injection to conversation context building
+- [ ] Handle tool_calls in AI response processing
+
+### Phase 8: Application Layer
+- [ ] Create ExecuteToolCommand and handler
+- [ ] Create GetAvailableToolsQuery and handler
+- [ ] Wire ToolExecutor into conversation engine
+
+### Phase 9: HTTP Layer
+- [ ] Create POST /api/cycles/:id/tools/:name endpoint
+- [ ] Create GET /api/cycles/:id/tools endpoint
+- [ ] Create GET /api/cycles/:id/tools/invocations endpoint
+- [ ] Create GET /api/cycles/:id/revisits endpoint
+- [ ] Create POST /api/cycles/:id/revisits/:id/resolve endpoint
+- [ ] Create GET /api/cycles/:id/confirmations/pending endpoint
+- [ ] Create POST /api/cycles/:id/confirmations/:id/respond endpoint
+
+### Phase 10: Database Migrations
+- [ ] Create tool_invocations table migration
+- [ ] Create revisit_suggestions table migration
+- [ ] Create confirmation_requests table migration
+- [ ] Add indexes for efficient querying
+
+## Acceptance Criteria
+
+- [ ] Tools can be executed via HTTP API and return structured responses
+- [ ] All tool invocations are logged with parameters, results, and timing
+- [ ] Available tools are filtered by current component type
+- [ ] Tools validate parameters against JSON Schema before execution
+- [ ] Revisit suggestions can be created, queried, and resolved
+- [ ] Confirmation requests pause conversation flow until resolved
+- [ ] AI providers receive tools in their native format (OpenAI/Anthropic)
+- [ ] Document sections are updated surgically (not full regeneration)
+- [ ] Analysis tools correctly compute Pugh totals and detect dominance
+- [ ] Decision Quality tools calculate overall DQ as minimum of elements
+
+---
+
 ## Related Documents
 
 - [Agent-Native Enrichments Analysis](../../docs/architecture/AGENT-NATIVE-ENRICHMENTS.md)
