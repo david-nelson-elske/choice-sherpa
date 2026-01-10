@@ -8,9 +8,16 @@ use std::sync::Arc;
 
 use crate::adapters::ai::ai_events::AITokensUsed;
 use crate::domain::foundation::{DomainError, ErrorCode, EventEnvelope};
-use crate::ports::{EventHandler, UsageTracker};
+#[allow(unused_imports)] // Used in handle_tokens_used via async trait
+use crate::ports::{EventHandler, UsageRecord, UsageTracker};
 
 /// Event handler that records AI token usage for cost tracking.
+///
+/// Subscribes to `ai.tokens_used` events and persists usage records via the
+/// UsageTracker port. This enables:
+/// - Cost attribution per user/session
+/// - Daily and session cost limit enforcement
+/// - Usage analytics by provider/model/component
 ///
 /// # Example
 ///
@@ -22,8 +29,7 @@ use crate::ports::{EventHandler, UsageTracker};
 /// event_bus.subscribe("ai.tokens_used", Arc::new(handler));
 /// ```
 pub struct AIUsageHandler {
-    // Note: tracker is used in commented code awaiting AITokensUsed event enhancement
-    #[allow(dead_code)]
+    #[allow(dead_code)] // Used in handle_tokens_used via async trait
     tracker: Arc<dyn UsageTracker>,
 }
 
@@ -33,49 +39,25 @@ impl AIUsageHandler {
         Self { tracker }
     }
 
-    /// Handles a tokens used event.
+    /// Handles a tokens used event by recording usage for cost tracking.
     async fn handle_tokens_used(&self, event: AITokensUsed) -> Result<(), DomainError> {
-        // Note: The current AITokensUsed event doesn't include user_id/session_id.
-        // This handler demonstrates the pattern, but requires the event to be
-        // enhanced with user context for full cost attribution.
-        //
-        // For now, we skip recording until the event is enhanced.
-        // In a production system, you'd either:
-        // 1. Enhance the event with user context (preferred)
-        // 2. Use a correlation store to map request_id -> user context
-        // 3. Extract user context from the event envelope metadata
-
-        // Log for debugging (replace with tracing when available)
-        #[cfg(debug_assertions)]
-        eprintln!(
-            "AI tokens used: provider={}, model={}, prompt_tokens={}, completion_tokens={}, cost_cents={}, request_id={}",
-            event.provider,
-            event.model,
+        // Create usage record from event (now includes user context)
+        let record = UsageRecord::new(
+            event.user_id,
+            event.session_id,
+            &event.provider,
+            &event.model,
             event.prompt_tokens,
             event.completion_tokens,
             event.estimated_cost_cents,
-            event.request_id
+            event.component_type,
         );
 
-        // Suppress unused variable warning in release builds
-        let _ = &event;
-
-        // TODO: Uncomment when AITokensUsed includes user_id and session_id
-        // let record = UsageRecord::new(
-        //     event.user_id,
-        //     event.session_id,
-        //     &event.provider,
-        //     &event.model,
-        //     event.prompt_tokens,
-        //     event.completion_tokens,
-        //     event.estimated_cost_cents,
-        //     event.component_type,
-        // );
-        //
-        // self.tracker
-        //     .record_usage(record)
-        //     .await
-        //     .map_err(|e| DomainError::new(ErrorCode::DatabaseError, e.to_string()))?;
+        // Record to tracker for cost attribution and limit enforcement
+        self.tracker
+            .record_usage(record)
+            .await
+            .map_err(|e| DomainError::new(ErrorCode::DatabaseError, e.to_string()))?;
 
         Ok(())
     }
@@ -223,7 +205,19 @@ mod tests {
     use test_support::InMemoryUsageTracker;
 
     fn make_tokens_used_envelope() -> EventEnvelope {
-        let event = AITokensUsed::new("openai", "gpt-4", 100, 50, 15, "req-123");
+        let user_id = UserId::new("user-test-123").unwrap();
+        let session_id = SessionId::new();
+        let event = AITokensUsed::new(
+            user_id,
+            session_id,
+            "openai",
+            "gpt-4",
+            100,  // prompt_tokens
+            50,   // completion_tokens
+            15,   // estimated_cost_cents
+            None, // component_type
+            "req-123",
+        );
         let payload = serde_json::to_value(&event).unwrap();
 
         EventEnvelope {
@@ -238,15 +232,24 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn handler_processes_tokens_used_event() {
+    async fn handler_processes_tokens_used_event_and_records_usage() {
         let tracker = Arc::new(InMemoryUsageTracker::new());
         let handler = AIUsageHandler::new(tracker.clone());
 
         let envelope = make_tokens_used_envelope();
         let result = handler.handle(envelope).await;
 
-        // Should succeed (currently just logs since event lacks user context)
+        // Handler should succeed
         assert!(result.is_ok());
+
+        // Verify usage was recorded
+        let records = tracker.records();
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].provider, "openai");
+        assert_eq!(records[0].model, "gpt-4");
+        assert_eq!(records[0].prompt_tokens, 100);
+        assert_eq!(records[0].completion_tokens, 50);
+        assert_eq!(records[0].cost_cents, 15);
     }
 
     #[tokio::test]
