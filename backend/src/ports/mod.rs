@@ -33,6 +33,8 @@
 mod access_checker;
 mod ai_provider;
 mod circuit_breaker;
+mod tool_executor;
+mod tool_invocation_repository;
 mod connection_registry;
 mod cycle_reader;
 mod cycle_repository;
@@ -85,4 +87,8 @@ pub use promo_code_validator::{
 };
 pub use usage_tracker::{
     ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
+};
+pub use tool_executor::{ToolExecutor, ToolExecutionContext, ToolExecutionError};
+pub use tool_invocation_repository::{
+    ToolInvocationRepository, ToolInvocationRepoError, ToolInvocationStats,
 };
