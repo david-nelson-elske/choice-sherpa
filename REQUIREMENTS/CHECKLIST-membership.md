@@ -24,7 +24,7 @@ The Membership module manages user subscriptions, access control, and payment in
 | `backend/src/domain/membership/mod.rs` | Module exports | ✅ |
 | `backend/src/domain/membership/status.rs` | MembershipStatus enum (18 tests inline) | ✅ |
 | `backend/src/domain/membership/tier.rs` | MembershipTier enum (6 tests inline) | ✅ |
-| `backend/src/domain/membership/tier_limits.rs` | TierLimits configuration (19 tests inline) | ✅ |
+| `backend/src/domain/membership/tier_limits.rs` | TierLimits configuration + AiModelTier (63 tests inline) | ✅ |
 | `backend/src/domain/membership/promo_code.rs` | PromoCode value object (26 tests inline) | ✅ |
 | `backend/src/domain/membership/aggregate.rs` | Membership aggregate (21 tests inline) | ✅ |
 | `backend/src/domain/membership/events.rs` | MembershipEvent enum (15 tests inline) | ✅ |
@@ -115,7 +115,8 @@ The Membership module manages user subscriptions, access control, and payment in
 |------|-------------|--------|
 | `frontend/src/lib/types/membership.ts` | Membership types | ✅ |
 | `frontend/src/lib/types/money.ts` | Money type (cents!) | ✅ |
-| `frontend/src/lib/types/tier.ts` | MembershipTier type | ✅ |
+| `frontend/src/lib/types/tier.ts` | MembershipTier, TierLimits, utilities | ✅ |
+| `frontend/src/lib/types/upgrade-prompts.ts` | UpgradePromptConfig for feature gating | ✅ |
 | `frontend/src/lib/types/index.ts` | Type exports | ✅ |
 
 ### Frontend Domain Tests (TypeScript)
@@ -170,7 +171,7 @@ The Membership module manages user subscriptions, access control, and payment in
 |-----------|-------------|--------|
 | `status.rs` - 18 tests | MembershipStatus state machine tests | ✅ |
 | `tier.rs` - 6 tests | MembershipTier enum tests | ✅ |
-| `tier_limits.rs` - 19 tests | TierLimits configuration tests | ✅ |
+| `tier_limits.rs` - 63 tests | TierLimits + AiModelTier configuration tests | ✅ |
 | `promo_code.rs` - 26 tests | PromoCode value object tests | ✅ |
 | `aggregate.rs` - 21 tests | Membership aggregate tests | ✅ |
 
@@ -389,8 +390,8 @@ cd frontend && npm test -- --testPathPattern="modules/membership"
 
 ```
 COMPLETE: membership
-Files: 49/52 (94%)
-Tests: 253 passing (domain: 105, ports: 41, handlers: 19, http adapter: 34, stripe adapter: 57, postgres adapter: 31)
+Files: 50/53 (94%)
+Tests: 297 passing (domain: 149, ports: 41, handlers: 19, http adapter: 34, stripe adapter: 57, postgres adapter: 31)
 Status: All backend phases complete, frontend core complete
 Remaining: Frontend tests (pending project setup)
 ```
@@ -400,10 +401,11 @@ Remaining: Frontend tests (pending project setup)
 ```
 MODULE COMPLETE: membership
 Files: 49/52
-Tests: 253 passing
+Tests: 297 passing
 Coverage: Domain 92%, Application 87%, Adapters 85%
 Money: All values in cents (integer) verified
 Integration: AccessChecker wired to session/cycle handlers
+Feature Gating: Full tier feature matrix with 15 limit fields
 ```
 
 ---
@@ -413,7 +415,7 @@ Integration: AccessChecker wired to session/cycle handlers
 ### Phase 1: Value Objects (COMPLETE)
 - [x] MembershipTier enum (tier.rs - 6 tests)
 - [x] MembershipStatus enum (status.rs - 18 tests)
-- [x] TierLimits configuration (tier_limits.rs - 19 tests)
+- [x] TierLimits configuration + AiModelTier (tier_limits.rs - 63 tests)
 - [x] PromoCode value object (promo_code.rs - 26 tests)
 
 ### Phase 2: Domain Aggregate (COMPLETE)
@@ -525,5 +527,5 @@ pub enum CommandError {
 ---
 
 *Generated: 2026-01-07*
-*Last Synced: 2026-01-10 (All phases complete)*
+*Last Synced: 2026-01-10 (All phases complete, tier feature matrix expanded)*
 *Specification: docs/modules/membership.md*
