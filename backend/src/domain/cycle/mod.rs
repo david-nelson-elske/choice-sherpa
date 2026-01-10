@@ -10,8 +10,8 @@ mod progress;
 
 pub use aggregate::Cycle;
 pub use document::{
-    DecisionDocument, DocumentVersion, MarkdownContent, ParseError, ParseErrorSeverity,
-    ParsedMetadata, ParsedSection, SyncSource, UpdatedBy,
+    DecisionDocument, DocumentEvent, DocumentVersion, MarkdownContent, ParseError,
+    ParseErrorSeverity, ParsedMetadata, ParsedSection, SyncSource, UpdatedBy,
 };
 pub use events::CycleEvent;
 pub use progress::CycleProgress;

@@ -5,9 +5,11 @@
 //! PrOACT component data.
 
 mod aggregate;
+mod events;
 mod value_objects;
 
 pub use aggregate::DecisionDocument;
+pub use events::DocumentEvent;
 pub use value_objects::{
     DocumentVersion, MarkdownContent, ParseError, ParseErrorSeverity, ParsedMetadata,
     ParsedSection, SyncSource, UpdatedBy,
