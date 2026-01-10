@@ -25,4 +25,4 @@ pub use events::{ExpiredReason, MembershipEvent};
 pub use promo_code::PromoCode;
 pub use status::MembershipStatus;
 pub use tier::MembershipTier;
-pub use tier_limits::TierLimits;
+pub use tier_limits::{AiModelTier, TierLimits};

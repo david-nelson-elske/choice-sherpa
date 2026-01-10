@@ -91,10 +91,10 @@ impl AccessChecker for StubAccessChecker {
         }
 
         let limits = TierLimits::for_tier(self.tier);
-        if limits.session_limit_reached(self.usage.active_sessions) {
+        if !limits.can_create_session(self.usage.active_sessions) {
             return Ok(AccessResult::Denied(AccessDeniedReason::SessionLimitReached {
                 current: self.usage.active_sessions,
-                max: limits.max_sessions.unwrap_or(0),
+                max: limits.max_active_sessions.unwrap_or(0),
             }));
         }
 
@@ -120,7 +120,7 @@ impl AccessChecker for StubAccessChecker {
         }
 
         let limits = TierLimits::for_tier(self.tier);
-        if !limits.export_enabled {
+        if !limits.can_export_pdf() {
             return Ok(AccessResult::Denied(AccessDeniedReason::FeatureNotIncluded {
                 feature: "Export".to_string(),
                 required_tier: MembershipTier::Monthly,
@@ -271,7 +271,7 @@ mod tests {
         let checker = StubAccessChecker::with_tier(MembershipTier::Monthly);
         let limits = checker.get_tier_limits(&test_user_id()).await.unwrap();
         assert_eq!(limits.tier, MembershipTier::Monthly);
-        assert_eq!(limits.max_sessions, Some(10));
+        assert_eq!(limits.max_active_sessions, Some(10));
     }
 
     // get_usage tests
