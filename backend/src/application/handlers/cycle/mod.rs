@@ -3,6 +3,7 @@
 //! Handlers for cycle lifecycle operations.
 
 mod branch_cycle;
+mod branch_with_document;
 mod create_cycle;
 mod generate_document;
 mod regenerate_document;
@@ -10,6 +11,10 @@ mod update_document_from_edit;
 
 pub use branch_cycle::{
     BranchCycleCommand, BranchCycleError, BranchCycleHandler, BranchCycleResult, CycleBranchedEvent,
+};
+pub use branch_with_document::{
+    BranchWithDocumentCommand, BranchWithDocumentError, BranchWithDocumentHandler,
+    BranchWithDocumentResult,
 };
 pub use create_cycle::{
     CreateCycleCommand, CreateCycleError, CreateCycleHandler, CreateCycleResult, CycleCreatedEvent,

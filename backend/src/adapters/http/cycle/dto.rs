@@ -294,6 +294,27 @@ pub struct ParseSummaryResponse {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// Branch DTOs
+// ════════════════════════════════════════════════════════════════════════════════
+
+/// Response after branching a cycle with its document.
+#[derive(Debug, Clone, Serialize)]
+pub struct BranchCycleResponse {
+    /// The new branch cycle ID.
+    pub cycle_id: String,
+    /// The parent cycle ID.
+    pub parent_cycle_id: String,
+    /// The document ID for the branch.
+    pub document_id: String,
+    /// The component where branching occurred.
+    pub branch_point: ComponentType,
+    /// The branch label.
+    pub branch_label: String,
+    /// The generated document content.
+    pub content: String,
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // Error DTOs
 // ════════════════════════════════════════════════════════════════════════════════
 

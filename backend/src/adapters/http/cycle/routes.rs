@@ -5,7 +5,9 @@
 use axum::routing::{get, post, put};
 use axum::Router;
 
-use super::handlers::{get_document, regenerate_document, update_document, CycleAppState};
+use super::handlers::{
+    branch_cycle, get_document, regenerate_document, update_document, CycleAppState,
+};
 
 /// Creates the cycle router with all endpoints.
 ///
@@ -14,11 +16,13 @@ use super::handlers::{get_document, regenerate_document, update_document, CycleA
 /// - `GET /api/cycles/:id/document?format=summary` - Generate summary document
 /// - `GET /api/cycles/:id/document?format=export` - Generate export document
 /// - `POST /api/cycles/:id/document/regenerate` - Regenerate and persist document
+/// - `POST /api/cycles/:id/branch` - Branch cycle at a component
 /// - `PUT /api/documents/:id` - Update document from user edit
 pub fn cycle_router() -> Router<CycleAppState> {
     Router::new()
         .route("/api/cycles/:id/document", get(get_document))
         .route("/api/cycles/:id/document/regenerate", post(regenerate_document))
+        .route("/api/cycles/:id/branch", post(branch_cycle))
         .route("/api/documents/:id", put(update_document))
 }
 

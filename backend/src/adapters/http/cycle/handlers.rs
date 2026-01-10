@@ -10,6 +10,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 
 use crate::application::handlers::cycle::{
+    BranchWithDocumentCommand, BranchWithDocumentError, BranchWithDocumentHandler,
     GenerateDocumentCommand, GenerateDocumentError, GenerateDocumentHandler,
     RegenerateDocumentCommand, RegenerateDocumentError, RegenerateDocumentHandler,
     UpdateDocumentFromEditCommand, UpdateDocumentFromEditError, UpdateDocumentFromEditHandler,
@@ -21,8 +22,8 @@ use crate::ports::{
 };
 
 use super::dto::{
-    DocumentResponse, ErrorResponse, GetDocumentQuery, ParseSummaryResponse,
-    RegenerateDocumentResponse, UpdateDocumentRequest, UpdateDocumentResponse,
+    BranchCycleRequest, BranchCycleResponse, DocumentResponse, ErrorResponse, GetDocumentQuery,
+    ParseSummaryResponse, RegenerateDocumentResponse, UpdateDocumentRequest, UpdateDocumentResponse,
 };
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -82,6 +83,16 @@ impl CycleAppState {
             self.document_parser.clone(),
             self.document_repository.clone(),
             self.cycle_repository.clone(),
+        )
+    }
+
+    /// Creates the branch with document handler.
+    pub fn branch_with_document_handler(&self) -> BranchWithDocumentHandler {
+        BranchWithDocumentHandler::new(
+            self.cycle_repository.clone(),
+            self.session_repository.clone(),
+            self.document_repository.clone(),
+            self.document_generator.clone(),
         )
     }
 }
@@ -397,6 +408,105 @@ pub async fn update_document(
             UpdateDocumentFromEditError::Domain(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse::internal(err.to_string())),
+            )
+                .into_response(),
+        },
+    }
+}
+
+/// POST /api/cycles/:id/branch
+///
+/// Branches a cycle at a specified component and creates a document for the branch.
+///
+/// Request body:
+/// - `branch_point`: The component type where branching occurs
+///
+/// Returns:
+/// - 201: Branch created successfully with document
+/// - 400: Invalid request (bad cycle ID or branch point)
+/// - 404: Cycle not found
+/// - 500: Branching or document creation failed
+pub async fn branch_cycle(
+    State(state): State<CycleAppState>,
+    Path(cycle_id): Path<String>,
+    Json(request): Json<BranchCycleRequest>,
+) -> impl IntoResponse {
+    // Parse cycle ID
+    let cycle_id = match cycle_id.parse::<CycleId>() {
+        Ok(id) => id,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::bad_request("Invalid cycle ID format")),
+            )
+                .into_response();
+        }
+    };
+
+    // TODO: Extract user ID from authentication context
+    let user_id = UserId::new("system").unwrap();
+
+    // Create command
+    let cmd = BranchWithDocumentCommand {
+        parent_cycle_id: cycle_id,
+        branch_point: request.branch_point,
+        branch_label: None, // Could be added to request DTO later
+        user_id,
+    };
+
+    // Execute handler
+    let handler = state.branch_with_document_handler();
+    match handler.handle(cmd).await {
+        Ok(result) => {
+            let branch_label = result
+                .document
+                .branch_label()
+                .unwrap_or("Branch")
+                .to_string();
+
+            let response = BranchCycleResponse {
+                cycle_id: result.branch_cycle.id().to_string(),
+                parent_cycle_id: cycle_id.to_string(),
+                document_id: result.document.id().to_string(),
+                branch_point: request.branch_point,
+                branch_label,
+                content: result.content,
+            };
+            (StatusCode::CREATED, Json(response)).into_response()
+        }
+        Err(err) => match err {
+            BranchWithDocumentError::CycleNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse::not_found("Cycle", &id.to_string())),
+            )
+                .into_response(),
+            BranchWithDocumentError::ParentDocumentNotFound(id) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(format!(
+                    "Parent document not found for cycle: {}",
+                    id
+                ))),
+            )
+                .into_response(),
+            BranchWithDocumentError::SessionNotFound => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal("Session not found for cycle")),
+            )
+                .into_response(),
+            BranchWithDocumentError::Domain(err) => {
+                // Domain errors are typically validation failures (e.g., branch point not started)
+                (
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse::bad_request(err.to_string())),
+                )
+                    .into_response()
+            }
+            BranchWithDocumentError::GenerationFailed(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(format!(
+                    "Document generation failed: {}",
+                    msg
+                ))),
             )
                 .into_response(),
         },
