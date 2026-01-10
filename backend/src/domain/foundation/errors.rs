@@ -72,6 +72,11 @@ pub enum ErrorCode {
     PreviousComponentRequired,
     InvalidComponentOutput,
     CannotBranch,
+    ConcurrencyConflict,
+
+    // Document errors
+    DocumentNotFound,
+    DocumentParseError,
 
     // Authorization errors
     Unauthorized,
@@ -121,6 +126,9 @@ impl fmt::Display for ErrorCode {
             ErrorCode::PreviousComponentRequired => "PREVIOUS_COMPONENT_REQUIRED",
             ErrorCode::InvalidComponentOutput => "INVALID_COMPONENT_OUTPUT",
             ErrorCode::CannotBranch => "CANNOT_BRANCH",
+            ErrorCode::ConcurrencyConflict => "CONCURRENCY_CONFLICT",
+            ErrorCode::DocumentNotFound => "DOCUMENT_NOT_FOUND",
+            ErrorCode::DocumentParseError => "DOCUMENT_PARSE_ERROR",
             ErrorCode::Unauthorized => "UNAUTHORIZED",
             ErrorCode::Forbidden => "FORBIDDEN",
             ErrorCode::AIProviderError => "AI_PROVIDER_ERROR",

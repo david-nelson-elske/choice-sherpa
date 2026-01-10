@@ -243,6 +243,48 @@ impl FromStr for MembershipId {
     }
 }
 
+/// Unique identifier for a decision document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct DecisionDocumentId(Uuid);
+
+impl DecisionDocumentId {
+    /// Creates a new random DecisionDocumentId.
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+
+    /// Creates a DecisionDocumentId from an existing UUID.
+    pub fn from_uuid(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
+
+    /// Returns the inner UUID.
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+impl Default for DecisionDocumentId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for DecisionDocumentId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for DecisionDocumentId {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(Uuid::parse_str(s)?))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -331,5 +373,34 @@ mod tests {
         let uuid = Uuid::new_v4();
         let id = ConversationId::from_uuid(uuid);
         assert_eq!(id.as_uuid(), &uuid);
+    }
+
+    #[test]
+    fn decision_document_id_generates_unique_values() {
+        let id1 = DecisionDocumentId::new();
+        let id2 = DecisionDocumentId::new();
+        assert_ne!(id1, id2);
+    }
+
+    #[test]
+    fn decision_document_id_parses_from_valid_string() {
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let id: DecisionDocumentId = uuid_str.parse().unwrap();
+        assert_eq!(id.to_string(), uuid_str);
+    }
+
+    #[test]
+    fn decision_document_id_from_uuid_preserves_value() {
+        let uuid = Uuid::new_v4();
+        let id = DecisionDocumentId::from_uuid(uuid);
+        assert_eq!(id.as_uuid(), &uuid);
+    }
+
+    #[test]
+    fn decision_document_id_serializes_to_json() {
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let id: DecisionDocumentId = uuid_str.parse().unwrap();
+        let json = serde_json::to_string(&id).unwrap();
+        assert_eq!(json, format!("\"{}\"", uuid_str));
     }
 }

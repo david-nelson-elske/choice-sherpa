@@ -4,9 +4,14 @@
 //! Cycles own their components and support branching for "what-if" exploration.
 
 mod aggregate;
+pub mod document;
 mod events;
 mod progress;
 
 pub use aggregate::Cycle;
+pub use document::{
+    DecisionDocument, DocumentVersion, MarkdownContent, ParseError, ParseErrorSeverity,
+    ParsedMetadata, ParsedSection, SyncSource, UpdatedBy,
+};
 pub use events::CycleEvent;
 pub use progress::CycleProgress;

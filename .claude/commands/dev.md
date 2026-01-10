@@ -2,6 +2,32 @@
 
 Execute features using TDD, with commits per task and PR on completion.
 
+---
+
+## ⚠️ CRITICAL REQUIREMENT: Worktree Location
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ALL CODE WORK HAPPENS IN THE WORKTREE, NOT THE MAIN REPO        │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Main repo:  /path/to/project/                                   │
+│  Worktree:   /path/to/project/.worktrees/<module>/               │
+│                                                                  │
+│  BEFORE EACH TASK:                                               │
+│    1. cd /path/to/project/.worktrees/<module>/                   │
+│    2. Verify: git branch --show-current → feat/<module>          │
+│    3. If branch shows "main", STOP - wrong directory!            │
+│                                                                  │
+│  ALL file reads/writes/edits use worktree paths:                 │
+│    ✓ .worktrees/<module>/backend/src/...                         │
+│    ✗ backend/src/... (wrong - this is main repo)                 │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Workflow State Persistence
 
 This skill persists state to survive context compaction. On invocation:
@@ -305,46 +331,141 @@ PR target:      main
 - Commits stay clustered per module
 - Clean isolation between modules
 
+---
+
+## ⚠️ CRITICAL: Work Location Requirements
+
+**ALL work MUST happen inside the worktree directory.** This is the most common failure mode - agents create the worktree but then do work in the main repository.
+
+### Before Starting Any Task
+
+1. **Determine the worktree absolute path:**
+   ```bash
+   WORKTREE_PATH="$(pwd)/.worktrees/$MODULE"
+   ```
+
+2. **Verify you are in the worktree** by checking the current branch:
+   ```bash
+   cd "$WORKTREE_PATH"
+   git branch --show-current  # Should show feat/<module>, NOT main
+   ```
+
+### File Operations in Worktree
+
+When reading, writing, or editing files, use **absolute paths inside the worktree**:
+
+| Operation | Path to Use |
+|-----------|-------------|
+| Read source file | `$WORKTREE_PATH/backend/src/domain/...` |
+| Write test file | `$WORKTREE_PATH/backend/src/domain/.../tests/...` |
+| Edit existing file | `$WORKTREE_PATH/backend/src/...` |
+
+**Example - Creating a test file:**
+```
+Worktree: /home/user/project/.worktrees/session
+File: /home/user/project/.worktrees/session/backend/src/domain/session/tests/create_test.rs
+```
+
+**NOT** `/home/user/project/backend/src/domain/session/tests/create_test.rs` (main repo!)
+
+### Git Operations in Worktree
+
+ALL git commands must run from within the worktree:
+
+```bash
+cd "$WORKTREE_PATH"
+git add .
+git commit -m "feat(session): add create session"
+git push -u origin feat/session
+```
+
+### Test and Lint in Worktree
+
+Run tests and linting from the worktree directory:
+
+```bash
+cd "$WORKTREE_PATH"
+cargo test -p session
+cargo clippy -p session
+```
+
+### Verification Checklist
+
+Before each task, verify:
+- [ ] Current directory is inside `.worktrees/<module>/`
+- [ ] `git branch --show-current` shows `feat/<module>` (not `main`)
+- [ ] All file paths start with the worktree path
+
+---
+
 ### Step 3: Execute Each Task
 
 For each task marked `- [ ]`:
 
-#### a) Announce Task
+#### a) Enter Worktree and Verify Location
+
+**FIRST:** Before any work, enter the worktree and verify:
+
+```bash
+# Get absolute worktree path from workflow state (or construct it)
+WORKTREE_PATH="$(pwd)/.worktrees/$MODULE"
+
+# Change into the worktree
+cd "$WORKTREE_PATH"
+
+# VERIFY: Branch should be feat/<module>, NOT main
+git branch --show-current
+```
+
+If `git branch --show-current` returns `main` or any branch other than `feat/<module>`, STOP - you are in the wrong directory.
+
+#### b) Announce Task
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📂 Working in: .worktrees/<module>/
+🌿 Branch: feat/<module>
 🎯 Task 3/5: Add login method to AuthService
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-#### b) TDD Cycle
+#### c) TDD Cycle (All paths relative to worktree!)
 
 **RED Phase:**
-- Identify test location based on task
-- Write failing test
+- Identify test location: `$WORKTREE_PATH/backend/src/.../tests/`
+- Write failing test using the **worktree path**
+- Run tests from worktree: `cd "$WORKTREE_PATH" && cargo test`
 - Confirm failure for right reason
 
 **GREEN Phase:**
-- Write minimal implementation
+- Write minimal implementation in worktree files
+- Run tests from worktree: `cd "$WORKTREE_PATH" && cargo test`
 - Confirm test passes
 
 **REFACTOR Phase:**
-- Improve code quality
+- Improve code quality (still in worktree)
 - Keep tests green
 
-#### c) Quality Checks
+#### d) Quality Checks (from worktree)
 ```bash
+cd "$WORKTREE_PATH"
 /lint   # Must pass
 /test   # Must pass
 ```
 
-#### d) Commit
+#### e) Commit (from worktree)
 ```bash
+cd "$WORKTREE_PATH"
 /commit "feat(<scope>): <task description>"
 ```
 
-#### e) Update Feature File
-```markdown
-- [x] Add login method to AuthService
+#### f) Update Feature File
+
+Update the feature file in the **main repository** (not the worktree):
+```bash
+# Feature file is in main repo, not worktree
+cd /path/to/main/repo
+# Edit features/<module>/<feature>.md to mark task complete:
+# - [x] Add login method to AuthService
 ```
 
 ### Step 4: Final Verification
@@ -392,7 +513,12 @@ cd -
 
 ## Multi-Feature Session (Module-Based)
 
-When processing a folder, all features in that module share a single worktree. Commits are clustered together, with one PR per module:
+When processing a folder, all features in that module share a single worktree. Commits are clustered together, with one PR per module.
+
+**⚠️ REMINDER:** All file operations happen in the worktree directory, using absolute paths like:
+```
+/home/user/project/.worktrees/auth/backend/src/domain/auth/...
+```
 
 ```
 > /dev features/auth/
@@ -400,7 +526,12 @@ When processing a folder, all features in that module share a single worktree. C
 📁 Processing folder: features/auth/
 📦 Module: auth
 🌿 Branch: feat/auth
-📂 Worktree: .worktrees/auth/
+📂 Worktree: .worktrees/auth/   ← ALL WORK HAPPENS HERE
+
+# Agent enters worktree and verifies:
+$ cd /home/user/project/.worktrees/auth/
+$ git branch --show-current
+feat/auth   ✓ (Correct! If it shows "main", STOP)
 
 Found 3 feature files:
   1. user-registration.md (0/4 tasks)
@@ -410,9 +541,11 @@ Found 3 feature files:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Feature 1/3: User Registration
 📂 Working in: .worktrees/auth/
+🌿 Branch: feat/auth (verified)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 [... processes all 4 tasks, commits each ...]
+[... ALL file paths use .worktrees/auth/... prefix ...]
 
 ✅ Feature complete: User Registration (4 commits)
 
@@ -624,6 +757,44 @@ If a task cannot be completed:
 - [BLOCKED] Task description - reason for blocking
 ```
 Blocked tasks are skipped; feature can still complete.
+
+### Wrong Directory (Common Issue!)
+
+**Symptom:** Files were created/modified in the main repo instead of the worktree.
+
+**Detection:**
+```bash
+# Check which branch you're on
+git branch --show-current
+# If this shows "main" but you expected "feat/<module>", you're in the wrong directory!
+
+# Check for uncommitted changes in main repo
+cd /path/to/project   # Main repo
+git status
+# If there are changes here but should be in worktree, problem detected
+```
+
+**Recovery:**
+```bash
+# 1. Identify the worktree path
+WORKTREE_PATH="/path/to/project/.worktrees/$MODULE"
+
+# 2. Move/recreate files in the correct location
+#    Copy the accidentally-created files to the worktree:
+cp backend/src/domain/<module>/new_file.rs "$WORKTREE_PATH/backend/src/domain/<module>/"
+
+# 3. Clean up the main repo
+git checkout -- backend/src/domain/<module>/new_file.rs
+
+# 4. Continue work from the worktree
+cd "$WORKTREE_PATH"
+git branch --show-current   # Verify: should show feat/<module>
+```
+
+**Prevention:**
+- ALWAYS verify `git branch --show-current` before starting work
+- ALWAYS use absolute paths starting with the worktree path
+- If file operation succeeds but you're on wrong branch, immediately check location
 
 ---
 

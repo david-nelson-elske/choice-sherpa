@@ -16,7 +16,7 @@ mod errors;
 mod events;
 mod command;
 
-pub use ids::{SessionId, CycleId, ComponentId, ConversationId, UserId, MembershipId};
+pub use ids::{SessionId, CycleId, ComponentId, ConversationId, UserId, MembershipId, DecisionDocumentId};
 pub use timestamp::Timestamp;
 pub use percentage::Percentage;
 pub use rating::Rating;
