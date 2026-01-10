@@ -2,10 +2,10 @@
 //!
 //! Configures Axum router with cycle-related routes.
 
-use axum::routing::{get, post};
+use axum::routing::{get, post, put};
 use axum::Router;
 
-use super::handlers::{get_document, regenerate_document, CycleAppState};
+use super::handlers::{get_document, regenerate_document, update_document, CycleAppState};
 
 /// Creates the cycle router with all endpoints.
 ///
@@ -14,10 +14,12 @@ use super::handlers::{get_document, regenerate_document, CycleAppState};
 /// - `GET /api/cycles/:id/document?format=summary` - Generate summary document
 /// - `GET /api/cycles/:id/document?format=export` - Generate export document
 /// - `POST /api/cycles/:id/document/regenerate` - Regenerate and persist document
+/// - `PUT /api/documents/:id` - Update document from user edit
 pub fn cycle_router() -> Router<CycleAppState> {
     Router::new()
         .route("/api/cycles/:id/document", get(get_document))
         .route("/api/cycles/:id/document/regenerate", post(regenerate_document))
+        .route("/api/documents/:id", put(update_document))
 }
 
 #[cfg(test)]
@@ -28,7 +30,7 @@ mod tests {
     use crate::domain::session::Session;
     use crate::ports::{
         CycleRepository, DecisionDocumentRepository, DocumentError, DocumentGenerator,
-        GenerationOptions, IntegrityStatus, SessionRepository, SyncResult,
+        DocumentParser, GenerationOptions, IntegrityStatus, SessionRepository, SyncResult,
     };
     use async_trait::async_trait;
     use axum::body::Body;
@@ -243,6 +245,40 @@ mod tests {
         }
     }
 
+    struct MockDocumentParser;
+
+    impl DocumentParser for MockDocumentParser {
+        fn parse(&self, _content: &str) -> Result<crate::ports::ParseResult, DocumentError> {
+            Ok(crate::ports::ParseResult::empty())
+        }
+
+        fn parse_section(
+            &self,
+            _section_content: &str,
+            component_type: crate::domain::foundation::ComponentType,
+        ) -> Result<crate::domain::cycle::ParsedSection, DocumentError> {
+            Ok(crate::domain::cycle::ParsedSection::success(
+                component_type,
+                "test".to_string(),
+                serde_json::json!({}),
+            ))
+        }
+
+        fn validate_structure(
+            &self,
+            _content: &str,
+        ) -> Result<Vec<crate::domain::cycle::ParseError>, DocumentError> {
+            Ok(vec![])
+        }
+
+        fn extract_section_boundaries(
+            &self,
+            _content: &str,
+        ) -> Vec<crate::ports::SectionBoundary> {
+            vec![]
+        }
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Tests
     // ───────────────────────────────────────────────────────────────
@@ -261,6 +297,7 @@ mod tests {
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator),
             Arc::new(MockDocumentRepository),
+            Arc::new(MockDocumentParser),
         );
 
         let app = cycle_router().with_state(state);

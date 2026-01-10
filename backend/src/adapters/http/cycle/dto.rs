@@ -253,6 +253,46 @@ pub struct RegenerateDocumentResponse {
     pub content: String,
 }
 
+/// Request to update document from user edit.
+#[derive(Debug, Clone, Deserialize)]
+pub struct UpdateDocumentRequest {
+    /// The edited markdown content.
+    pub content: String,
+    /// Whether to sync changes back to component outputs.
+    #[serde(default = "default_sync_to_components")]
+    pub sync_to_components: bool,
+}
+
+fn default_sync_to_components() -> bool {
+    true
+}
+
+/// Response after updating document from user edit.
+#[derive(Debug, Clone, Serialize)]
+pub struct UpdateDocumentResponse {
+    /// The document ID.
+    pub document_id: String,
+    /// The cycle ID.
+    pub cycle_id: String,
+    /// The new version number.
+    pub version: u32,
+    /// Number of components updated.
+    pub components_updated: usize,
+    /// Parse result summary.
+    pub parse_summary: ParseSummaryResponse,
+}
+
+/// Summary of parse results.
+#[derive(Debug, Clone, Serialize)]
+pub struct ParseSummaryResponse {
+    /// Number of sections successfully parsed.
+    pub sections_parsed: usize,
+    /// Number of warnings.
+    pub warnings: usize,
+    /// Number of errors.
+    pub errors: usize,
+}
+
 // ════════════════════════════════════════════════════════════════════════════════
 // Error DTOs
 // ════════════════════════════════════════════════════════════════════════════════

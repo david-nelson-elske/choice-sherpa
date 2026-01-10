@@ -12,14 +12,18 @@ use axum::Json;
 use crate::application::handlers::cycle::{
     GenerateDocumentCommand, GenerateDocumentError, GenerateDocumentHandler,
     RegenerateDocumentCommand, RegenerateDocumentError, RegenerateDocumentHandler,
+    UpdateDocumentFromEditCommand, UpdateDocumentFromEditError, UpdateDocumentFromEditHandler,
 };
-use crate::domain::foundation::{CommandMetadata, CycleId, UserId};
+use crate::domain::foundation::{CommandMetadata, CycleId, DecisionDocumentId, UserId};
 use crate::ports::{
     CycleRepository, DecisionDocumentRepository, DocumentFormat, DocumentGenerator,
-    SessionRepository,
+    DocumentParser, SessionRepository,
 };
 
-use super::dto::{DocumentResponse, ErrorResponse, GetDocumentQuery, RegenerateDocumentResponse};
+use super::dto::{
+    DocumentResponse, ErrorResponse, GetDocumentQuery, ParseSummaryResponse,
+    RegenerateDocumentResponse, UpdateDocumentRequest, UpdateDocumentResponse,
+};
 
 // ════════════════════════════════════════════════════════════════════════════════
 // Application State
@@ -32,6 +36,7 @@ pub struct CycleAppState {
     pub session_repository: Arc<dyn SessionRepository>,
     pub document_generator: Arc<dyn DocumentGenerator>,
     pub document_repository: Arc<dyn DecisionDocumentRepository>,
+    pub document_parser: Arc<dyn DocumentParser>,
 }
 
 impl CycleAppState {
@@ -41,12 +46,14 @@ impl CycleAppState {
         session_repository: Arc<dyn SessionRepository>,
         document_generator: Arc<dyn DocumentGenerator>,
         document_repository: Arc<dyn DecisionDocumentRepository>,
+        document_parser: Arc<dyn DocumentParser>,
     ) -> Self {
         Self {
             cycle_repository,
             session_repository,
             document_generator,
             document_repository,
+            document_parser,
         }
     }
 
@@ -66,6 +73,15 @@ impl CycleAppState {
             self.session_repository.clone(),
             self.document_generator.clone(),
             self.document_repository.clone(),
+        )
+    }
+
+    /// Creates the document update handler.
+    pub fn update_document_handler(&self) -> UpdateDocumentFromEditHandler {
+        UpdateDocumentFromEditHandler::new(
+            self.document_parser.clone(),
+            self.document_repository.clone(),
+            self.cycle_repository.clone(),
         )
     }
 }
@@ -259,6 +275,126 @@ pub async fn regenerate_document(
             )
                 .into_response(),
             RegenerateDocumentError::Domain(err) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(err.to_string())),
+            )
+                .into_response(),
+        },
+    }
+}
+
+/// PUT /api/cycles/:id/document
+///
+/// Updates a decision document from user edits.
+///
+/// This endpoint receives edited markdown content and:
+/// 1. Parses the markdown to extract structured data
+/// 2. Optionally updates cycle component outputs (sync_to_components)
+/// 3. Persists the updated document
+///
+/// Returns:
+/// - 200: Document updated successfully
+/// - 400: Invalid request (missing content, invalid document ID)
+/// - 404: Document not found
+/// - 409: Version conflict (concurrent edit)
+/// - 500: Parse or persistence failed
+pub async fn update_document(
+    State(state): State<CycleAppState>,
+    Path(document_id): Path<String>,
+    Json(request): Json<UpdateDocumentRequest>,
+) -> impl IntoResponse {
+    // Parse document ID
+    let document_id = match document_id.parse::<DecisionDocumentId>() {
+        Ok(id) => id,
+        Err(_) => {
+            return (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::bad_request("Invalid document ID format")),
+            )
+                .into_response();
+        }
+    };
+
+    // Validate request
+    if request.content.is_empty() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse::bad_request("Content cannot be empty")),
+        )
+            .into_response();
+    }
+
+    // Create command
+    let cmd = if request.sync_to_components {
+        UpdateDocumentFromEditCommand::sync(document_id, request.content)
+    } else {
+        UpdateDocumentFromEditCommand::document_only(document_id, request.content)
+    };
+
+    // TODO: Extract user ID from authentication context
+    let user_id = UserId::new("system").unwrap();
+    let metadata = CommandMetadata::new(user_id);
+
+    // Execute handler
+    let handler = state.update_document_handler();
+    match handler.handle(cmd, metadata).await {
+        Ok(result) => {
+            let response = UpdateDocumentResponse {
+                document_id: result.document_id.to_string(),
+                cycle_id: result.cycle_id.to_string(),
+                version: result.version,
+                components_updated: result.components_updated,
+                parse_summary: ParseSummaryResponse {
+                    sections_parsed: result.parse_result.sections_parsed,
+                    warnings: result.parse_result.warnings,
+                    errors: result.parse_result.errors,
+                },
+            };
+            (StatusCode::OK, Json(response)).into_response()
+        }
+        Err(err) => match err {
+            UpdateDocumentFromEditError::DocumentNotFound(id) => (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse::not_found("Document", &id.to_string())),
+            )
+                .into_response(),
+            UpdateDocumentFromEditError::CycleNotFound(id) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(format!(
+                    "Data integrity error: cycle {} not found for document",
+                    id
+                ))),
+            )
+                .into_response(),
+            UpdateDocumentFromEditError::ParseFailed(msg) => (
+                StatusCode::BAD_REQUEST,
+                Json(ErrorResponse::bad_request(format!(
+                    "Document parse failed: {}",
+                    msg
+                ))),
+            )
+                .into_response(),
+            UpdateDocumentFromEditError::PersistFailed(msg) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ErrorResponse::internal(format!(
+                    "Failed to persist document: {}",
+                    msg
+                ))),
+            )
+                .into_response(),
+            UpdateDocumentFromEditError::VersionConflict { expected, actual } => (
+                StatusCode::CONFLICT,
+                Json(ErrorResponse {
+                    code: "VERSION_CONFLICT".to_string(),
+                    message: format!(
+                        "Document was modified: expected version {}, found {}",
+                        expected, actual
+                    ),
+                    details: None,
+                }),
+            )
+                .into_response(),
+            UpdateDocumentFromEditError::Domain(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ErrorResponse::internal(err.to_string())),
             )
@@ -505,6 +641,40 @@ mod tests {
         }
     }
 
+    struct MockDocumentParser;
+
+    impl DocumentParser for MockDocumentParser {
+        fn parse(&self, _content: &str) -> Result<crate::ports::ParseResult, DocumentError> {
+            Ok(crate::ports::ParseResult::empty())
+        }
+
+        fn parse_section(
+            &self,
+            _section_content: &str,
+            component_type: crate::domain::foundation::ComponentType,
+        ) -> Result<crate::domain::cycle::ParsedSection, DocumentError> {
+            Ok(crate::domain::cycle::ParsedSection::success(
+                component_type,
+                "test".to_string(),
+                serde_json::json!({}),
+            ))
+        }
+
+        fn validate_structure(
+            &self,
+            _content: &str,
+        ) -> Result<Vec<crate::domain::cycle::ParseError>, DocumentError> {
+            Ok(vec![])
+        }
+
+        fn extract_section_boundaries(
+            &self,
+            _content: &str,
+        ) -> Vec<crate::ports::SectionBoundary> {
+            vec![]
+        }
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Test helpers
     // ───────────────────────────────────────────────────────────────
@@ -543,6 +713,7 @@ mod tests {
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test content")),
             Arc::new(MockDocumentRepository),
+            Arc::new(MockDocumentParser),
         );
 
         let app = create_app(state);
@@ -569,6 +740,7 @@ mod tests {
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test")),
             Arc::new(MockDocumentRepository),
+            Arc::new(MockDocumentParser),
         );
 
         let app = create_app(state);
@@ -597,6 +769,7 @@ mod tests {
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test")),
             Arc::new(MockDocumentRepository),
+            Arc::new(MockDocumentParser),
         );
 
         let app = create_app(state);
@@ -625,6 +798,7 @@ mod tests {
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test")),
             Arc::new(MockDocumentRepository),
+            Arc::new(MockDocumentParser),
         );
 
         let app = create_app(state);
@@ -653,6 +827,7 @@ mod tests {
             Arc::new(MockSessionRepository::with_session(session)),
             Arc::new(MockDocumentGenerator::new("Test")),
             Arc::new(MockDocumentRepository),
+            Arc::new(MockDocumentParser),
         );
 
         let app = create_app(state);
