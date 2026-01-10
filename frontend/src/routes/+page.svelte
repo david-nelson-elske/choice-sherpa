@@ -29,7 +29,7 @@
 		{:else}
 			<div class="cta-guest">
 				<p>Sign in to start making better decisions.</p>
-				<a href="/auth/signin" class="btn btn-primary">Get Started</a>
+				<a href="/login" class="btn btn-primary">Get Started</a>
 			</div>
 		{/if}
 	</section>

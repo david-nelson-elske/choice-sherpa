@@ -30,7 +30,7 @@ import type { Session } from '@auth/sveltekit';
  *
  * @param event - The SvelteKit request event
  * @returns The authenticated session
- * @throws Redirect to /auth/signin if not authenticated
+ * @throws Redirect to /login if not authenticated
  */
 export async function requireAuth(event: RequestEvent): Promise<Session> {
 	const session = await event.locals.auth();
@@ -38,7 +38,7 @@ export async function requireAuth(event: RequestEvent): Promise<Session> {
 	if (!session?.user) {
 		// Redirect to sign-in with callback URL
 		const callbackUrl = encodeURIComponent(event.url.pathname + event.url.search);
-		redirect(303, `/auth/signin?callbackUrl=${callbackUrl}`);
+		redirect(303, `/login?callbackUrl=${callbackUrl}`);
 	}
 
 	return session;

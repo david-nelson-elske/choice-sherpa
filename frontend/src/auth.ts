@@ -15,6 +15,11 @@
 
 import { SvelteKitAuth } from '@auth/sveltekit';
 import type { Provider } from '@auth/sveltekit/providers';
+import {
+	AUTH_ZITADEL_ISSUER,
+	AUTH_ZITADEL_CLIENT_ID,
+	AUTH_ZITADEL_CLIENT_SECRET
+} from '$env/static/private';
 
 /**
  * Zitadel OIDC Provider configuration.
@@ -28,13 +33,15 @@ const ZitadelProvider: Provider = {
 	type: 'oidc',
 	// Issuer URL - Zitadel's OIDC discovery endpoint
 	// Auth.js will fetch /.well-known/openid-configuration automatically
-	issuer: process.env.AUTH_ZITADEL_ISSUER,
-	clientId: process.env.AUTH_ZITADEL_CLIENT_ID,
-	clientSecret: process.env.AUTH_ZITADEL_CLIENT_SECRET,
+	issuer: AUTH_ZITADEL_ISSUER,
+	clientId: AUTH_ZITADEL_CLIENT_ID,
+	clientSecret: AUTH_ZITADEL_CLIENT_SECRET,
 	// Request offline_access for refresh tokens
 	authorization: {
 		params: {
-			scope: 'openid email profile offline_access'
+			scope: 'openid email profile offline_access',
+			// Force login prompt (useful for dev, remove for production SSO)
+			prompt: 'login'
 		}
 	},
 	// Map Zitadel's user info to Auth.js profile
@@ -103,10 +110,10 @@ export const { handle, signIn, signOut } = SvelteKitAuth({
 		maxAge: 30 * 24 * 60 * 60 // 30 days
 	},
 
-	// Page configuration
+	// Page configuration - custom pages outside /auth/* to avoid conflicts
 	pages: {
-		signIn: '/auth/signin',
-		error: '/auth/error'
+		signIn: '/login',
+		error: '/error'
 	}
 });
 

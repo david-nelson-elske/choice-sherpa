@@ -13,7 +13,7 @@ import { sequence } from '@sveltejs/kit/hooks';
 
 /**
  * Authentication handler from Auth.js.
- * Handles /auth/signin, /auth/signout, /auth/callback, etc.
+ * Handles /auth/signout, /auth/callback, etc. (sign-in is at /login)
  */
 const authenticationHandle: Handle = authHandle;
 

@@ -29,7 +29,7 @@
 					<span class="user-info">
 						{data.session.user.name || data.session.user.email}
 					</span>
-					<button onclick={() => signOut()} class="btn btn-secondary">
+					<button onclick={() => signOut({ callbackUrl: '/' })} class="btn btn-secondary">
 						Sign out
 					</button>
 				{:else}

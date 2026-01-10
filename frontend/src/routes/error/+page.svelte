@@ -22,7 +22,7 @@
 		<p class="error-message">{error}</p>
 
 		<div class="actions">
-			<a href="/auth/signin" class="btn btn-primary">Try Again</a>
+			<a href="/login" class="btn btn-primary">Try Again</a>
 			<a href="/" class="btn btn-secondary">Go Home</a>
 		</div>
 	</div>

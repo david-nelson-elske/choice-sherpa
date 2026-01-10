@@ -5,7 +5,7 @@ services:
   # Zitadel Identity Provider (OIDC)
   # ============================================
   zitadel:
-    image: ghcr.io/zitadel/zitadel:latest
+    image: ghcr.io/zitadel/zitadel:v2.45.0
     container_name: choice-sherpa-zitadel
     command: start-from-init --masterkeyFromEnv --tlsMode disabled
     environment:
@@ -22,9 +22,17 @@ services:
       ZITADEL_EXTERNALSECURE: "false"
       ZITADEL_EXTERNALDOMAIN: localhost
       ZITADEL_EXTERNALPORT: 8085
-      # First user (admin)
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: admin
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: "Admin123!"
+      # First instance configuration
+      ZITADEL_FIRSTINSTANCE_ORG_NAME: "Choice Sherpa"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: "admin@localhost"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: "RootPassword1!"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_FIRSTNAME: "Admin"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_LASTNAME: "User"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL: "admin@localhost"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_VERIFIED: "true"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
+      # Use v1 login UI (v2 has issues)
+      ZITADEL_DEFAULTINSTANCE_LOGINV2: "false"
     ports:
       - "8085:8080"
     depends_on:
