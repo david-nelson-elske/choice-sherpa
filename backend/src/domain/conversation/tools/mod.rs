@@ -11,6 +11,9 @@
 //! - [`ToolCall`] - Request to invoke a tool
 //! - [`ToolResponse`] - Result returned from a tool
 //! - [`ToolDefinition`] - Schema and metadata for a tool
+//! - [`ToolRegistry`] - Central registry for component-based tool lookup
+//! - [`RevisitSuggestion`] - Queued suggestion to revisit a component
+//! - [`ConfirmationRequest`] - User confirmation request from agent
 //!
 //! ## Design Principles
 //!
@@ -23,6 +26,7 @@ mod tool_result;
 mod tool_invocation;
 mod tool_call;
 mod tool_definition;
+mod tool_registry;
 mod revisit_suggestion;
 mod confirmation_request;
 
@@ -30,5 +34,6 @@ pub use tool_result::ToolResult;
 pub use tool_invocation::ToolInvocation;
 pub use tool_call::{ToolCall, ToolResponse};
 pub use tool_definition::ToolDefinition;
+pub use tool_registry::ToolRegistry;
 pub use revisit_suggestion::{RevisitSuggestion, RevisitPriority, SuggestionStatus};
 pub use confirmation_request::{ConfirmationRequest, ConfirmationStatus, ConfirmationOption};

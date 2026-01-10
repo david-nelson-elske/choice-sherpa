@@ -85,6 +85,68 @@ impl ToolDefinition {
         }
     }
 
+    /// Creates a simple tool definition with empty schemas.
+    ///
+    /// Useful for testing or registering tools where parameters
+    /// will be added via builder methods.
+    pub fn simple(
+        name: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
+        Self {
+            name: name.into(),
+            description: description.into(),
+            parameters_schema: serde_json::json!({
+                "type": "object",
+                "properties": {},
+                "required": []
+            }),
+            returns_schema: serde_json::json!({"type": "object"}),
+        }
+    }
+
+    /// Adds a parameter to the tool definition (builder pattern).
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Parameter name
+    /// * `param_type` - JSON Schema type (string, integer, boolean, etc.)
+    /// * `description` - Parameter description
+    /// * `required` - Whether this parameter is required
+    pub fn with_parameter(
+        mut self,
+        name: impl Into<String>,
+        param_type: impl Into<String>,
+        description: impl Into<String>,
+        required: bool,
+    ) -> Self {
+        let name = name.into();
+        let props = self.parameters_schema
+            .as_object_mut()
+            .and_then(|obj| obj.get_mut("properties"))
+            .and_then(|p| p.as_object_mut());
+
+        if let Some(properties) = props {
+            properties.insert(
+                name.clone(),
+                serde_json::json!({
+                    "type": param_type.into(),
+                    "description": description.into()
+                }),
+            );
+        }
+
+        if required {
+            if let Some(obj) = self.parameters_schema.as_object_mut() {
+                if let Some(req) = obj.get_mut("required").and_then(|r| r.as_array_mut()) {
+                    req.push(serde_json::Value::String(name));
+                }
+            }
+        }
+
+        self
+    }
+
     /// Returns the tool name.
     pub fn name(&self) -> &str {
         &self.name

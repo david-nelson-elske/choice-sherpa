@@ -22,6 +22,13 @@
 //!
 //! - `AIProvider` - Port for LLM provider integrations (OpenAI, Anthropic)
 //!
+//! ## Atomic Decision Tools Ports
+//!
+//! - `ToolExecutor` - Port for executing atomic decision tools
+//! - `ToolInvocationRepository` - Audit log for tool invocations
+//! - `RevisitSuggestionRepository` - Queued component revisit suggestions
+//! - `ConfirmationRequestRepository` - User confirmation requests
+//!
 //! ## Scaling Infrastructure Ports
 //!
 //! - `OutboxWriter` - Transactional event persistence for guaranteed delivery
@@ -33,9 +40,11 @@
 mod access_checker;
 mod ai_provider;
 mod circuit_breaker;
+mod confirmation_request_repository;
+mod connection_registry;
+mod revisit_suggestion_repository;
 mod tool_executor;
 mod tool_invocation_repository;
-mod connection_registry;
 mod cycle_reader;
 mod cycle_repository;
 mod event_publisher;
@@ -91,4 +100,10 @@ pub use usage_tracker::{
 pub use tool_executor::{ToolExecutor, ToolExecutionContext, ToolExecutionError};
 pub use tool_invocation_repository::{
     ToolInvocationRepository, ToolInvocationRepoError, ToolInvocationStats,
+};
+pub use revisit_suggestion_repository::{
+    RevisitSuggestionRepository, RevisitSuggestionRepoError, RevisitSuggestionCounts,
+};
+pub use confirmation_request_repository::{
+    ConfirmationRequestRepository, ConfirmationRequestRepoError, ConfirmationRequestCounts,
 };
