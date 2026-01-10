@@ -267,6 +267,21 @@ impl DecisionDocument {
         self.updated_by = UpdatedBy::Agent;
     }
 
+    /// Updates the document from a user edit (no version check).
+    ///
+    /// Use this when the handler has already loaded the document and
+    /// version conflicts aren't a concern (e.g., single-user editing).
+    pub fn update_from_user_edit(&mut self, new_content: impl Into<String>) {
+        let now = Timestamp::now();
+
+        self.content.update(new_content);
+        self.version = self.version.increment();
+        self.last_sync_source = SyncSource::UserEdit;
+        self.last_synced_at = now;
+        self.updated_at = now;
+        self.updated_by = UpdatedBy::System; // System because we don't have user context here
+    }
+
     /// Applies a user edit to the document.
     ///
     /// Validates version for optimistic locking.

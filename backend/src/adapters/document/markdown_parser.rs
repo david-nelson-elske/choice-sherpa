@@ -191,27 +191,14 @@ impl MarkdownDocumentParser {
             }
         }
 
-        // Build result JSON
-        let mut data = json!({});
+        // Check if we got any meaningful data
+        let has_data = synthesis.is_some()
+            || !decisions.is_empty()
+            || !objectives.is_empty()
+            || !uncertainties.is_empty()
+            || !considerations.is_empty();
 
-        if let Some(s) = synthesis {
-            data["synthesis"] = json!(s);
-        }
-        if !decisions.is_empty() {
-            data["decisions"] = json!(decisions);
-        }
-        if !objectives.is_empty() {
-            data["objectives"] = json!(objectives);
-        }
-        if !uncertainties.is_empty() {
-            data["uncertainties"] = json!(uncertainties);
-        }
-        if !considerations.is_empty() {
-            data["considerations"] = json!(considerations);
-        }
-
-        // Check if we got any data
-        if data.as_object().map(|o| o.is_empty()).unwrap_or(true) {
+        if !has_data {
             if content.contains("Not yet started") {
                 // Empty section is valid
                 ParsedSection::success(ComponentType::IssueRaising, content.to_string(), json!({}))
@@ -227,6 +214,14 @@ impl MarkdownDocumentParser {
                 )
             }
         } else {
+            // Build domain-compatible JSON (matches IssueRaisingOutput structure)
+            let data = json!({
+                "potential_decisions": decisions,
+                "objectives": objectives,
+                "uncertainties": uncertainties,
+                "considerations": considerations,
+                "user_confirmed": false
+            });
             ParsedSection::success(ComponentType::IssueRaising, content.to_string(), data)
         }
     }
@@ -1208,11 +1203,12 @@ Even more content.
 
         assert!(section.is_success());
         let data = section.parsed_data.unwrap();
-        assert_eq!(data["synthesis"], "A career transition decision");
-        assert!(data["decisions"].as_array().unwrap().len() == 2);
-        assert!(data["objectives"].as_array().unwrap().len() == 2);
-        assert!(data["uncertainties"].as_array().unwrap().len() == 1);
-        assert!(data["considerations"].as_array().unwrap().len() == 1);
+        // Domain-compatible output (matches IssueRaisingOutput)
+        assert_eq!(data["potential_decisions"].as_array().unwrap().len(), 2);
+        assert_eq!(data["objectives"].as_array().unwrap().len(), 2);
+        assert_eq!(data["uncertainties"].as_array().unwrap().len(), 1);
+        assert_eq!(data["considerations"].as_array().unwrap().len(), 1);
+        assert_eq!(data["user_confirmed"], false);
     }
 
     #[test]
