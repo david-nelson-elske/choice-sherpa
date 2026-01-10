@@ -29,6 +29,7 @@ mod tool_definition;
 mod tool_registry;
 mod revisit_suggestion;
 mod confirmation_request;
+pub mod definitions;
 
 pub use tool_result::ToolResult;
 pub use tool_invocation::ToolInvocation;

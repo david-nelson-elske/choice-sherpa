@@ -158,7 +158,6 @@ impl ConfirmationRequest {
         ttl_minutes: i64,
     ) -> Self {
         let now = Timestamp::now();
-        let expires_at = now.add_days(0).add_months(0); // Start from now
         // Add minutes by using days (1 day = 1440 minutes)
         let expires_at = if ttl_minutes >= 1440 {
             now.add_days(ttl_minutes / 1440)
