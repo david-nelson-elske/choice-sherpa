@@ -11,8 +11,13 @@
 //! - `POST /api/webhooks/stripe` - Handle Stripe webhooks
 
 pub mod dto;
-// TODO: Add when implemented
-// pub mod handlers;
-// pub mod routes;
+pub mod handlers;
+pub mod routes;
 
 pub use dto::*;
+pub use handlers::{
+    cancel_membership, check_access, create_checkout, create_free_membership, get_membership,
+    get_membership_stats, get_portal_url, get_tier_limits, handle_stripe_webhook,
+    MembershipAppState,
+};
+pub use routes::{membership_router, membership_routes, webhook_routes};

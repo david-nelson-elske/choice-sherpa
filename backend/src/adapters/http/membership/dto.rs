@@ -3,7 +3,7 @@
 //! These types define the JSON request/response structure for the membership API.
 //! They serve as the boundary between HTTP and the application layer.
 
-use crate::domain::foundation::{MembershipId, Timestamp, UserId};
+use crate::domain::foundation::{MembershipId, UserId};
 use crate::domain::membership::{MembershipStatus, MembershipTier, TierLimits};
 use crate::ports::{MembershipStatistics, MembershipView};
 use serde::{Deserialize, Serialize};
@@ -22,12 +22,17 @@ pub struct CreateFreeMembershipRequest {
 /// Request to initiate paid membership checkout.
 #[derive(Debug, Clone, Deserialize)]
 pub struct CreatePaidMembershipRequest {
+    /// User's email for Stripe customer.
+    pub email: String,
     /// The tier to subscribe to (monthly or annual).
     pub tier: MembershipTier,
     /// URL to redirect after successful checkout.
     pub success_url: String,
     /// URL to redirect after cancelled checkout.
     pub cancel_url: String,
+    /// Optional promo code for discount.
+    #[serde(default)]
+    pub promo_code: Option<String>,
 }
 
 /// Request to cancel a membership.
@@ -252,13 +257,29 @@ mod tests {
     #[test]
     fn create_paid_membership_request_deserializes() {
         let json = r#"{
+            "email": "user@example.com",
             "tier": "monthly",
             "success_url": "https://example.com/success",
             "cancel_url": "https://example.com/cancel"
         }"#;
         let request: CreatePaidMembershipRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.email, "user@example.com");
         assert_eq!(request.tier, MembershipTier::Monthly);
         assert_eq!(request.success_url, "https://example.com/success");
+        assert!(request.promo_code.is_none());
+    }
+
+    #[test]
+    fn create_paid_membership_request_with_promo_code() {
+        let json = r#"{
+            "email": "user@example.com",
+            "tier": "annual",
+            "success_url": "https://example.com/success",
+            "cancel_url": "https://example.com/cancel",
+            "promo_code": "SAVE10"
+        }"#;
+        let request: CreatePaidMembershipRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(request.promo_code, Some("SAVE10".to_string()));
     }
 
     #[test]
