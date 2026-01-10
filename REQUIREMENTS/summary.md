@@ -1,46 +1,84 @@
 # Choice Sherpa Implementation Status
 
-## Completed Modules (Rust Backend)
+**Updated:** 2026-01-09
 
-| Module | Files | Tests | Status |
-|--------|-------|-------|--------|
-| foundation | 14/14 | 96/96 | COMPLETE |
-| proact-types | 6/6 | 95/95 | COMPLETE |
-| analysis | 5/5 | 61/61 | COMPLETE (backend) |
+## Test Summary
 
-## In-Progress Modules
+| Metric | Count |
+|--------|-------|
+| **Total Tests** | 1,228 passing |
+| **Domain Files** | 63 |
+| **Port Files** | 19 |
+| **Adapter Files** | 21 |
+| **Application Files** | 24 |
 
-| Module | Files | Tests | Status |
-|--------|-------|-------|--------|
-| membership | 2/65 (3%) | 18/95 (19%) | Domain layer started |
-| session | 2/45 (4%) | 13/85 (15%) | Events done |
-| cycle | 3/58 (5%) | 38/82 (46%) | Aggregate done |
-| ai-engine | 6/43 (14%) | ~87 tests | AI adapters complete |
-| events | 5/125 (4%) | ~40 tests | Port interfaces done |
+## Module Status
 
-## Not Started Modules
+### Completed Modules
 
-| Module | Files | Tests | Status |
-|--------|-------|-------|--------|
-| conversation | 0/75 | 0/82 | Not started |
-| dashboard | 0/53 | 0/62 | Not started |
+| Module | Domain | Ports | Adapters | Tests | Status |
+|--------|--------|-------|----------|-------|--------|
+| foundation | 16 files | N/A | N/A | 100+ | COMPLETE |
+| proact-types | 16 files | 1 (schema) | 1 (validation) | 100+ | COMPLETE |
+| analysis | 5 files | N/A | N/A | 61+ | COMPLETE |
 
-## Total Backend Progress
+### In-Progress Modules
 
-- Files: ~38/464 (~8%)
-- Tests: ~448 passing
-- Frontend: Not started (0%)
+| Module | Domain | Ports | Adapters | Status |
+|--------|--------|-------|----------|--------|
+| events | Core types | Publisher, Subscriber, Outbox | InMemory, Idempotent | Phase 1 complete |
+| ai-engine | Types | AIProvider | OpenAI, Anthropic, Mock, Failover | Adapters complete |
+| membership | 8 files | AccessChecker | Stub, HTTP routes | Domain + HTTP started |
+| session | 4 files | Repository | - | Domain + events done |
+| cycle | 4 files | Repository | - | Aggregate done |
+| conversation | 9 files | AIProvider | AI adapters | 87% per checklist |
+
+### Not Started Modules
+
+| Module | Status |
+|--------|--------|
+| dashboard | Blocked by cycle/session completion |
 
 ## Key Infrastructure Completed
 
-- Domain events and event ports (EventPublisher, EventSubscriber)
-- AI provider abstraction with OpenAI, Anthropic, Mock, and Failover adapters
-- StateMachine pattern for status enums
-- Core value objects (Money, IDs, etc.)
+- Domain events (EventPublisher, EventSubscriber, InMemoryEventBus)
+- Transactional outbox pattern (OutboxWriter, OutboxPublisher)
+- Idempotency handling (ProcessedEventStore, IdempotentHandler)
+- AI provider abstraction with failover
+- Database migrations (outbox, processed_events, memberships)
+- Configuration loading (database, server, redis, auth, AI, payment, email)
+- Docker development environment (PostgreSQL 16, Redis 7)
+
+## Checklist Progress
+
+| Checklist | Completion |
+|-----------|------------|
+| conversation | 87% (41/47) |
+| membership | 41% (24/58) |
+| session | 37% (14/38) |
+| cycle | 33% (17/51) |
+| events | 23% (30/133) |
+| ai-engine | 14% (6/43) |
+| dashboard | 0% (0/58) |
+
+## Archived Features (docs/features/)
+
+- foundation/foundation.md (15 tasks)
+- foundation/event-infrastructure.md (17 tasks)
+- session/session-events.md (13 tasks)
+- proact-types/proact-types.md (36 tasks)
+- proact-types/component-schemas.md (4 tasks)
+- analysis/algorithm-specifications.md (11 tasks)
+- infrastructure/00-infrastructure-unblock.md (30 tasks)
 
 ## Recommended Next Steps
 
-1. Complete membership module (subscription/payment foundation)
-2. Complete session module (top-level container)
-3. Complete cycle module (aggregate with component lifecycle)
-4. Then conversation, dashboard, events in dependency order
+1. Complete conversation module (87% done - highest priority)
+2. Complete membership module (access control foundation)
+3. Complete session module (top-level container)
+4. Complete cycle module (aggregate with component lifecycle)
+5. Then dashboard (read models for completed modules)
+
+---
+
+*See `docs/planning/` for historical planning documents.*
