@@ -68,6 +68,7 @@ impl Cycle {
     ///
     /// This is used by repository implementations to reconstruct domain objects
     /// from database records. It bypasses domain event recording.
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: CycleId,
         session_id: SessionId,
