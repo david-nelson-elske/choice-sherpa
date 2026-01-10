@@ -6,6 +6,7 @@ use axum::Router;
 use super::handlers::{
     end_conversation, get_conversation_state, send_message, start_conversation, AIEngineAppState,
 };
+use super::websocket::stream_conversation;
 
 /// Create AI Engine router with all endpoints
 ///
@@ -14,6 +15,7 @@ use super::handlers::{
 /// - `POST /ai/conversations` - Start new conversation
 /// - `POST /ai/conversations/{cycle_id}/messages` - Send message
 /// - `GET /ai/conversations/{cycle_id}` - Get conversation state
+/// - `GET /ai/conversations/{cycle_id}/stream` - WebSocket streaming endpoint
 /// - `DELETE /ai/conversations/{cycle_id}` - End conversation
 pub fn routes() -> Router<AIEngineAppState> {
     Router::new()
@@ -23,6 +25,10 @@ pub fn routes() -> Router<AIEngineAppState> {
             post(send_message),
         )
         .route("/ai/conversations/:cycle_id", get(get_conversation_state))
+        .route(
+            "/ai/conversations/:cycle_id/stream",
+            get(stream_conversation),
+        )
         .route("/ai/conversations/:cycle_id", delete(end_conversation))
 }
 
