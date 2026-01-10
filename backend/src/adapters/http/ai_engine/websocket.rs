@@ -14,8 +14,11 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use tokio::sync::mpsc;
 
-use crate::application::handlers::SendMessageCommand;
-use crate::domain::foundation::CycleId;
+use crate::domain::ai_engine::{conversation_state::MessageRole, step_agent, ConversationState};
+use crate::domain::foundation::{ComponentType, ConversationId, CycleId, UserId};
+use crate::ports::{
+    CompletionRequest, Message as AIMessage, MessageRole as AIMessageRole, RequestMetadata,
+};
 
 use super::handlers::AIEngineAppState;
 
@@ -44,6 +47,12 @@ pub enum ServerMessage {
         full_content: String,
         current_step: String,
         turn_count: u32,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        prompt_tokens: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        completion_tokens: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        estimated_cost_cents: Option<u32>,
     },
     /// Error during streaming
     StreamError { error: String },
@@ -187,52 +196,167 @@ async fn handle_send_message(
         return Err("Message cannot be empty".to_string());
     }
 
-    // Create command
-    let cmd = SendMessageCommand {
-        cycle_id,
-        message: content,
-    };
+    // 1. Load existing conversation state
+    let mut state = app_state
+        .storage
+        .load_state(cycle_id)
+        .await
+        .map_err(|e| format!("Failed to load state: {}", e))?;
 
-    // Execute command
-    let handler = app_state.send_message_handler();
-    let result = handler.handle(cmd).await.map_err(|e| e.to_string())?;
+    // 2. Add user message to history
+    state.add_message(MessageRole::User, content.clone());
 
-    // For now, stream the response in chunks (simulating streaming)
-    // TODO: Integrate with actual AI provider streaming
-    let response = result.ai_response;
-    let chunk_size = 20; // Characters per chunk
+    // 3. Build system prompt from step agent spec
+    let system_prompt = build_system_prompt(state.current_step);
 
-    for (i, chunk) in response
-        .chars()
-        .collect::<Vec<char>>()
-        .chunks(chunk_size)
-        .enumerate()
-    {
-        let delta: String = chunk.iter().collect();
-        let is_final = i * chunk_size + chunk.len() >= response.len();
+    // 4. Convert conversation history to AI messages
+    let messages = convert_messages_to_ai_format(&state);
 
-        tx.send(ServerMessage::StreamChunk { delta, is_final })
-            .await
-            .map_err(|e| format!("Failed to send chunk: {}", e))?;
+    // 5. Build request metadata
+    let metadata = RequestMetadata::new(
+        UserId::new("system").unwrap(), // TODO: Get actual user_id from context
+        state.session_id,
+        ConversationId::new(), // TODO: Map CycleId to ConversationId
+        format!("ws-cycle-{}", state.cycle_id),
+    );
 
-        // Simulate streaming delay
-        tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+    // 6. Build completion request
+    let mut request = CompletionRequest::new(metadata)
+        .with_system_prompt(system_prompt)
+        .with_max_tokens(2000)
+        .with_temperature(0.7)
+        .with_component_type(state.current_step);
+
+    // Add messages
+    for msg in messages {
+        request = request.with_message(msg.role, msg.content);
     }
 
-    // Send complete message
+    // 7. Start streaming from AI provider
+    let mut stream = app_state
+        .ai_provider
+        .stream_complete(request)
+        .await
+        .map_err(|e| format!("AI provider error: {}", e))?;
+
+    // 8. Stream chunks to client
+    let mut full_response = String::new();
+    let mut token_usage = None;
+
+    while let Some(chunk_result) = stream.next().await {
+        match chunk_result {
+            Ok(chunk) => {
+                // Accumulate response
+                full_response.push_str(&chunk.delta);
+
+                // Check if final before moving chunk
+                let is_final = chunk.is_final();
+
+                // Capture token usage from final chunk
+                if let Some(usage) = chunk.usage {
+                    token_usage = Some(usage);
+                }
+
+                // Send chunk to client
+                tx.send(ServerMessage::StreamChunk {
+                    delta: chunk.delta,
+                    is_final,
+                })
+                .await
+                .map_err(|e| format!("Failed to send chunk: {}", e))?;
+            }
+            Err(e) => {
+                // Send error to client
+                tx.send(ServerMessage::StreamError {
+                    error: format!("Streaming error: {}", e),
+                })
+                .await
+                .map_err(|e| format!("Failed to send error: {}", e))?;
+
+                return Err(format!("AI streaming error: {}", e));
+            }
+        }
+    }
+
+    // 9. Add AI response to conversation history
+    state.add_message(MessageRole::Assistant, full_response.clone());
+
+    // 10. Persist updated state
+    app_state
+        .storage
+        .save_state(cycle_id, &state)
+        .await
+        .map_err(|e| format!("Failed to save state: {}", e))?;
+
+    // 11. Send completion message with token usage
+    let (prompt_tokens, completion_tokens, cost_cents) = token_usage
+        .map(|u| {
+            (
+                Some(u.prompt_tokens),
+                Some(u.completion_tokens),
+                Some(u.estimated_cost_cents),
+            )
+        })
+        .unwrap_or((None, None, None));
+
     tx.send(ServerMessage::StreamComplete {
-        full_content: response,
-        current_step: format!("{:?}", result.updated_state.current_step),
-        turn_count: result
-            .updated_state
-            .step_state(result.updated_state.current_step)
+        full_content: full_response,
+        current_step: format!("{:?}", state.current_step),
+        turn_count: state
+            .step_state(state.current_step)
             .map(|s| s.turn_count)
             .unwrap_or(0),
+        prompt_tokens,
+        completion_tokens,
+        estimated_cost_cents: cost_cents,
     })
     .await
     .map_err(|e| format!("Failed to send complete: {}", e))?;
 
     Ok(())
+}
+
+/// Build system prompt from step agent specification
+fn build_system_prompt(component: ComponentType) -> String {
+    let spec = step_agent::agents::get(component)
+        .expect("All component types should have agent specs");
+
+    format!(
+        "You are a thoughtful decision professional helping users work through the {} phase of their decision-making process.\n\n\
+        Role: {}\n\n\
+        Objectives:\n{}\n\n\
+        Techniques:\n{}\n\n\
+        Guide the user through this phase with probing questions and thoughtful reflection. \
+        Do not make decisions for them - help them think clearly about their situation.",
+        spec.component.to_string().to_lowercase().replace('_', " "),
+        spec.role,
+        spec.objectives
+            .iter()
+            .map(|o| format!("- {}", o))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        spec.techniques
+            .iter()
+            .map(|t| format!("- {}", t))
+            .collect::<Vec<_>>()
+            .join("\n")
+    )
+}
+
+/// Convert conversation history to AI provider message format
+fn convert_messages_to_ai_format(state: &ConversationState) -> Vec<AIMessage> {
+    state
+        .message_history
+        .iter()
+        .map(|msg| {
+            let role = match msg.role {
+                MessageRole::System => AIMessageRole::System,
+                MessageRole::User => AIMessageRole::User,
+                MessageRole::Assistant => AIMessageRole::Assistant,
+            };
+            AIMessage::new(role, msg.content.clone())
+        })
+        .collect()
 }
 
 #[cfg(test)]
@@ -276,11 +400,33 @@ mod tests {
             full_content: "Full response".to_string(),
             current_step: "IssueRaising".to_string(),
             turn_count: 5,
+            prompt_tokens: Some(100),
+            completion_tokens: Some(50),
+            estimated_cost_cents: Some(15),
         };
         let json = serde_json::to_string(&msg).unwrap();
         assert!(json.contains("stream_complete"));
         assert!(json.contains("Full response"));
         assert!(json.contains("IssueRaising"));
+        assert!(json.contains("prompt_tokens"));
+        assert!(json.contains("100"));
+    }
+
+    #[test]
+    fn test_stream_complete_without_usage() {
+        let msg = ServerMessage::StreamComplete {
+            full_content: "Full response".to_string(),
+            current_step: "IssueRaising".to_string(),
+            turn_count: 5,
+            prompt_tokens: None,
+            completion_tokens: None,
+            estimated_cost_cents: None,
+        };
+        let json = serde_json::to_string(&msg).unwrap();
+        assert!(json.contains("stream_complete"));
+        assert!(json.contains("Full response"));
+        // Token fields should be omitted when None
+        assert!(!json.contains("prompt_tokens"));
     }
 
     #[test]
