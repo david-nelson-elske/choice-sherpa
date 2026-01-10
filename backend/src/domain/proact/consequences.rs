@@ -104,6 +104,11 @@ impl Consequences {
         }
     }
 
+    /// Reconstitutes a Consequences component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: ConsequencesOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &ConsequencesOutput {
         &self.output

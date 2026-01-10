@@ -53,8 +53,8 @@ pub use ai_provider::{
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
 pub use cycle_reader::{
-    ComponentStatusItem, CycleProgressView, CycleReader, CycleSummary, CycleTreeNode, CycleView,
-    NextAction, NextActionType, ProgressStep,
+    ComponentOutputView, ComponentStatusItem, CycleProgressView, CycleReader, CycleSummary,
+    CycleTreeNode, CycleView, NextAction, NextActionType, ProgressStep,
 };
 pub use cycle_repository::CycleRepository;
 pub use event_publisher::EventPublisher;

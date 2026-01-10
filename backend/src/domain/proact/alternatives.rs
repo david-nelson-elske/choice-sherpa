@@ -65,6 +65,11 @@ impl Alternatives {
         }
     }
 
+    /// Reconstitutes an Alternatives component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: AlternativesOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &AlternativesOutput {
         &self.output

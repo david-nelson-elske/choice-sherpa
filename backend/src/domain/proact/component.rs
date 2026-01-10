@@ -62,6 +62,28 @@ impl ComponentBase {
         }
     }
 
+    /// Reconstitutes a ComponentBase from persisted data.
+    ///
+    /// This is used by repository implementations to reconstruct domain objects
+    /// from database records.
+    pub fn reconstitute(
+        id: ComponentId,
+        component_type: ComponentType,
+        status: ComponentStatus,
+        created_at: Timestamp,
+        updated_at: Timestamp,
+        revision_reason: Option<String>,
+    ) -> Self {
+        Self {
+            id,
+            component_type,
+            status,
+            created_at,
+            updated_at,
+            revision_reason,
+        }
+    }
+
     /// Starts work on this component.
     pub fn start(&mut self) -> Result<(), ComponentError> {
         if !self.status.can_transition_to(&ComponentStatus::InProgress) {

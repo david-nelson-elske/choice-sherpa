@@ -35,6 +35,11 @@ impl Recommendation {
         }
     }
 
+    /// Reconstitutes a Recommendation component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: RecommendationOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &RecommendationOutput {
         &self.output

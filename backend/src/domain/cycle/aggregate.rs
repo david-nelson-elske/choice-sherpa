@@ -64,6 +64,35 @@ impl Cycle {
         cycle
     }
 
+    /// Reconstitutes a cycle from persisted data.
+    ///
+    /// This is used by repository implementations to reconstruct domain objects
+    /// from database records. It bypasses domain event recording.
+    pub fn reconstitute(
+        id: CycleId,
+        session_id: SessionId,
+        parent_cycle_id: Option<CycleId>,
+        branch_point: Option<ComponentType>,
+        status: CycleStatus,
+        current_step: ComponentType,
+        components: HashMap<ComponentType, ComponentVariant>,
+        created_at: Timestamp,
+        updated_at: Timestamp,
+    ) -> Result<Self, DomainError> {
+        Ok(Self {
+            id,
+            session_id,
+            parent_cycle_id,
+            branch_point,
+            status,
+            current_step,
+            components,
+            created_at,
+            updated_at,
+            domain_events: Vec::new(),
+        })
+    }
+
     // ───────────────────────────────────────────────────────────────
     // Accessors
     // ───────────────────────────────────────────────────────────────
@@ -237,6 +266,53 @@ impl Cycle {
         self.updated_at = Timestamp::now();
 
         self.record_event(CycleEvent::ComponentCompleted {
+            cycle_id: self.id,
+            component_type: ct,
+        });
+
+        Ok(())
+    }
+
+    /// Updates the output of a component.
+    ///
+    /// The component must be in a state that accepts output (InProgress or NeedsRevision).
+    pub fn update_component_output(
+        &mut self,
+        ct: ComponentType,
+        output: serde_json::Value,
+    ) -> Result<(), DomainError> {
+        // Check cycle is mutable
+        if !self.status.is_mutable() {
+            return Err(DomainError::new(
+                ErrorCode::CycleArchived,
+                "Cannot modify archived or completed cycle",
+            ));
+        }
+
+        // Check component accepts output
+        let current_status = self.component_status(ct);
+        if !current_status.accepts_output() {
+            return Err(DomainError::new(
+                ErrorCode::InvalidStateTransition,
+                format!(
+                    "Cannot update output for {:?} in {:?} state",
+                    ct, current_status
+                ),
+            ));
+        }
+
+        let component = self
+            .components
+            .get_mut(&ct)
+            .ok_or_else(|| DomainError::new(ErrorCode::ComponentNotFound, "Component not found"))?;
+
+        component
+            .set_output_from_value(output)
+            .map_err(|e| DomainError::new(ErrorCode::InvalidFormat, e.to_string()))?;
+
+        self.updated_at = Timestamp::now();
+
+        self.record_event(CycleEvent::ComponentOutputUpdated {
             cycle_id: self.id,
             component_type: ct,
         });

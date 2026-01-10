@@ -53,6 +53,12 @@ pub enum CycleEvent {
         cycle_id: CycleId,
         component_type: ComponentType,
     },
+
+    /// A component's output was updated.
+    ComponentOutputUpdated {
+        cycle_id: CycleId,
+        component_type: ComponentType,
+    },
 }
 
 impl CycleEvent {
@@ -69,6 +75,7 @@ impl CycleEvent {
             CycleEvent::ComponentCompleted { cycle_id, .. } => *cycle_id,
             CycleEvent::ComponentMarkedForRevision { cycle_id, .. } => *cycle_id,
             CycleEvent::NavigatedTo { cycle_id, .. } => *cycle_id,
+            CycleEvent::ComponentOutputUpdated { cycle_id, .. } => *cycle_id,
         }
     }
 
@@ -83,6 +90,7 @@ impl CycleEvent {
             CycleEvent::ComponentCompleted { .. } => "ComponentCompleted",
             CycleEvent::ComponentMarkedForRevision { .. } => "ComponentMarkedForRevision",
             CycleEvent::NavigatedTo { .. } => "NavigatedTo",
+            CycleEvent::ComponentOutputUpdated { .. } => "ComponentOutputUpdated",
         }
     }
 }

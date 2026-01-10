@@ -41,6 +41,11 @@ impl IssueRaising {
         }
     }
 
+    /// Reconstitutes an IssueRaising component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: IssueRaisingOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &IssueRaisingOutput {
         &self.output

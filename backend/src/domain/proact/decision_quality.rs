@@ -56,6 +56,11 @@ impl DecisionQuality {
         }
     }
 
+    /// Reconstitutes a DecisionQuality component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: DecisionQualityOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &DecisionQualityOutput {
         &self.output

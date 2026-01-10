@@ -97,6 +97,11 @@ impl ProblemFrame {
         }
     }
 
+    /// Reconstitutes a ProblemFrame component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: ProblemFrameOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &ProblemFrameOutput {
         &self.output
