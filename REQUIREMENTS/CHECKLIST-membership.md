@@ -40,7 +40,7 @@ The Membership module manages user subscriptions, access control, and payment in
 | `backend/src/ports/membership_reader.rs` | MembershipReader trait (4 tests) | ✅ |
 | `backend/src/ports/access_checker.rs` | AccessChecker trait (16 tests) | ✅ |
 | `backend/src/ports/payment_provider.rs` | PaymentProvider trait (5 tests) | ✅ |
-| `backend/src/ports/promo_code_validator.rs` | PromoCodeValidator trait | ⬜ |
+| `backend/src/ports/promo_code_validator.rs` | PromoCodeValidator trait (15 tests) | ✅ |
 
 ### Application Layer - Handlers (Rust)
 
@@ -61,10 +61,10 @@ The Membership module manages user subscriptions, access control, and payment in
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/http/membership/mod.rs` | Module exports | ⬜ |
-| `backend/src/adapters/http/membership/handlers.rs` | HTTP handlers | ⬜ |
-| `backend/src/adapters/http/membership/dto.rs` | Request/Response DTOs | ⬜ |
-| `backend/src/adapters/http/membership/routes.rs` | Route definitions | ⬜ |
+| `backend/src/adapters/http/membership/mod.rs` | Module exports | ✅ |
+| `backend/src/adapters/http/membership/handlers.rs` | HTTP handlers (17 tests inline) | ✅ |
+| `backend/src/adapters/http/membership/dto.rs` | Request/Response DTOs (14 tests inline) | ✅ |
+| `backend/src/adapters/http/membership/routes.rs` | Route definitions (3 tests inline) | ✅ |
 
 ### HTTP Adapter Tests (Rust)
 
@@ -367,8 +367,8 @@ cd frontend && npm test -- --testPathPattern="modules/membership"
 
 ### Module is COMPLETE when:
 
-- [ ] All 49 files in File Inventory exist (21/49 complete)
-- [ ] All tests pass (131 domain/ports/handlers tests passing)
+- [ ] All 49 files in File Inventory exist (26/49 complete)
+- [ ] All tests pass (165 domain/ports/handlers/http tests passing)
 - [ ] Domain layer coverage >= 90%
 - [ ] Application layer coverage >= 85%
 - [ ] Adapter layer coverage >= 80%
@@ -387,10 +387,10 @@ cd frontend && npm test -- --testPathPattern="modules/membership"
 
 ```
 STARTED: membership
-Files: 21/49 (43%)
-Tests: 131 passing (domain: 105, ports: 26, handlers inline)
-Status: Domain layer, ports, and application handlers complete
-Next: HTTP adapter, Postgres adapter, Stripe adapter, Frontend
+Files: 26/49 (53%)
+Tests: 165 passing (domain: 105, ports: 41, handlers: 19, http adapter: 34)
+Status: Domain layer, ports, application handlers, and HTTP adapter complete
+Next: Postgres adapter, Stripe adapter, Frontend
 ```
 
 ### Exit Signal
@@ -423,7 +423,7 @@ Money: All values in cents (integer) verified
 - [x] MembershipReader trait (4 tests)
 - [x] AccessChecker trait (16 tests)
 - [x] PaymentProvider trait (5 tests)
-- [ ] PromoCodeValidator trait
+- [x] PromoCodeValidator trait (15 tests)
 
 ### Phase 4: Commands (COMPLETE)
 - [x] CreateFreeMembershipCommand + Handler (inline tests)
@@ -436,12 +436,12 @@ Money: All values in cents (integer) verified
 - [x] CheckAccessQuery + Handler (inline tests)
 - [x] GetMembershipStatsQuery + Handler (inline tests)
 
-### Phase 6: HTTP Adapter
-- [ ] Request/Response DTOs
-- [ ] HTTP handlers
-- [ ] Route definitions
-- [ ] Webhook endpoint
-- [ ] Handler tests
+### Phase 6: HTTP Adapter (COMPLETE)
+- [x] Request/Response DTOs (14 tests inline)
+- [x] HTTP handlers (17 tests inline)
+- [x] Route definitions (3 tests inline)
+- [x] Webhook endpoint
+- [x] Handler tests (inline, 34 total)
 
 ### Phase 7: Postgres Adapter
 - [ ] Database migrations (promo_codes table pending)
@@ -523,5 +523,5 @@ pub enum CommandError {
 ---
 
 *Generated: 2026-01-07*
-*Last Synced: 2026-01-09 (handlers complete)*
+*Last Synced: 2026-01-09 (HTTP adapter complete)*
 *Specification: docs/modules/membership.md*

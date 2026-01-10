@@ -3,7 +3,6 @@
 //! These types define the JSON request/response structure for the membership API.
 //! They serve as the boundary between HTTP and the application layer.
 
-use crate::domain::foundation::{MembershipId, UserId};
 use crate::domain::membership::{MembershipStatus, MembershipTier, TierLimits};
 use crate::ports::{MembershipStatistics, MembershipView};
 use serde::{Deserialize, Serialize};
@@ -240,7 +239,7 @@ impl ErrorResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::foundation::Timestamp;
+    use crate::domain::foundation::{MembershipId, Timestamp, UserId};
     use crate::ports::{StatusCounts, TierCounts};
 
     // ════════════════════════════════════════════════════════════════════════════
