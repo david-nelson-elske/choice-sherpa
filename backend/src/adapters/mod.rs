@@ -6,6 +6,7 @@
 //! - `http` - HTTP/REST API implementations
 //! - `membership` - Membership access control implementations
 //! - `postgres` - PostgreSQL database implementations
+//! - `storage` - State storage implementations (file, in-memory)
 //! - `validation` - Schema validation implementations
 
 pub mod ai;
@@ -13,6 +14,7 @@ pub mod events;
 pub mod http;
 pub mod membership;
 pub mod postgres;
+pub mod storage;
 pub mod validation;
 
 pub use ai::{
@@ -23,4 +25,5 @@ pub use ai::{
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;
 pub use postgres::{PostgresCycleReader, PostgresCycleRepository};
+pub use storage::{FileStateStorage, InMemoryStateStorage};
 pub use validation::JsonSchemaValidator;
