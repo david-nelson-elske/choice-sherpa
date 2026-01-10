@@ -1,6 +1,73 @@
 version: '3.8'
 
 services:
+  # ============================================
+  # Zitadel Identity Provider (OIDC)
+  # ============================================
+  zitadel:
+    image: ghcr.io/zitadel/zitadel:v2.45.0
+    container_name: choice-sherpa-zitadel
+    command: start-from-init --masterkeyFromEnv --tlsMode disabled
+    environment:
+      ZITADEL_MASTERKEY: "DevMasterKey123456789012345678ab"
+      ZITADEL_DATABASE_POSTGRES_HOST: zitadel-db
+      ZITADEL_DATABASE_POSTGRES_PORT: 5432
+      ZITADEL_DATABASE_POSTGRES_DATABASE: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_USERNAME: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_PASSWORD: zitadel
+      ZITADEL_DATABASE_POSTGRES_USER_SSL_MODE: disable
+      ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME: postgres
+      ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD: postgres
+      ZITADEL_DATABASE_POSTGRES_ADMIN_SSL_MODE: disable
+      ZITADEL_EXTERNALSECURE: "false"
+      ZITADEL_EXTERNALDOMAIN: localhost
+      ZITADEL_EXTERNALPORT: 8085
+      # First instance configuration
+      ZITADEL_FIRSTINSTANCE_ORG_NAME: "Choice Sherpa"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: "admin@localhost"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: "RootPassword1!"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_FIRSTNAME: "Admin"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_LASTNAME: "User"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL: "admin@localhost"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_EMAIL_VERIFIED: "true"
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORDCHANGEREQUIRED: "false"
+      # Use v1 login UI (v2 has issues)
+      ZITADEL_DEFAULTINSTANCE_LOGINV2: "false"
+    ports:
+      - "8085:8080"
+    depends_on:
+      zitadel-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/zitadel", "ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - choice-sherpa
+
+  zitadel-db:
+    image: postgres:16-alpine
+    container_name: choice-sherpa-zitadel-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: zitadel
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d zitadel"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - zitadel_data:/var/lib/postgresql/data
+    networks:
+      - choice-sherpa
+
+  # ============================================
+  # Application Database
+  # ============================================
   postgres:
     image: postgres:16-alpine
     container_name: choice-sherpa-postgres
@@ -42,6 +109,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  zitadel_data:
     driver: local
 
 networks:

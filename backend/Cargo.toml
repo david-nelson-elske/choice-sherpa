@@ -58,6 +58,9 @@ dotenvy = "0.15"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
+# JWT Authentication
+jsonwebtoken = "9.3"
+
 [dev-dependencies]
 # Testing - pinned for Rust 1.72 compatibility
 proptest = "1.4"
