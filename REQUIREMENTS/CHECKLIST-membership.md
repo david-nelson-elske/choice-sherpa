@@ -27,8 +27,8 @@ The Membership module manages user subscriptions, access control, and payment in
 | `backend/src/domain/membership/tier_limits.rs` | TierLimits configuration (19 tests inline) | ✅ |
 | `backend/src/domain/membership/promo_code.rs` | PromoCode value object (26 tests inline) | ✅ |
 | `backend/src/domain/membership/aggregate.rs` | Membership aggregate (21 tests inline) | ✅ |
-| `backend/src/domain/membership/events.rs` | MembershipEvent enum | ⬜ |
-| `backend/src/domain/membership/errors.rs` | Membership-specific errors | ⬜ |
+| `backend/src/domain/membership/events.rs` | MembershipEvent enum (15 tests inline) | ✅ |
+| `backend/src/domain/membership/errors.rs` | Membership-specific errors | ✅ |
 
 > **Note:** Tests are inline in implementation files using `#[cfg(test)] mod tests` (Rust convention).
 
@@ -42,38 +42,20 @@ The Membership module manages user subscriptions, access control, and payment in
 | `backend/src/ports/payment_provider.rs` | PaymentProvider trait (5 tests) | ✅ |
 | `backend/src/ports/promo_code_validator.rs` | PromoCodeValidator trait | ⬜ |
 
-### Application Layer - Commands (Rust)
+### Application Layer - Handlers (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/application/commands/create_free_membership.rs` | CreateFreeMembership handler | ⬜ |
-| `backend/src/application/commands/create_paid_membership.rs` | CreatePaidMembership handler | ⬜ |
-| `backend/src/application/commands/cancel_membership.rs` | CancelMembership handler | ⬜ |
-| `backend/src/application/commands/handle_payment_webhook.rs` | HandlePaymentWebhook handler | ⬜ |
+| `backend/src/application/handlers/membership/mod.rs` | Module exports | ✅ |
+| `backend/src/application/handlers/membership/create_free_membership.rs` | CreateFreeMembership command handler (tests inline) | ✅ |
+| `backend/src/application/handlers/membership/create_paid_membership.rs` | CreatePaidMembership command handler (tests inline) | ✅ |
+| `backend/src/application/handlers/membership/cancel_membership.rs` | CancelMembership command handler (tests inline) | ✅ |
+| `backend/src/application/handlers/membership/handle_payment_webhook.rs` | HandlePaymentWebhook command handler (tests inline) | ✅ |
+| `backend/src/application/handlers/membership/get_membership.rs` | GetMembership query handler (tests inline) | ✅ |
+| `backend/src/application/handlers/membership/check_access.rs` | CheckAccess query handler (tests inline) | ✅ |
+| `backend/src/application/handlers/membership/get_membership_stats.rs` | GetMembershipStats query handler (tests inline) | ✅ |
 
-### Application Layer - Command Tests (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/application/commands/create_free_membership_test.rs` | CreateFreeMembership tests | ⬜ |
-| `backend/src/application/commands/create_paid_membership_test.rs` | CreatePaidMembership tests | ⬜ |
-| `backend/src/application/commands/cancel_membership_test.rs` | CancelMembership tests | ⬜ |
-| `backend/src/application/commands/handle_payment_webhook_test.rs` | HandlePaymentWebhook tests | ⬜ |
-
-### Application Layer - Queries (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/application/queries/get_membership.rs` | GetMembership handler | ⬜ |
-| `backend/src/application/queries/check_access.rs` | CheckAccess handler | ⬜ |
-| `backend/src/application/queries/get_prices.rs` | GetPrices handler | ⬜ |
-
-### Application Layer - Query Tests (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/application/queries/get_membership_test.rs` | GetMembership tests | ⬜ |
-| `backend/src/application/queries/check_access_test.rs` | CheckAccess tests | ⬜ |
+> **Note:** Command and query handlers use inline tests following Rust conventions.
 
 ### HTTP Adapter (Rust)
 
@@ -385,8 +367,8 @@ cd frontend && npm test -- --testPathPattern="modules/membership"
 
 ### Module is COMPLETE when:
 
-- [ ] All 56 files in File Inventory exist (11/56 complete)
-- [ ] All tests pass (116 domain/ports tests passing, 62 additional tests pending)
+- [ ] All 49 files in File Inventory exist (21/49 complete)
+- [ ] All tests pass (131 domain/ports/handlers tests passing)
 - [ ] Domain layer coverage >= 90%
 - [ ] Application layer coverage >= 85%
 - [ ] Adapter layer coverage >= 80%
@@ -405,10 +387,10 @@ cd frontend && npm test -- --testPathPattern="modules/membership"
 
 ```
 STARTED: membership
-Files: 11/56 (20%)
-Tests: 116 passing (domain: 90, ports: 26)
-Status: Domain layer and ports complete, application/adapters pending
-Next: Application layer commands/queries, HTTP adapter
+Files: 21/49 (43%)
+Tests: 131 passing (domain: 105, ports: 26, handlers inline)
+Status: Domain layer, ports, and application handlers complete
+Next: HTTP adapter, Postgres adapter, Stripe adapter, Frontend
 ```
 
 ### Exit Signal
@@ -433,8 +415,8 @@ Money: All values in cents (integer) verified
 
 ### Phase 2: Domain Aggregate (COMPLETE)
 - [x] Membership aggregate (aggregate.rs - 21 tests)
-- [ ] MembershipEvent enum (events.rs)
-- [ ] Domain-specific errors (errors.rs)
+- [x] MembershipEvent enum (events.rs - 15 tests)
+- [x] Domain-specific errors (errors.rs)
 
 ### Phase 3: Ports (COMPLETE)
 - [x] MembershipRepository trait (1 test)
@@ -443,18 +425,16 @@ Money: All values in cents (integer) verified
 - [x] PaymentProvider trait (5 tests)
 - [ ] PromoCodeValidator trait
 
-### Phase 4: Commands
-- [ ] CreateFreeMembershipCommand + Handler
-- [ ] CreatePaidMembershipCommand + Handler
-- [ ] CancelMembershipCommand + Handler
-- [ ] HandlePaymentWebhookCommand + Handler
-- [ ] Command tests with mock repos
+### Phase 4: Commands (COMPLETE)
+- [x] CreateFreeMembershipCommand + Handler (inline tests)
+- [x] CreatePaidMembershipCommand + Handler (inline tests)
+- [x] CancelMembershipCommand + Handler (inline tests)
+- [x] HandlePaymentWebhookCommand + Handler (inline tests)
 
-### Phase 5: Queries
-- [ ] GetMembershipQuery + Handler
-- [ ] CheckAccessQuery + Handler
-- [ ] GetPricesQuery + Handler
-- [ ] Query tests with mock readers
+### Phase 5: Queries (COMPLETE)
+- [x] GetMembershipQuery + Handler (inline tests)
+- [x] CheckAccessQuery + Handler (inline tests)
+- [x] GetMembershipStatsQuery + Handler (inline tests)
 
 ### Phase 6: HTTP Adapter
 - [ ] Request/Response DTOs
@@ -543,5 +523,5 @@ pub enum CommandError {
 ---
 
 *Generated: 2026-01-07*
-*Last Synced: 2026-01-09*
+*Last Synced: 2026-01-09 (handlers complete)*
 *Specification: docs/modules/membership.md*
