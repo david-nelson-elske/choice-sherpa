@@ -17,8 +17,8 @@ The Conversation module manages AI agent behavior, conversation flow, and messag
 
 ```
 IN PROGRESS: conversation
-Files: 11/75 (15%)
-Tests: 205 passing
+Files: 13/75 (17%)
+Tests: 200 passing
 Frontend: Not started
 ```
 
@@ -193,7 +193,7 @@ Frontend: Not started
 
 ## Test Summary
 
-### Implemented Tests (205 total)
+### Implemented Tests (200 total)
 
 | Category | Count | Description |
 |----------|-------|-------------|
@@ -255,7 +255,7 @@ The core domain logic for conversation management is implemented:
 ## Notes
 
 - Core domain types recovered from feat/conversation-lifecycle branch
-- 205 tests passing covering state, phase, engine, extractor, context, configs
+- 200 tests passing covering state, phase, engine, extractor, context, configs
 - AI provider ports already exist in infrastructure (ports/ai_provider.rs)
 - Streaming protocol documented in docs/api/streaming-protocol.md
 - Templates include prompts for all 9 PrOACT components
@@ -264,4 +264,4 @@ The core domain logic for conversation management is implemented:
 
 *Updated: 2026-01-09*
 *Source: Recovered from feat/conversation-lifecycle branch*
-*Test Count: 205 (domain) + handlers*
+*Test Count: 200 (domain) + handlers*
