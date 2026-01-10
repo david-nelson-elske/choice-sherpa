@@ -19,6 +19,7 @@ WORKFLOW_STATE_DIR=".claude/workflow-state"
 WORKFLOW_ACTIVE_DIR="$WORKFLOW_STATE_DIR/active"
 WORKFLOW_COMPLETED_DIR="$WORKFLOW_STATE_DIR/completed"
 WORKFLOW_INDEX="$WORKFLOW_STATE_DIR/index.json"
+WORKTREE_DIR=".worktrees"
 
 # =============================================================================
 # Directory Setup
@@ -448,6 +449,122 @@ workflow_mark_compaction() {
           .history += [{"at": $time, "event": "context_compacted", "note": "session resumed after compaction"}]
         ' "$WORKFLOW_STATE_FILE" > "$WORKFLOW_STATE_FILE.tmp.$$" \
             && mv "$WORKFLOW_STATE_FILE.tmp.$$" "$WORKFLOW_STATE_FILE"
+    fi
+}
+
+# =============================================================================
+# Worktree Management
+# =============================================================================
+
+worktree_path() {
+    local module="$1"
+    echo "$WORKTREE_DIR/$module"
+}
+
+worktree_exists() {
+    local module="$1"
+    local path=$(worktree_path "$module")
+    [ -d "$path" ] && git worktree list | grep -q "$path"
+}
+
+worktree_create() {
+    local module="$1"
+    local branch="${2:-feat/$module}"
+    local base_branch="${3:-main}"
+    local path=$(worktree_path "$module")
+
+    mkdir -p "$WORKTREE_DIR"
+
+    if worktree_exists "$module"; then
+        echo "Worktree already exists: $path"
+        return 0
+    fi
+
+    # Check if branch exists
+    if git show-ref --verify --quiet "refs/heads/$branch"; then
+        git worktree add "$path" "$branch"
+    else
+        # Create new branch from base
+        git worktree add -b "$branch" "$path" "$base_branch"
+    fi
+
+    echo "$path"
+}
+
+worktree_remove() {
+    local module="$1"
+    local path=$(worktree_path "$module")
+
+    if worktree_exists "$module"; then
+        git worktree remove "$path" --force 2>/dev/null || true
+    fi
+
+    # Clean up empty directory if it exists
+    [ -d "$path" ] && rmdir "$path" 2>/dev/null || true
+}
+
+worktree_list() {
+    if [ -d "$WORKTREE_DIR" ]; then
+        git worktree list | grep "$WORKTREE_DIR" || echo "No module worktrees"
+    else
+        echo "No module worktrees"
+    fi
+}
+
+worktree_cleanup_merged() {
+    # Clean up worktrees for branches that have been merged and deleted
+    local cleaned=0
+
+    if [ ! -d "$WORKTREE_DIR" ]; then
+        return 0
+    fi
+
+    for path in "$WORKTREE_DIR"/*; do
+        [ -d "$path" ] || continue
+        local module=$(basename "$path")
+
+        # Check if the worktree branch still exists
+        local branch=$(git worktree list --porcelain | grep -A2 "worktree.*$path" | grep "branch" | cut -d'/' -f3-)
+
+        if [ -n "$branch" ]; then
+            # Check if branch is gone (merged and deleted on remote)
+            if git branch -vv | grep -q "\[$branch: gone\]"; then
+                echo "Cleaning up merged worktree: $module ($branch)"
+                worktree_remove "$module"
+                ((cleaned++))
+            fi
+        fi
+    done
+
+    if [ "$cleaned" -gt 0 ]; then
+        echo "Cleaned $cleaned merged worktree(s)"
+    fi
+}
+
+worktree_state_set() {
+    local module="$1"
+    local path=$(worktree_path "$module")
+    local branch="${2:-}"
+    local now=$(date -Iseconds)
+
+    if [ -f "$WORKFLOW_STATE_FILE" ]; then
+        jq --arg module "$module" --arg path "$path" --arg branch "$branch" --arg time "$now" '
+          .worktree = {
+            "module": $module,
+            "path": $path,
+            "branch": $branch,
+            "created_at": $time
+          } |
+          .workflow.updated_at = $time
+        ' "$WORKFLOW_STATE_FILE" > "$WORKFLOW_STATE_FILE.tmp.$$" \
+            && mv "$WORKFLOW_STATE_FILE.tmp.$$" "$WORKFLOW_STATE_FILE"
+    fi
+}
+
+worktree_state_get() {
+    local field="$1"
+    if [ -f "$WORKFLOW_STATE_FILE" ]; then
+        jq -r ".worktree.$field // empty" "$WORKFLOW_STATE_FILE"
     fi
 }
 

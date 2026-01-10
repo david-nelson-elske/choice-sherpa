@@ -8,6 +8,9 @@ backend/.env
 .claude/dev-progress.local.md
 .claude/agents/
 
+# Git worktrees (module development)
+.worktrees/
+
 # Rust
 backend/target/
 

@@ -225,7 +225,7 @@ dev_frontend: cd frontend && npm run dev
 
 | Skill | Description |
 |-------|-------------|
-| `/dev <path>` | Process feature file or folder |
+| `/dev <path>` | Process feature file or folder (uses worktrees) |
 | `/tdd <task>` | Single TDD cycle |
 | `/tdd-red` | RED phase - write failing test |
 | `/tdd-green` | GREEN phase - minimal implementation |
@@ -235,6 +235,7 @@ dev_frontend: cd frontend && npm run dev
 | `/commit` | Create git commit |
 | `/pr` | Create pull request |
 | `/checklist-sync` | Sync REQUIREMENTS checklist with filesystem state |
+| `/clean-worktrees` | Remove worktrees for merged PRs |
 
 ### Security & Code Quality
 
@@ -244,6 +245,60 @@ dev_frontend: cd frontend && npm run dev
 | `/code-simplifier` | Review code for unnecessary complexity and suggest simplifications |
 
 **Note:** Both `/security-review` and `/code-simplifier` are automatically invoked by `/pr`. PRs are blocked if CRITICAL or HIGH severity security issues are found.
+
+---
+
+## Worktree-Based Development
+
+Development uses **git worktrees** for module isolation. Each module gets its own worktree directory, enabling:
+
+- **Parallel development** across multiple terminals without branch conflicts
+- **Clustered commits** - all work on a module stays on one branch
+- **Single PR per module** - cleaner review process
+- **No branch switching** - work in `.worktrees/<module>/` directly
+
+### Worktree Locations
+
+```
+choice-sherpa/
+├── .worktrees/              # Module worktrees (gitignored)
+│   ├── session/             # → feat/session branch
+│   ├── membership/          # → feat/membership branch
+│   └── cycle/               # → feat/cycle branch
+├── backend/                 # Main repo (unchanged)
+├── frontend/
+└── ...
+```
+
+### Development Flow
+
+```bash
+# 1. Start work on a module (creates worktree automatically)
+/dev features/session/
+
+# 2. Work happens in .worktrees/session/
+#    All commits go to feat/session branch
+#    Multiple features in session/ share the same worktree
+
+# 3. When module complete, PR is created
+#    Worktree stays until PR merged
+
+# 4. After merge, clean up
+/clean-worktrees
+```
+
+### Manual Worktree Commands
+
+```bash
+# List active worktrees
+git worktree list
+
+# Create worktree manually
+git worktree add .worktrees/mymodule feat/mymodule
+
+# Remove worktree
+git worktree remove .worktrees/mymodule
+```
 
 ---
 

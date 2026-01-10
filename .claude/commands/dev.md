@@ -14,11 +14,11 @@ if [ "$RESUME" = "resume" ]; then
     # Display resume prompt and continue from saved state
     workflow_display_resume_prompt
     PHASE=$(workflow_current_phase)
-    # Resume from: load_feature, create_branch, task_execution, verification, pr_creation
+    # Resume from: load_feature, create_worktree, task_execution, verification, pr_creation
 else
     # Initialize new workflow with phases
     workflow_add_phase "load_feature" "pending"
-    workflow_add_phase "create_branch" "pending"
+    workflow_add_phase "create_worktree" "pending"
     workflow_add_phase "task_execution" "pending"
     workflow_add_phase "verification" "pending"
     workflow_add_phase "pr_creation" "pending"
@@ -31,11 +31,12 @@ fi
 ```
 
 **State transitions during execution:**
-- After loading feature: `workflow_phase_complete "load_feature"` → `workflow_transition "create_branch"`
-- After branch creation:
-  - `workflow_set '.workflow.parent_branch' "$PARENT_BRANCH"`
-  - `workflow_set '.workflow.child_branch' "$CHILD_BRANCH"`
-  - `workflow_phase_complete "create_branch"` → `workflow_transition "task_execution"`
+- After loading feature: `workflow_phase_complete "load_feature"` → `workflow_transition "create_worktree"`
+- After worktree creation:
+  - `workflow_set '.workflow.base_branch' "$BASE_BRANCH"`
+  - `workflow_set '.workflow.branch' "$BRANCH"`
+  - `worktree_state_set "$MODULE" "$BRANCH"`
+  - `workflow_phase_complete "create_worktree"` → `workflow_transition "task_execution"`
 - Before each task: `workflow_task_start $INDEX` → `workflow_tdd_phase $INDEX "red"`
 - After TDD phases: `workflow_tdd_phase_complete $INDEX "red|green|refactor"`
 - After task commit: `workflow_task_complete $INDEX "$COMMIT_SHA"`
@@ -44,6 +45,8 @@ fi
 - After PR: `workflow_complete "$PR_URL"`
 
 **State file location:** `.claude/workflow-state/active/dev-{hash}.json`
+
+**Worktree location:** `.worktrees/<module>/`
 
 See `.claude/templates/WORKFLOW-STATE-SPEC.md` for full specification.
 
@@ -249,43 +252,58 @@ Parse the feature file:
    - Create POST /auth/login endpoint
 ```
 
-### Step 2: Create/Verify Branch
+### Step 2: Create/Enter Module Worktree
 
-**Nested Branch Strategy:**
+**Worktree-Based Module Development:**
 
-The workflow creates child branches under the current parent branch, enabling focused PRs:
+The workflow creates isolated worktrees for each module, enabling parallel development without branch switching:
 
 ```bash
-# Capture parent branch BEFORE creating child
-PARENT_BRANCH=$(git branch --show-current)
+# Capture current branch as base
+BASE_BRANCH=$(git branch --show-current)
 
-# Derive feature name from filename
-# features/user-auth.md → user-auth
-FEATURE_NAME=$(basename "$FEATURE_FILE" .md)
-
-# Create nested child branch
-# If on main/master: feat/<feature-name>
-# If on feature branch: <parent>/<feature-name>
-if [ "$PARENT_BRANCH" = "main" ] || [ "$PARENT_BRANCH" = "master" ]; then
-    CHILD_BRANCH="feat/$FEATURE_NAME"
-else
-    CHILD_BRANCH="$PARENT_BRANCH/$FEATURE_NAME"
+# Derive module name from feature path
+# features/session/create-session.md → session
+# features/user-auth.md → (uses filename as module)
+MODULE=$(dirname "$FEATURE_FILE" | xargs basename)
+if [ "$MODULE" = "features" ]; then
+    MODULE=$(basename "$FEATURE_FILE" .md)
 fi
 
-git checkout -b "$CHILD_BRANCH"
+# Create branch name: feat/<module> or <base>/<module>
+if [ "$BASE_BRANCH" = "main" ] || [ "$BASE_BRANCH" = "master" ]; then
+    BRANCH="feat/$MODULE"
+else
+    BRANCH="$BASE_BRANCH/$MODULE"
+fi
 
-# Store in workflow state for PR creation
-workflow_set '.workflow.parent_branch' "$PARENT_BRANCH"
-workflow_set '.workflow.child_branch' "$CHILD_BRANCH"
+# Create worktree (or use existing)
+WORKTREE_PATH=$(worktree_create "$MODULE" "$BRANCH" "$BASE_BRANCH")
+
+# Store in workflow state
+workflow_set '.workflow.base_branch' "$BASE_BRANCH"
+workflow_set '.workflow.branch' "$BRANCH"
+worktree_state_set "$MODULE" "$BRANCH"
+
+echo "📁 Working in: $WORKTREE_PATH"
+echo "🌿 Branch: $BRANCH"
 ```
 
 **Example:**
 ```
-Current branch: agent-enrichment
+Current branch: main
 Feature file:   features/session/create-session.md
-Child branch:   agent-enrichment/create-session
-PR target:      agent-enrichment (not main)
+Module:         session
+Worktree:       .worktrees/session/
+Branch:         feat/session
+PR target:      main
 ```
+
+**Benefits of Worktrees:**
+- Multiple terminals can work on different modules simultaneously
+- No branch switching confusion
+- Commits stay clustered per module
+- Clean isolation between modules
 
 ### Step 3: Execute Each Task
 
@@ -338,35 +356,51 @@ When all tasks complete:
 
 ### Step 5: Create PR
 
-Create PR targeting the parent branch (not main):
+Create PR from the worktree branch targeting the base branch:
 
 ```bash
-# Read parent branch from workflow state
-PARENT_BRANCH=$(workflow_get '.workflow.parent_branch')
+# Read base branch and worktree info from workflow state
+BASE_BRANCH=$(workflow_get '.workflow.base_branch')
+MODULE=$(worktree_state_get 'module')
+WORKTREE_PATH=$(worktree_state_get 'path')
 
-# Create PR targeting parent branch
-/pr --from-feature <feature-file> --base "$PARENT_BRANCH"
+# Push from worktree and create PR
+cd "$WORKTREE_PATH"
+git push -u origin "$(git branch --show-current)"
+
+# Create PR targeting base branch
+/pr --from-feature <feature-file> --base "$BASE_BRANCH"
+
+# Return to main repo (worktree stays for cleanup after merge)
+cd -
 ```
 
 **PR Flow:**
 ```
-agent-enrichment/create-session  →  PR to → agent-enrichment
-                                              ↓ (later)
-                                           PR to → main
+.worktrees/session/ (feat/session)  →  PR to → main
+                                                ↓
+                                    After merge: worktree auto-cleaned
 ```
+
+**Worktree Lifecycle:**
+1. Created when `/dev` starts on a module
+2. Kept during development (multiple features)
+3. Kept after PR created (for reviews/fixes)
+4. Removed after PR merged (via `/clean-worktrees` or auto-cleanup)
 
 ---
 
-## Multi-Feature Session
+## Multi-Feature Session (Module-Based)
 
-When processing a folder, child branches are created under the current parent:
+When processing a folder, all features in that module share a single worktree. Commits are clustered together, with one PR per module:
 
 ```
-> git checkout agent-enrichment
 > /dev features/auth/
 
 📁 Processing folder: features/auth/
-🌿 Parent branch: agent-enrichment
+📦 Module: auth
+🌿 Branch: feat/auth
+📂 Worktree: .worktrees/auth/
 
 Found 3 feature files:
   1. user-registration.md (0/4 tasks)
@@ -375,58 +409,59 @@ Found 3 feature files:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Feature 1/3: User Registration
-🌿 Branch: agent-enrichment/user-registration
+📂 Working in: .worktrees/auth/
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[... processes all tasks ...]
+[... processes all 4 tasks, commits each ...]
 
-✅ Feature complete: User Registration
-🚀 PR #42 created (→ agent-enrichment)
-
-# Return to parent for next feature
-git checkout agent-enrichment
+✅ Feature complete: User Registration (4 commits)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Feature 2/3: User Login
-🌿 Branch: agent-enrichment/user-login
+📂 Working in: .worktrees/auth/ (same worktree)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[... processes all tasks ...]
+[... processes all 3 tasks, commits each ...]
 
-✅ Feature complete: User Login
-🚀 PR #43 created (→ agent-enrichment)
-
-git checkout agent-enrichment
+✅ Feature complete: User Login (3 commits)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📄 Feature 3/3: Password Reset
-🌿 Branch: agent-enrichment/password-reset
+📂 Working in: .worktrees/auth/ (same worktree)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[... processes all tasks ...]
+[... processes all 5 tasks, commits each ...]
 
-✅ Feature complete: Password Reset
-🚀 PR #44 created (→ agent-enrichment)
+✅ Feature complete: Password Reset (5 commits)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🎉 All features complete!
+🎉 Module complete: auth
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Branch structure:
-  agent-enrichment
-  ├── agent-enrichment/user-registration → PR #42 (merged)
-  ├── agent-enrichment/user-login → PR #43 (merged)
-  └── agent-enrichment/password-reset → PR #44 (merged)
+Worktree: .worktrees/auth/
+Branch:   feat/auth
+Commits:  12 (clustered on single branch)
+
+🚀 PR #42 created (feat/auth → main)
+
+Worktree kept until PR merged.
+Run `/clean-worktrees` after merge to cleanup.
 
 Summary:
-  ✅ User Registration → PR #42 (→ agent-enrichment)
-  ✅ User Login → PR #43 (→ agent-enrichment)
-  ✅ Password Reset → PR #44 (→ agent-enrichment)
+  ✅ auth/user-registration.md (4 tasks)
+  ✅ auth/user-login.md (3 tasks)
+  ✅ auth/password-reset.md (5 tasks)
 
-Total: 12 tasks, 12 commits, 3 PRs
+Total: 12 tasks, 12 commits, 1 PR
 
 DEV_COMPLETE: All features done
 ```
+
+**Key Difference from Branch Switching:**
+- All features in a module folder share ONE worktree and ONE branch
+- Commits are naturally clustered together
+- Single PR per module (not per feature)
+- No branch switching between features
 
 ### Signal Output (for Ralph Loop)
 

@@ -7,6 +7,8 @@ pub mod membership;
 pub mod session;
 
 pub use cycle::{
+    // Commands
+    BranchCycleCommand, BranchCycleError, BranchCycleHandler, BranchCycleResult, CycleBranchedEvent,
     CreateCycleCommand, CreateCycleError, CreateCycleHandler, CreateCycleResult, CycleCreatedEvent,
 };
 pub use membership::{
