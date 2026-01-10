@@ -3,6 +3,16 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
 	plugins: [sveltekit()],
+	server: {
+		port: 5173,
+		proxy: {
+			// Proxy API requests to the Rust backend
+			'/api': {
+				target: 'http://localhost:8080',
+				changeOrigin: true
+			}
+		}
+	},
 	test: {
 		include: ['src/**/*.{test,spec}.{js,ts}'],
 		environment: 'jsdom',
