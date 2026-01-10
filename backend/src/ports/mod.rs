@@ -32,6 +32,8 @@ mod circuit_breaker;
 mod connection_registry;
 mod cycle_reader;
 mod cycle_repository;
+mod decision_document_reader;
+mod decision_document_repository;
 mod document_file_storage;
 mod document_generator;
 mod document_parser;
@@ -60,6 +62,14 @@ pub use cycle_reader::{
     NextAction, NextActionType, ProgressStep,
 };
 pub use cycle_repository::CycleRepository;
+pub use decision_document_reader::{
+    ComponentStatus, DecisionDocumentReader, DocumentListOptions, DocumentSearchResult,
+    DocumentSummary, DocumentTree, DocumentTreeNode, DocumentVersionInfo, DocumentView, OrderBy,
+    PrOACTStatus,
+};
+pub use decision_document_repository::{
+    DecisionDocumentRepository, IntegrityStatus, SyncResult,
+};
 pub use document_file_storage::{
     DocumentFileStorage, FileInfo, FileMetadata, FilePath, StorageError,
 };
