@@ -265,6 +265,7 @@ impl RevisitSuggestion {
 
     /// Reconstitutes a RevisitSuggestion from stored data.
     #[doc(hidden)]
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: RevisitSuggestionId,
         cycle_id: CycleId,

@@ -210,6 +210,7 @@ impl ToolInvocation {
     ///
     /// This bypasses validation and should only be used by repositories.
     #[doc(hidden)]
+    #[allow(clippy::too_many_arguments)]
     pub fn reconstitute(
         id: ToolInvocationId,
         cycle_id: CycleId,
