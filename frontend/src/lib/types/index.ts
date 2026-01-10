@@ -57,3 +57,25 @@ export {
     formatDaysRemaining,
     getAccessDeniedMessage,
 } from './membership';
+
+// WebSocket types
+export {
+    type WebSocketMessage,
+    type ConnectedMessage,
+    type DashboardUpdateMessage,
+    type DashboardUpdateType,
+    type ErrorMessage,
+    type PongMessage,
+    type ServerMessage,
+    type ClientPing,
+    type RequestStateMessage,
+    type ClientMessage,
+    type ComponentCompletedData,
+    type ProgressInfo,
+    type ConversationMessageData,
+    type MessagePreview,
+    type AnalysisScoresData,
+    type WebSocketConnectionState,
+    type UseDashboardLiveOptions,
+    INITIAL_CONNECTION_STATE,
+} from './websocket';
