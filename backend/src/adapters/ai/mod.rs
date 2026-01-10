@@ -9,15 +9,18 @@
 //! - `AnthropicProvider` - Anthropic Claude models (Opus, Sonnet, Haiku)
 //! - `FailoverAIProvider` - Wrapper with automatic failover between providers
 //! - `AIUsageHandler` - Event handler for tracking AI token usage
+//! - `InMemoryUsageTracker` - In-memory usage tracking for dev/testing
 
 mod anthropic_provider;
 mod failover_provider;
+mod in_memory_usage_tracker;
 mod mock_provider;
 mod openai_provider;
 mod usage_handler;
 
 pub use anthropic_provider::{AnthropicConfig, AnthropicProvider};
 pub use failover_provider::{events as ai_events, AIEventCallback, FailoverAIProvider};
+pub use in_memory_usage_tracker::InMemoryUsageTracker;
 pub use mock_provider::{MockAIProvider, MockError, MockResponse};
 pub use openai_provider::{OpenAIConfig, OpenAIProvider};
 pub use usage_handler::AIUsageHandler;

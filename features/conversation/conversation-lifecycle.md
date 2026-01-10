@@ -1138,17 +1138,17 @@ impl Conversation {
 
 ## Tasks
 
-- [ ] Implement ConversationState enum in `backend/src/domain/conversation/state.rs`
-- [ ] Implement AgentPhase enum in `backend/src/domain/conversation/phase.rs`
-- [ ] Implement PhaseTransitionEngine in `backend/src/domain/conversation/engine.rs`
-- [ ] Implement DataExtractor in `backend/src/domain/conversation/extractor.rs`
-- [ ] Implement ContextWindowManager in `backend/src/domain/conversation/context.rs`
-- [ ] Implement StreamingMessageHandler in `backend/src/application/handlers/stream_message.rs`
-- [ ] Add component-specific agent configs in `backend/src/domain/conversation/configs/`
-- [ ] Create opening message templates for all 9 components
-- [ ] Write unit tests for phase transitions
-- [ ] Write integration tests for extraction
-- [ ] Document streaming protocol in API docs
+- [x] Implement ConversationState enum in `backend/src/domain/conversation/state.rs`
+- [x] Implement AgentPhase enum in `backend/src/domain/conversation/phase.rs`
+- [x] Implement PhaseTransitionEngine in `backend/src/domain/conversation/engine.rs`
+- [x] Implement DataExtractor in `backend/src/domain/conversation/extractor.rs`
+- [x] Implement ContextWindowManager in `backend/src/domain/conversation/context.rs`
+- [x] Implement StreamingMessageHandler in `backend/src/application/handlers/stream_message.rs`
+- [x] Add component-specific agent configs in `backend/src/domain/conversation/configs/`
+- [x] Create opening message templates for all 9 components
+- [x] Write unit tests for phase transitions
+- [x] Write integration tests for extraction
+- [x] Document streaming protocol in API docs
 
 ---
 

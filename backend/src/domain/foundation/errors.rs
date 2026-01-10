@@ -85,6 +85,15 @@ pub enum ErrorCode {
     PaymentRequired,
     PaymentFailed,
 
+    // Membership errors
+    MembershipNotFound,
+    MembershipExists,
+    MembershipExpired,
+    InvalidTier,
+    InvalidPromoCode,
+    PromoCodeExhausted,
+    InvalidWebhookSignature,
+
     // Infrastructure errors
     DatabaseError,
     CacheError,
@@ -118,6 +127,13 @@ impl fmt::Display for ErrorCode {
             ErrorCode::RateLimited => "RATE_LIMITED",
             ErrorCode::PaymentRequired => "PAYMENT_REQUIRED",
             ErrorCode::PaymentFailed => "PAYMENT_FAILED",
+            ErrorCode::MembershipNotFound => "MEMBERSHIP_NOT_FOUND",
+            ErrorCode::MembershipExists => "MEMBERSHIP_EXISTS",
+            ErrorCode::MembershipExpired => "MEMBERSHIP_EXPIRED",
+            ErrorCode::InvalidTier => "INVALID_TIER",
+            ErrorCode::InvalidPromoCode => "INVALID_PROMO_CODE",
+            ErrorCode::PromoCodeExhausted => "PROMO_CODE_EXHAUSTED",
+            ErrorCode::InvalidWebhookSignature => "INVALID_WEBHOOK_SIGNATURE",
             ErrorCode::DatabaseError => "DATABASE_ERROR",
             ErrorCode::CacheError => "CACHE_ERROR",
             ErrorCode::ExternalServiceError => "EXTERNAL_SERVICE_ERROR",

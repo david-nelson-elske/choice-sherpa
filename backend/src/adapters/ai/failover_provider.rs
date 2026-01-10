@@ -26,41 +26,62 @@ use crate::ports::{
 pub mod events {
     use serde::{Deserialize, Serialize};
 
-    use crate::domain::foundation::{domain_event, EventId, Timestamp};
+    use crate::domain::foundation::{domain_event, ComponentType, EventId, SessionId, Timestamp, UserId};
 
     /// Emitted when AI tokens are used for a completion.
+    ///
+    /// This event enables cost attribution by carrying user and session context
+    /// alongside provider/model/token information.
     #[derive(Debug, Clone, Serialize, Deserialize)]
     pub struct AITokensUsed {
         pub event_id: EventId,
+        /// User who incurred the cost.
+        pub user_id: UserId,
+        /// Session context for the request.
+        pub session_id: SessionId,
         pub provider: String,
         pub model: String,
         pub prompt_tokens: u32,
         pub completion_tokens: u32,
         pub estimated_cost_cents: u32,
+        /// PrOACT component type for analytics (optional).
+        pub component_type: Option<ComponentType>,
         pub request_id: String,
         pub occurred_at: Timestamp,
     }
 
     impl AITokensUsed {
-        /// Creates a new AITokensUsed event.
+        /// Creates a new AITokensUsed event with full user context.
+        #[allow(clippy::too_many_arguments)]
         pub fn new(
+            user_id: UserId,
+            session_id: SessionId,
             provider: impl Into<String>,
             model: impl Into<String>,
             prompt_tokens: u32,
             completion_tokens: u32,
             estimated_cost_cents: u32,
+            component_type: Option<ComponentType>,
             request_id: impl Into<String>,
         ) -> Self {
             Self {
                 event_id: EventId::new(),
+                user_id,
+                session_id,
                 provider: provider.into(),
                 model: model.into(),
                 prompt_tokens,
                 completion_tokens,
                 estimated_cost_cents,
+                component_type,
                 request_id: request_id.into(),
                 occurred_at: Timestamp::now(),
             }
+        }
+
+        /// Total tokens used in this request.
+        pub fn total_tokens(&self) -> u32 {
+            self.prompt_tokens + self.completion_tokens
         }
     }
 
@@ -194,15 +215,23 @@ impl<P: AIProvider, F: AIProvider> FailoverAIProvider<P, F> {
         self
     }
 
-    /// Emits a tokens used event.
-    fn emit_tokens_used(&self, response: &CompletionResponse, request_id: &str) {
+    /// Emits a tokens used event with full user context.
+    fn emit_tokens_used(
+        &self,
+        request: &CompletionRequest,
+        response: &CompletionResponse,
+        request_id: &str,
+    ) {
         let info = self.primary.provider_info();
         let event = events::AITokensUsed::new(
+            request.metadata.user_id.clone(),
+            request.metadata.session_id,
             info.name,
             &response.model,
             response.usage.prompt_tokens,
             response.usage.completion_tokens,
             response.usage.estimated_cost_cents,
+            request.component_type,
             request_id,
         );
         self.event_callback.on_tokens_used(event);
@@ -232,7 +261,7 @@ impl<P: AIProvider + 'static, F: AIProvider + 'static> AIProvider for FailoverAI
         // Try primary provider
         match self.primary.complete(request.clone()).await {
             Ok(response) => {
-                self.emit_tokens_used(&response, &request_id);
+                self.emit_tokens_used(&request, &response, &request_id);
                 Ok(response)
             }
             Err(err) if err.is_retryable() && self.fallback.is_some() => {
@@ -241,8 +270,8 @@ impl<P: AIProvider + 'static, F: AIProvider + 'static> AIProvider for FailoverAI
 
                 // Try fallback
                 let fallback = self.fallback.as_ref().unwrap();
-                let response = fallback.complete(request).await?;
-                self.emit_tokens_used(&response, &request_id);
+                let response = fallback.complete(request.clone()).await?;
+                self.emit_tokens_used(&request, &response, &request_id);
                 Ok(response)
             }
             Err(err) => Err(err),
@@ -426,7 +455,21 @@ mod tests {
 
     #[test]
     fn tokens_used_event_creates_correctly() {
-        let event = events::AITokensUsed::new("openai", "gpt-4", 100, 50, 5, "req-123");
+        
+
+        let user_id = UserId::new("user-test-123").unwrap();
+        let session_id = SessionId::new();
+        let event = events::AITokensUsed::new(
+            user_id,
+            session_id,
+            "openai",
+            "gpt-4",
+            100,
+            50,
+            5,
+            None, // component_type
+            "req-123",
+        );
 
         assert_eq!(event.provider, "openai");
         assert_eq!(event.model, "gpt-4");

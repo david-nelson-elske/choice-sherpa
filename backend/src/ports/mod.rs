@@ -37,6 +37,7 @@ mod membership_repository;
 mod outbox_writer;
 mod payment_provider;
 mod processed_event_store;
+mod promo_code_validator;
 mod schema_validator;
 mod session_reader;
 mod session_repository;
@@ -66,6 +67,9 @@ pub use processed_event_store::ProcessedEventStore;
 pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};
 pub use session_reader::{ListOptions, SessionList, SessionReader, SessionSummary, SessionView};
 pub use session_repository::SessionRepository;
+pub use promo_code_validator::{
+    PromoCodeInvalidReason, PromoCodeValidation, PromoCodeValidator,
+};
 pub use usage_tracker::{
     ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
 };
