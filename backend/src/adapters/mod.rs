@@ -25,5 +25,5 @@ pub use ai::{
 pub use document::{LocalDocumentFileStorage, TemplateDocumentGenerator};
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;
-pub use postgres::PostgresDocumentRepository;
+pub use postgres::{PostgresDocumentReader, PostgresDocumentRepository};
 pub use validation::JsonSchemaValidator;
