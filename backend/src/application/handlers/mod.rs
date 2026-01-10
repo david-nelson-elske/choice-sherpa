@@ -2,6 +2,7 @@
 //!
 //! Command and query handlers that orchestrate domain operations.
 
+pub mod ai_engine;
 pub mod cycle;
 pub mod membership;
 pub mod session;
@@ -43,4 +44,13 @@ pub use session::{
     CreateSessionCommand, CreateSessionHandler, CreateSessionResult,
     CycleCreated, SessionCycleTracker,
     RenameSessionCommand, RenameSessionHandler, RenameSessionResult,
+};
+pub use ai_engine::{
+    // Commands
+    StartConversationCommand, StartConversationHandler, StartConversationResult, StartConversationError,
+    SendMessageCommand, SendMessageHandler, SendMessageResult, SendMessageError,
+    RouteIntentCommand, RouteIntentHandler, RouteIntentResult, RouteIntentError,
+    EndConversationCommand, EndConversationHandler, EndConversationError,
+    // Queries
+    GetConversationStateHandler, GetConversationStateQuery, GetConversationStateResult,
 };
