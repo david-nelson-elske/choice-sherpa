@@ -91,16 +91,16 @@ The Membership module manages user subscriptions, access control, and payment in
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/stripe/mod.rs` | Module exports | ⬜ |
-| `backend/src/adapters/stripe/stripe_adapter.rs` | StripePaymentAdapter | ⬜ |
-| `backend/src/adapters/stripe/webhook_types.rs` | Webhook event types | ⬜ |
-| `backend/src/adapters/stripe/mock_payment_provider.rs` | Mock for testing | ⬜ |
+| `backend/src/adapters/stripe/mod.rs` | Module exports (4 tests inline) | ✅ |
+| `backend/src/adapters/stripe/stripe_adapter.rs` | StripePaymentAdapter (19 tests inline) | ✅ |
+| `backend/src/adapters/stripe/webhook_types.rs` | Webhook event types (23 tests inline) | ✅ |
+| `backend/src/adapters/stripe/mock_payment_provider.rs` | Mock for testing (18 tests inline) | ✅ |
 
 ### Stripe Adapter Tests (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/stripe/stripe_adapter_test.rs` | Stripe adapter tests | ⬜ |
+| `backend/src/adapters/stripe/stripe_adapter_test.rs` | Stripe adapter tests | ✅ (inline in implementation files)
 
 ### Database Migrations
 
@@ -278,12 +278,12 @@ The Membership module manages user subscriptions, access control, and payment in
 
 | Test Name | Description | Status |
 |-----------|-------------|--------|
-| `test_stripe_adapter_create_customer` | Customer creation | ⬜ |
-| `test_stripe_adapter_create_checkout_session` | Checkout session | ⬜ |
-| `test_stripe_adapter_create_portal_session` | Portal session | ⬜ |
-| `test_stripe_adapter_cancel_subscription` | Cancellation | ⬜ |
-| `test_stripe_adapter_verify_webhook_signature` | Signature verify | ⬜ |
-| `test_stripe_adapter_verify_webhook_rejects_invalid` | Bad sig | ⬜ |
+| `test_stripe_adapter_create_customer` | Customer creation | ✅ |
+| `test_stripe_adapter_create_checkout_session` | Checkout session | ✅ |
+| `test_stripe_adapter_create_portal_session` | Portal session | ✅ |
+| `test_stripe_adapter_cancel_subscription` | Cancellation | ✅ |
+| `test_stripe_adapter_verify_webhook_signature` | Signature verify | ✅ |
+| `test_stripe_adapter_verify_webhook_rejects_invalid` | Bad sig | ✅ |
 
 ### Frontend Tests
 
@@ -387,10 +387,10 @@ cd frontend && npm test -- --testPathPattern="modules/membership"
 
 ```
 STARTED: membership
-Files: 26/49 (53%)
-Tests: 165 passing (domain: 105, ports: 41, handlers: 19, http adapter: 34)
-Status: Domain layer, ports, application handlers, and HTTP adapter complete
-Next: Postgres adapter, Stripe adapter, Frontend
+Files: 30/49 (61%)
+Tests: 222 passing (domain: 105, ports: 41, handlers: 19, http adapter: 34, stripe adapter: 57)
+Status: Domain layer, ports, application handlers, HTTP adapter, and Stripe adapter complete
+Next: Postgres adapter, Frontend
 ```
 
 ### Exit Signal
@@ -450,11 +450,11 @@ Money: All values in cents (integer) verified
 - [ ] AccessChecker implementation
 - [ ] Integration tests
 
-### Phase 8: Stripe Adapter
-- [ ] StripePaymentAdapter
-- [ ] Webhook signature verification
-- [ ] Mock payment provider
-- [ ] Adapter tests
+### Phase 8: Stripe Adapter (COMPLETE)
+- [x] StripePaymentAdapter (19 tests)
+- [x] Webhook signature verification (HMAC-SHA256, timestamp validation)
+- [x] Mock payment provider (18 tests)
+- [x] Adapter tests (57 tests total inline)
 
 ### Phase 9: Frontend
 - [ ] TypeScript types (with Money in cents!)
@@ -523,5 +523,5 @@ pub enum CommandError {
 ---
 
 *Generated: 2026-01-07*
-*Last Synced: 2026-01-09 (HTTP adapter complete)*
+*Last Synced: 2026-01-10 (Stripe adapter complete)*
 *Specification: docs/modules/membership.md*
