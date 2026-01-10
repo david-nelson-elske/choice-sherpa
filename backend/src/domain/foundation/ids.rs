@@ -243,6 +243,132 @@ impl FromStr for MembershipId {
     }
 }
 
+/// Unique identifier for a tool invocation audit record.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ToolInvocationId(Uuid);
+
+impl ToolInvocationId {
+    /// Creates a new random ToolInvocationId.
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+
+    /// Creates a ToolInvocationId from an existing UUID.
+    pub fn from_uuid(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
+
+    /// Returns the inner UUID.
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+impl Default for ToolInvocationId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for ToolInvocationId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for ToolInvocationId {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(Uuid::parse_str(s)?))
+    }
+}
+
+/// Unique identifier for a revisit suggestion.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct RevisitSuggestionId(Uuid);
+
+impl RevisitSuggestionId {
+    /// Creates a new random RevisitSuggestionId.
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+
+    /// Creates a RevisitSuggestionId from an existing UUID.
+    pub fn from_uuid(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
+
+    /// Returns the inner UUID.
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+impl Default for RevisitSuggestionId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for RevisitSuggestionId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for RevisitSuggestionId {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(Uuid::parse_str(s)?))
+    }
+}
+
+/// Unique identifier for a confirmation request.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ConfirmationRequestId(Uuid);
+
+impl ConfirmationRequestId {
+    /// Creates a new random ConfirmationRequestId.
+    pub fn new() -> Self {
+        Self(Uuid::new_v4())
+    }
+
+    /// Creates a ConfirmationRequestId from an existing UUID.
+    pub fn from_uuid(uuid: Uuid) -> Self {
+        Self(uuid)
+    }
+
+    /// Returns the inner UUID.
+    pub fn as_uuid(&self) -> &Uuid {
+        &self.0
+    }
+}
+
+impl Default for ConfirmationRequestId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl fmt::Display for ConfirmationRequestId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for ConfirmationRequestId {
+    type Err = uuid::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(Uuid::parse_str(s)?))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -330,6 +456,77 @@ mod tests {
     fn conversation_id_from_uuid_preserves_value() {
         let uuid = Uuid::new_v4();
         let id = ConversationId::from_uuid(uuid);
+        assert_eq!(id.as_uuid(), &uuid);
+    }
+
+    #[test]
+    fn tool_invocation_id_generates_unique_values() {
+        let id1 = ToolInvocationId::new();
+        let id2 = ToolInvocationId::new();
+        assert_ne!(id1, id2);
+    }
+
+    #[test]
+    fn tool_invocation_id_parses_from_valid_string() {
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let id: ToolInvocationId = uuid_str.parse().unwrap();
+        assert_eq!(id.to_string(), uuid_str);
+    }
+
+    #[test]
+    fn tool_invocation_id_from_uuid_preserves_value() {
+        let uuid = Uuid::new_v4();
+        let id = ToolInvocationId::from_uuid(uuid);
+        assert_eq!(id.as_uuid(), &uuid);
+    }
+
+    #[test]
+    fn tool_invocation_id_serializes_to_json() {
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let id: ToolInvocationId = uuid_str.parse().unwrap();
+        let json = serde_json::to_string(&id).unwrap();
+        assert_eq!(json, format!("\"{}\"", uuid_str));
+    }
+
+    #[test]
+    fn revisit_suggestion_id_generates_unique_values() {
+        let id1 = RevisitSuggestionId::new();
+        let id2 = RevisitSuggestionId::new();
+        assert_ne!(id1, id2);
+    }
+
+    #[test]
+    fn revisit_suggestion_id_parses_from_valid_string() {
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let id: RevisitSuggestionId = uuid_str.parse().unwrap();
+        assert_eq!(id.to_string(), uuid_str);
+    }
+
+    #[test]
+    fn revisit_suggestion_id_from_uuid_preserves_value() {
+        let uuid = Uuid::new_v4();
+        let id = RevisitSuggestionId::from_uuid(uuid);
+        assert_eq!(id.as_uuid(), &uuid);
+    }
+
+    #[test]
+    fn confirmation_request_id_generates_unique_values() {
+        let id1 = ConfirmationRequestId::new();
+        let id2 = ConfirmationRequestId::new();
+        assert_ne!(id1, id2);
+    }
+
+    #[test]
+    fn confirmation_request_id_parses_from_valid_string() {
+        let uuid_str = "550e8400-e29b-41d4-a716-446655440000";
+        let id: ConfirmationRequestId = uuid_str.parse().unwrap();
+        assert_eq!(id.to_string(), uuid_str);
+    }
+
+    #[test]
+    fn confirmation_request_id_from_uuid_preserves_value() {
+        let uuid = Uuid::new_v4();
+        let id = ConfirmationRequestId::from_uuid(uuid);
         assert_eq!(id.as_uuid(), &uuid);
     }
 }

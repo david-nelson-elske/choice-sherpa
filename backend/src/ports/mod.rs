@@ -3,6 +3,10 @@
 //! Following hexagonal architecture, ports define the contracts between
 //! the domain and the outside world. Adapters implement these ports.
 //!
+//! ## Authentication Port
+//!
+//! - `SessionValidator` - Validates JWT tokens and extracts authenticated user
+//!
 //! ## Access Control Port
 //!
 //! - `AccessChecker` - Port for membership-based access control
@@ -43,6 +47,7 @@ mod promo_code_validator;
 mod schema_validator;
 mod session_reader;
 mod session_repository;
+mod session_validator;
 mod usage_tracker;
 
 pub use access_checker::{AccessChecker, AccessDeniedReason, AccessResult, UsageStats};
@@ -74,6 +79,7 @@ pub use processed_event_store::ProcessedEventStore;
 pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};
 pub use session_reader::{ListOptions, SessionList, SessionReader, SessionSummary, SessionView};
 pub use session_repository::SessionRepository;
+pub use session_validator::SessionValidator;
 pub use promo_code_validator::{
     PromoCodeInvalidReason, PromoCodeValidation, PromoCodeValidator,
 };

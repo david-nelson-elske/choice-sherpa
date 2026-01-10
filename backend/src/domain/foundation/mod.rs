@@ -18,7 +18,10 @@ mod events;
 mod command;
 
 pub use auth::{AuthenticatedUser, AuthError};
-pub use ids::{SessionId, CycleId, ComponentId, ConversationId, UserId, MembershipId};
+pub use ids::{
+    SessionId, CycleId, ComponentId, ConversationId, UserId, MembershipId,
+    ToolInvocationId, RevisitSuggestionId, ConfirmationRequestId,
+};
 pub use timestamp::Timestamp;
 pub use percentage::Percentage;
 pub use rating::Rating;
