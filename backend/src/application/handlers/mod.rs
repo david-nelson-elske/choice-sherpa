@@ -52,5 +52,5 @@ pub use ai_engine::{
     RouteIntentCommand, RouteIntentHandler, RouteIntentResult, RouteIntentError,
     EndConversationCommand, EndConversationHandler, EndConversationError,
     // Queries
-    GetConversationStateHandler, GetConversationStateQuery, GetConversationStateResult,
+    GetConversationStateError, GetConversationStateHandler, GetConversationStateQuery, GetConversationStateResult,
 };

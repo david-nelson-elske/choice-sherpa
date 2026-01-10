@@ -19,7 +19,8 @@ mod start_conversation;
 
 pub use end_conversation::{EndConversationCommand, EndConversationError, EndConversationHandler};
 pub use get_conversation_state::{
-    GetConversationStateHandler, GetConversationStateQuery, GetConversationStateResult,
+    GetConversationStateError, GetConversationStateHandler, GetConversationStateQuery,
+    GetConversationStateResult,
 };
 pub use route_intent::{
     RouteIntentCommand, RouteIntentError, RouteIntentHandler, RouteIntentResult,
