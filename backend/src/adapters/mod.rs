@@ -3,11 +3,13 @@
 //! Adapters connect the domain to external systems:
 //! - `ai` - AI/LLM provider implementations (mock, OpenAI, Anthropic)
 //! - `events` - Event bus implementations (in-memory, Redis)
+//! - `http` - HTTP/REST API implementations
 //! - `membership` - Membership access control implementations
 //! - `validation` - Schema validation implementations
 
 pub mod ai;
 pub mod events;
+pub mod http;
 pub mod membership;
 pub mod validation;
 
