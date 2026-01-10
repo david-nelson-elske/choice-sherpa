@@ -30,6 +30,7 @@ mod access_checker;
 mod ai_provider;
 mod circuit_breaker;
 mod connection_registry;
+mod cycle_reader;
 mod cycle_repository;
 mod event_publisher;
 mod event_subscriber;
@@ -51,6 +52,10 @@ pub use ai_provider::{
 };
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
+pub use cycle_reader::{
+    ComponentStatusItem, CycleProgressView, CycleReader, CycleSummary, CycleTreeNode, CycleView,
+    NextAction, NextActionType, ProgressStep,
+};
 pub use cycle_repository::CycleRepository;
 pub use event_publisher::EventPublisher;
 pub use event_subscriber::{EventBus, EventHandler, EventSubscriber};
