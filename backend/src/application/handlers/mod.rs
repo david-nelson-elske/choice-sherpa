@@ -10,6 +10,7 @@ pub use cycle::{
     // Commands
     BranchCycleCommand, BranchCycleError, BranchCycleHandler, BranchCycleResult, CycleBranchedEvent,
     CreateCycleCommand, CreateCycleError, CreateCycleHandler, CreateCycleResult, CycleCreatedEvent,
+    GenerateDocumentCommand, GenerateDocumentError, GenerateDocumentHandler, GenerateDocumentResult,
 };
 pub use membership::{
     // Commands
