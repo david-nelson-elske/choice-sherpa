@@ -14,7 +14,7 @@ This checklist tracks implementation of cross-cutting integration features that 
 
 | Feature | Specification | Tasks | Status |
 |---------|---------------|-------|--------|
-| Authentication & Identity | `features/integrations/authentication-identity.md` | 0/17 | Not started |
+| Authentication & Identity | `features/integrations/authentication-identity.md` | 5/17 | In progress |
 | Event Versioning | `features/integrations/event-versioning.md` | 0/35 | Not started |
 | Membership Access Control | `features/integrations/membership-access-control.md` | 3/22 | In progress |
 | Notification Service | `features/integrations/notification-service.md` | 0/25 | Not started |
@@ -22,7 +22,7 @@ This checklist tracks implementation of cross-cutting integration features that 
 | Rate Limiting | `features/integrations/rate-limiting.md` | 0/25 | Not started |
 | WebSocket Dashboard | `features/integrations/websocket-dashboard.md` | 0/16 | Not started |
 
-**Total Progress: 3/165 (2%)**
+**Total Progress: 8/165 (5%)**
 
 ---
 
@@ -39,11 +39,12 @@ This checklist tracks implementation of cross-cutting integration features that 
 
 ### Backend Implementation
 
-- [ ] Implement SessionValidator port
+- [x] Implement SessionValidator port
 - [ ] Implement ZitadelSessionValidator adapter
-- [ ] Add JWT verification middleware
-- [ ] Create user context extraction
-- [ ] Write authentication tests
+- [x] Add JWT verification middleware
+- [x] Create user context extraction
+- [x] Write authentication tests
+- [x] Implement AuthProvider port (bonus: for background token refresh)
 
 ### Frontend Implementation
 
@@ -240,15 +241,15 @@ This checklist tracks implementation of cross-cutting integration features that 
 
 | Section | Tasks | Completed | Percentage |
 |---------|-------|-----------|------------|
-| Authentication & Identity | 17 | 0 | 0% |
+| Authentication & Identity | 17 | 5 | 29% |
 | Event Versioning | 35 | 0 | 0% |
 | Membership Access Control | 22 | 3 | 14% |
 | Notification Service | 25 | 0 | 0% |
 | Observability | 25 | 0 | 0% |
 | Rate Limiting | 25 | 0 | 0% |
 | WebSocket Dashboard | 16 | 0 | 0% |
-| **Total** | **165** | **3** | **2%** |
+| **Total** | **165** | **8** | **5%** |
 
 ---
 
-*Last Updated: 2026-01-09*
+*Last Updated: 2026-01-10*
