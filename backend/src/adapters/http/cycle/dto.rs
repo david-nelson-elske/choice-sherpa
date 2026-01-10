@@ -205,6 +205,39 @@ pub struct ComponentCommandResponse {
     pub message: String,
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// Document DTOs
+// ════════════════════════════════════════════════════════════════════════════════
+
+/// Query parameters for document generation.
+#[derive(Debug, Clone, Deserialize)]
+pub struct GetDocumentQuery {
+    /// Document format: "full", "summary", or "export".
+    #[serde(default = "default_format")]
+    pub format: String,
+}
+
+fn default_format() -> String {
+    "full".to_string()
+}
+
+/// Response containing generated document content.
+#[derive(Debug, Clone, Serialize)]
+pub struct DocumentResponse {
+    /// The generated markdown content.
+    pub content: String,
+    /// The cycle ID.
+    pub cycle_id: String,
+    /// The session ID.
+    pub session_id: String,
+    /// The format used.
+    pub format: String,
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// Error DTOs
+// ════════════════════════════════════════════════════════════════════════════════
+
 /// Standard error response.
 #[derive(Debug, Clone, Serialize)]
 pub struct ErrorResponse {
