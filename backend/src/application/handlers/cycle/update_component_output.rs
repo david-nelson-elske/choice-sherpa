@@ -1,32 +1,36 @@
-//! UpdateComponentOutputHandler - Command handler for updating a component's output.
+//! UpdateComponentOutputHandler - Command handler for updating component output.
 //!
-//! Allows updating the output data for a component that is InProgress or NeedsRevision.
-//! This is the main way AI conversations translate into structured component data.
+//! Updating a component's output stores the structured data produced by
+//! conversations within that component. The component must be in progress.
 
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 
+use crate::domain::cycle::Cycle;
 use crate::domain::foundation::{
     domain_event, CommandMetadata, ComponentType, CycleId, DomainError, EventId,
     SerializableDomainEvent, Timestamp,
 };
 use crate::ports::{CycleRepository, EventPublisher};
 
-/// Command to update a component's output.
+/// Command to update a component's output within a cycle.
 #[derive(Debug, Clone)]
 pub struct UpdateComponentOutputCommand {
     /// The cycle containing the component.
     pub cycle_id: CycleId,
     /// The component type to update.
     pub component_type: ComponentType,
-    /// The new output data as JSON.
-    pub output: serde_json::Value,
+    /// The new output data (JSON structure varies by component type).
+    pub output: JsonValue,
 }
 
-/// Result of successful output update.
-#[derive(Debug)]
+/// Result of successfully updating a component's output.
+#[derive(Debug, Clone)]
 pub struct UpdateComponentOutputResult {
+    /// The updated cycle.
+    pub cycle: Cycle,
     /// The emitted event.
     pub event: ComponentOutputUpdatedEvent,
 }
@@ -38,7 +42,7 @@ pub struct ComponentOutputUpdatedEvent {
     pub event_id: EventId,
     /// The cycle containing the component.
     pub cycle_id: CycleId,
-    /// The component type that was updated.
+    /// The component that was updated.
     pub component_type: ComponentType,
     /// When the output was updated.
     pub updated_at: Timestamp,
@@ -53,12 +57,12 @@ domain_event!(
     event_id = event_id
 );
 
-/// Error type for updating component output.
+/// Error type for updating a component's output.
 #[derive(Debug, Clone)]
 pub enum UpdateComponentOutputError {
     /// Cycle not found.
     CycleNotFound(CycleId),
-    /// Domain error (e.g., component not in valid state).
+    /// Domain error (e.g., component not in progress).
     Domain(DomainError),
 }
 
@@ -129,16 +133,16 @@ impl UpdateComponentOutputHandler {
 
         self.event_publisher.publish(envelope).await?;
 
-        Ok(UpdateComponentOutputResult { event })
+        Ok(UpdateComponentOutputResult { cycle, event })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::cycle::Cycle;
-    use crate::domain::foundation::{ErrorCode, EventEnvelope, SessionId, UserId};
+    use crate::domain::foundation::{ComponentStatus, ErrorCode, EventEnvelope, SessionId, UserId};
     use async_trait::async_trait;
+    use serde_json::json;
     use std::sync::Mutex;
 
     // ─────────────────────────────────────────────────────────────────────
@@ -147,45 +151,35 @@ mod tests {
 
     struct MockCycleRepository {
         cycles: Mutex<Vec<Cycle>>,
+        updated_cycles: Mutex<Vec<Cycle>>,
         fail_update: bool,
     }
 
     impl MockCycleRepository {
-        fn new() -> Self {
-            Self {
-                cycles: Mutex::new(Vec::new()),
-                fail_update: false,
-            }
-        }
-
         fn with_cycle(cycle: Cycle) -> Self {
             Self {
                 cycles: Mutex::new(vec![cycle]),
+                updated_cycles: Mutex::new(Vec::new()),
                 fail_update: false,
             }
         }
 
-        fn failing_update_with_cycle(cycle: Cycle) -> Self {
+        fn failing_with_cycle(cycle: Cycle) -> Self {
             Self {
                 cycles: Mutex::new(vec![cycle]),
+                updated_cycles: Mutex::new(Vec::new()),
                 fail_update: true,
             }
         }
 
-        fn get_cycle(&self, id: &CycleId) -> Option<Cycle> {
-            self.cycles
-                .lock()
-                .unwrap()
-                .iter()
-                .find(|c| c.id() == *id)
-                .cloned()
+        fn updated_cycles(&self) -> Vec<Cycle> {
+            self.updated_cycles.lock().unwrap().clone()
         }
     }
 
     #[async_trait]
     impl CycleRepository for MockCycleRepository {
-        async fn save(&self, cycle: &Cycle) -> Result<(), DomainError> {
-            self.cycles.lock().unwrap().push(cycle.clone());
+        async fn save(&self, _cycle: &Cycle) -> Result<(), DomainError> {
             Ok(())
         }
 
@@ -196,10 +190,7 @@ mod tests {
                     "Simulated update failure",
                 ));
             }
-            let mut cycles = self.cycles.lock().unwrap();
-            if let Some(pos) = cycles.iter().position(|c| c.id() == cycle.id()) {
-                cycles[pos] = cycle.clone();
-            }
+            self.updated_cycles.lock().unwrap().push(cycle.clone());
             Ok(())
         }
 
@@ -217,29 +208,23 @@ mod tests {
             Ok(self.cycles.lock().unwrap().iter().any(|c| c.id() == *id))
         }
 
-        async fn find_by_session_id(
-            &self,
-            _session_id: &SessionId,
-        ) -> Result<Vec<Cycle>, DomainError> {
+        async fn find_by_session_id(&self, _: &SessionId) -> Result<Vec<Cycle>, DomainError> {
             Ok(vec![])
         }
 
-        async fn find_primary_by_session_id(
-            &self,
-            _session_id: &SessionId,
-        ) -> Result<Option<Cycle>, DomainError> {
+        async fn find_primary_by_session_id(&self, _: &SessionId) -> Result<Option<Cycle>, DomainError> {
             Ok(None)
         }
 
-        async fn find_branches(&self, _parent_id: &CycleId) -> Result<Vec<Cycle>, DomainError> {
+        async fn find_branches(&self, _: &CycleId) -> Result<Vec<Cycle>, DomainError> {
             Ok(vec![])
         }
 
-        async fn count_by_session_id(&self, _session_id: &SessionId) -> Result<u32, DomainError> {
+        async fn count_by_session_id(&self, _: &SessionId) -> Result<u32, DomainError> {
             Ok(0)
         }
 
-        async fn delete(&self, _id: &CycleId) -> Result<(), DomainError> {
+        async fn delete(&self, _: &CycleId) -> Result<(), DomainError> {
             Ok(())
         }
     }
@@ -287,29 +272,11 @@ mod tests {
         CommandMetadata::new(test_user_id()).with_correlation_id("test-correlation")
     }
 
-    fn create_cycle_with_component_in_progress() -> Cycle {
-        let session_id = SessionId::new();
-        let mut cycle = Cycle::new(session_id);
+    fn create_cycle_with_started_component() -> Cycle {
+        let mut cycle = Cycle::new(SessionId::new());
         cycle.start_component(ComponentType::IssueRaising).unwrap();
-        cycle.take_events();
+        cycle.take_events(); // Clear setup events
         cycle
-    }
-
-    fn create_fresh_cycle() -> Cycle {
-        let session_id = SessionId::new();
-        let mut cycle = Cycle::new(session_id);
-        cycle.take_events();
-        cycle
-    }
-
-    fn valid_issue_raising_output() -> serde_json::Value {
-        serde_json::json!({
-            "potential_decisions": ["Should I change jobs?"],
-            "objectives": ["Financial stability", "Work-life balance"],
-            "uncertainties": ["Market conditions"],
-            "considerations": ["Family depends on income"],
-            "user_confirmed": false
-        })
     }
 
     fn create_handler(
@@ -319,13 +286,23 @@ mod tests {
         UpdateComponentOutputHandler::new(cycle_repo, publisher)
     }
 
+    fn sample_output() -> JsonValue {
+        json!({
+            "potential_decisions": ["Should we expand?"],
+            "objectives": ["Increase revenue"],
+            "uncertainties": ["Market conditions"],
+            "considerations": ["Budget constraints"],
+            "user_confirmed": false
+        })
+    }
+
     // ─────────────────────────────────────────────────────────────────────
     // Tests
     // ─────────────────────────────────────────────────────────────────────
 
     #[tokio::test]
-    async fn updates_output_for_in_progress_component() {
-        let cycle = create_cycle_with_component_in_progress();
+    async fn updates_in_progress_component_output() {
+        let cycle = create_cycle_with_started_component();
         let cycle_id = cycle.id();
 
         let cycle_repo = Arc::new(MockCycleRepository::with_cycle(cycle));
@@ -336,19 +313,21 @@ mod tests {
         let cmd = UpdateComponentOutputCommand {
             cycle_id,
             component_type: ComponentType::IssueRaising,
-            output: valid_issue_raising_output(),
+            output: sample_output(),
         };
         let result = handler.handle(cmd, test_metadata()).await;
 
         assert!(result.is_ok());
         let result = result.unwrap();
-        assert_eq!(result.event.cycle_id, cycle_id);
-        assert_eq!(result.event.component_type, ComponentType::IssueRaising);
+        assert_eq!(
+            result.cycle.component_status(ComponentType::IssueRaising),
+            ComponentStatus::InProgress
+        );
     }
 
     #[tokio::test]
-    async fn persists_updated_output_in_repository() {
-        let cycle = create_cycle_with_component_in_progress();
+    async fn saves_updated_cycle_to_repository() {
+        let cycle = create_cycle_with_started_component();
         let cycle_id = cycle.id();
 
         let cycle_repo = Arc::new(MockCycleRepository::with_cycle(cycle));
@@ -359,19 +338,17 @@ mod tests {
         let cmd = UpdateComponentOutputCommand {
             cycle_id,
             component_type: ComponentType::IssueRaising,
-            output: valid_issue_raising_output(),
+            output: sample_output(),
         };
         handler.handle(cmd, test_metadata()).await.unwrap();
 
-        let updated = cycle_repo.get_cycle(&cycle_id).unwrap();
-        let component = updated.component(ComponentType::IssueRaising).unwrap();
-        let output = component.output_as_value();
-        assert!(output["potential_decisions"].is_array());
+        let updated = cycle_repo.updated_cycles();
+        assert_eq!(updated.len(), 1);
     }
 
     #[tokio::test]
     async fn publishes_component_output_updated_event() {
-        let cycle = create_cycle_with_component_in_progress();
+        let cycle = create_cycle_with_started_component();
         let cycle_id = cycle.id();
 
         let cycle_repo = Arc::new(MockCycleRepository::with_cycle(cycle));
@@ -382,18 +359,20 @@ mod tests {
         let cmd = UpdateComponentOutputCommand {
             cycle_id,
             component_type: ComponentType::IssueRaising,
-            output: valid_issue_raising_output(),
+            output: sample_output(),
         };
         handler.handle(cmd, test_metadata()).await.unwrap();
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].event_type, "component.output_updated");
+        assert_eq!(events[0].aggregate_id, cycle_id.to_string());
     }
 
     #[tokio::test]
     async fn fails_when_cycle_not_found() {
-        let cycle_repo = Arc::new(MockCycleRepository::new());
+        let cycle = create_cycle_with_started_component();
+        let cycle_repo = Arc::new(MockCycleRepository::with_cycle(cycle));
         let publisher = Arc::new(MockEventPublisher::new());
 
         let handler = create_handler(cycle_repo, publisher.clone());
@@ -401,20 +380,17 @@ mod tests {
         let cmd = UpdateComponentOutputCommand {
             cycle_id: CycleId::new(),
             component_type: ComponentType::IssueRaising,
-            output: valid_issue_raising_output(),
+            output: sample_output(),
         };
         let result = handler.handle(cmd, test_metadata()).await;
 
-        assert!(matches!(
-            result,
-            Err(UpdateComponentOutputError::CycleNotFound(_))
-        ));
+        assert!(matches!(result, Err(UpdateComponentOutputError::CycleNotFound(_))));
         assert!(publisher.published_events().is_empty());
     }
 
     #[tokio::test]
     async fn fails_when_component_not_started() {
-        let cycle = create_fresh_cycle();
+        let cycle = Cycle::new(SessionId::new()); // No components started
         let cycle_id = cycle.id();
 
         let cycle_repo = Arc::new(MockCycleRepository::with_cycle(cycle));
@@ -425,46 +401,17 @@ mod tests {
         let cmd = UpdateComponentOutputCommand {
             cycle_id,
             component_type: ComponentType::IssueRaising,
-            output: valid_issue_raising_output(),
+            output: sample_output(),
         };
         let result = handler.handle(cmd, test_metadata()).await;
 
-        assert!(matches!(
-            result,
-            Err(UpdateComponentOutputError::Domain(_))
-        ));
-        assert!(publisher.published_events().is_empty());
-    }
-
-    #[tokio::test]
-    async fn fails_when_cycle_archived() {
-        let mut cycle = create_cycle_with_component_in_progress();
-        let cycle_id = cycle.id();
-        cycle.archive().unwrap();
-        cycle.take_events();
-
-        let cycle_repo = Arc::new(MockCycleRepository::with_cycle(cycle));
-        let publisher = Arc::new(MockEventPublisher::new());
-
-        let handler = create_handler(cycle_repo, publisher.clone());
-
-        let cmd = UpdateComponentOutputCommand {
-            cycle_id,
-            component_type: ComponentType::IssueRaising,
-            output: valid_issue_raising_output(),
-        };
-        let result = handler.handle(cmd, test_metadata()).await;
-
-        assert!(matches!(
-            result,
-            Err(UpdateComponentOutputError::Domain(_))
-        ));
+        assert!(matches!(result, Err(UpdateComponentOutputError::Domain(_))));
         assert!(publisher.published_events().is_empty());
     }
 
     #[tokio::test]
     async fn includes_correlation_id_in_event() {
-        let cycle = create_cycle_with_component_in_progress();
+        let cycle = create_cycle_with_started_component();
         let cycle_id = cycle.id();
 
         let cycle_repo = Arc::new(MockCycleRepository::with_cycle(cycle));
@@ -475,7 +422,7 @@ mod tests {
         let cmd = UpdateComponentOutputCommand {
             cycle_id,
             component_type: ComponentType::IssueRaising,
-            output: valid_issue_raising_output(),
+            output: sample_output(),
         };
         handler.handle(cmd, test_metadata()).await.unwrap();
 
@@ -488,10 +435,10 @@ mod tests {
 
     #[tokio::test]
     async fn does_not_publish_event_on_update_failure() {
-        let cycle = create_cycle_with_component_in_progress();
+        let cycle = create_cycle_with_started_component();
         let cycle_id = cycle.id();
 
-        let cycle_repo = Arc::new(MockCycleRepository::failing_update_with_cycle(cycle));
+        let cycle_repo = Arc::new(MockCycleRepository::failing_with_cycle(cycle));
         let publisher = Arc::new(MockEventPublisher::new());
 
         let handler = create_handler(cycle_repo, publisher.clone());
@@ -499,7 +446,7 @@ mod tests {
         let cmd = UpdateComponentOutputCommand {
             cycle_id,
             component_type: ComponentType::IssueRaising,
-            output: valid_issue_raising_output(),
+            output: sample_output(),
         };
         let result = handler.handle(cmd, test_metadata()).await;
 

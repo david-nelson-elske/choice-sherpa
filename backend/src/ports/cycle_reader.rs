@@ -14,6 +14,7 @@ use crate::domain::foundation::{
 };
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 
 /// Reader port for cycle queries.
 ///
@@ -46,6 +47,15 @@ pub trait CycleReader: Send + Sync {
     ///
     /// Returns ordered list from root to the specified cycle.
     async fn get_lineage(&self, id: &CycleId) -> Result<Vec<CycleSummary>, DomainError>;
+
+    /// Get a component's output from a cycle.
+    ///
+    /// Returns the component's structured output and status information.
+    async fn get_component_output(
+        &self,
+        cycle_id: &CycleId,
+        component_type: ComponentType,
+    ) -> Result<Option<ComponentOutputView>, DomainError>;
 }
 
 /// Detailed view of a cycle for UI display.
@@ -216,6 +226,25 @@ pub enum NextActionType {
 
     /// Cycle is already complete.
     AlreadyComplete,
+}
+
+/// View of a component's output for queries.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ComponentOutputView {
+    /// The cycle this component belongs to.
+    pub cycle_id: CycleId,
+
+    /// Component type.
+    pub component_type: ComponentType,
+
+    /// Current status of the component.
+    pub status: ComponentStatus,
+
+    /// The structured output data (schema varies by component type).
+    pub output: JsonValue,
+
+    /// When the component was last updated.
+    pub updated_at: Timestamp,
 }
 
 #[cfg(test)]

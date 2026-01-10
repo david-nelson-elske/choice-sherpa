@@ -58,6 +58,11 @@ impl Tradeoffs {
         }
     }
 
+    /// Reconstitutes a Tradeoffs component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: TradeoffsOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &TradeoffsOutput {
         &self.output

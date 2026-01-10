@@ -1,56 +1,27 @@
 //! GetCycleHandler - Query handler for retrieving cycle details.
 //!
-//! Returns a detailed view of a cycle for UI display,
-//! including component statuses and progress information.
+//! Returns the full cycle view for UI display including component statuses,
+//! progress, and branching information.
 
 use std::sync::Arc;
 
-use crate::domain::foundation::{CycleId, DomainError, ErrorCode};
+use crate::domain::foundation::{CycleId, DomainError};
 use crate::ports::{CycleReader, CycleView};
 
 /// Query to get a cycle by ID.
 #[derive(Debug, Clone)]
 pub struct GetCycleQuery {
-    /// The cycle to retrieve.
+    /// The cycle ID to retrieve.
     pub cycle_id: CycleId,
 }
 
 /// Result of successful cycle query.
-pub type GetCycleResult = CycleView;
-
-/// Error type for getting a cycle.
-#[derive(Debug, Clone)]
-pub enum GetCycleError {
-    /// Cycle not found.
-    NotFound(CycleId),
-    /// Infrastructure error.
-    Infrastructure(String),
-}
-
-impl std::fmt::Display for GetCycleError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            GetCycleError::NotFound(id) => write!(f, "Cycle not found: {}", id),
-            GetCycleError::Infrastructure(msg) => write!(f, "Infrastructure error: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for GetCycleError {}
-
-impl From<DomainError> for GetCycleError {
-    fn from(err: DomainError) -> Self {
-        match err.code {
-            ErrorCode::CycleNotFound => GetCycleError::NotFound(CycleId::new()),
-            _ => GetCycleError::Infrastructure(err.message),
-        }
-    }
-}
+pub type GetCycleResult = Option<CycleView>;
 
 /// Handler for retrieving cycle details.
 ///
 /// Returns the full cycle view for UI display,
-/// or an error if the cycle doesn't exist.
+/// or `None` if the cycle is not found.
 pub struct GetCycleHandler {
     reader: Arc<dyn CycleReader>,
 }
@@ -60,23 +31,16 @@ impl GetCycleHandler {
         Self { reader }
     }
 
-    pub async fn handle(&self, query: GetCycleQuery) -> Result<GetCycleResult, GetCycleError> {
-        self.reader
-            .get_by_id(&query.cycle_id)
-            .await?
-            .ok_or(GetCycleError::NotFound(query.cycle_id))
+    pub async fn handle(&self, query: GetCycleQuery) -> Result<GetCycleResult, DomainError> {
+        self.reader.get_by_id(&query.cycle_id).await
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::foundation::{
-        ComponentStatus, ComponentType, CycleStatus, SessionId, Timestamp,
-    };
-    use crate::ports::{
-        ComponentStatusItem, CycleProgressView, CycleSummary, CycleTreeNode, CycleView,
-    };
+    use crate::domain::foundation::{ComponentStatus, ComponentType, CycleStatus, SessionId, Timestamp};
+    use crate::ports::{ComponentStatusItem, CycleProgressView, CycleSummary, CycleTreeNode};
     use async_trait::async_trait;
 
     // ─────────────────────────────────────────────────────────────────────
@@ -84,28 +48,28 @@ mod tests {
     // ─────────────────────────────────────────────────────────────────────
 
     struct MockCycleReader {
-        cycles: Vec<CycleView>,
+        views: Vec<CycleView>,
         fail_read: bool,
     }
 
     impl MockCycleReader {
         fn new() -> Self {
             Self {
-                cycles: Vec::new(),
+                views: Vec::new(),
                 fail_read: false,
             }
         }
 
-        fn with_cycle(cycle: CycleView) -> Self {
+        fn with_cycle(view: CycleView) -> Self {
             Self {
-                cycles: vec![cycle],
+                views: vec![view],
                 fail_read: false,
             }
         }
 
         fn failing() -> Self {
             Self {
-                cycles: Vec::new(),
+                views: Vec::new(),
                 fail_read: true,
             }
         }
@@ -116,11 +80,11 @@ mod tests {
         async fn get_by_id(&self, id: &CycleId) -> Result<Option<CycleView>, DomainError> {
             if self.fail_read {
                 return Err(DomainError::new(
-                    ErrorCode::DatabaseError,
+                    crate::domain::foundation::ErrorCode::DatabaseError,
                     "Simulated read failure",
                 ));
             }
-            Ok(self.cycles.iter().find(|c| &c.id == id).cloned())
+            Ok(self.views.iter().find(|v| v.id == *id).cloned())
         }
 
         async fn list_by_session_id(
@@ -137,15 +101,20 @@ mod tests {
             Ok(None)
         }
 
-        async fn get_progress(
-            &self,
-            _id: &CycleId,
-        ) -> Result<Option<CycleProgressView>, DomainError> {
+        async fn get_progress(&self, _id: &CycleId) -> Result<Option<CycleProgressView>, DomainError> {
             Ok(None)
         }
 
         async fn get_lineage(&self, _id: &CycleId) -> Result<Vec<CycleSummary>, DomainError> {
             Ok(vec![])
+        }
+
+        async fn get_component_output(
+            &self,
+            _cycle_id: &CycleId,
+            _component_type: ComponentType,
+        ) -> Result<Option<crate::ports::ComponentOutputView>, DomainError> {
+            Ok(None)
         }
     }
 
@@ -153,9 +122,10 @@ mod tests {
     // Test Helpers
     // ─────────────────────────────────────────────────────────────────────
 
-    fn test_cycle_view(id: CycleId) -> CycleView {
+    fn create_test_cycle_view() -> CycleView {
+        let cycle_id = CycleId::new();
         CycleView {
-            id,
+            id: cycle_id,
             session_id: SessionId::new(),
             parent_cycle_id: None,
             branch_point: None,
@@ -166,7 +136,7 @@ mod tests {
                 status: ComponentStatus::InProgress,
                 is_current: true,
             }],
-            progress_percent: 0,
+            progress_percent: 10,
             is_complete: false,
             branch_count: 0,
             created_at: Timestamp::now(),
@@ -179,62 +149,66 @@ mod tests {
     // ─────────────────────────────────────────────────────────────────────
 
     #[tokio::test]
-    async fn returns_cycle_when_exists() {
-        let cycle_id = CycleId::new();
-        let view = test_cycle_view(cycle_id);
+    async fn returns_cycle_when_found() {
+        let view = create_test_cycle_view();
+        let cycle_id = view.id;
+
         let reader = Arc::new(MockCycleReader::with_cycle(view.clone()));
-
         let handler = GetCycleHandler::new(reader);
+
         let query = GetCycleQuery { cycle_id };
-
         let result = handler.handle(query).await;
-        assert!(result.is_ok());
 
-        let cycle = result.unwrap();
-        assert_eq!(cycle.id, cycle_id);
-        assert_eq!(cycle.status, CycleStatus::Active);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_some());
+        let result = result.unwrap();
+        assert_eq!(result.id, cycle_id);
+        assert_eq!(result.status, CycleStatus::Active);
     }
 
     #[tokio::test]
-    async fn returns_correct_component_statuses() {
-        let cycle_id = CycleId::new();
-        let view = test_cycle_view(cycle_id);
-        let reader = Arc::new(MockCycleReader::with_cycle(view));
-
+    async fn returns_none_when_not_found() {
+        let reader = Arc::new(MockCycleReader::new());
         let handler = GetCycleHandler::new(reader);
-        let query = GetCycleQuery { cycle_id };
 
-        let result = handler.handle(query).await.unwrap();
+        let query = GetCycleQuery {
+            cycle_id: CycleId::new(),
+        };
+        let result = handler.handle(query).await;
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn returns_error_on_read_failure() {
+        let reader = Arc::new(MockCycleReader::failing());
+        let handler = GetCycleHandler::new(reader);
+
+        let query = GetCycleQuery {
+            cycle_id: CycleId::new(),
+        };
+        let result = handler.handle(query).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn includes_component_statuses() {
+        let view = create_test_cycle_view();
+        let cycle_id = view.id;
+
+        let reader = Arc::new(MockCycleReader::with_cycle(view));
+        let handler = GetCycleHandler::new(reader);
+
+        let query = GetCycleQuery { cycle_id };
+        let result = handler.handle(query).await.unwrap().unwrap();
+
         assert_eq!(result.component_statuses.len(), 1);
         assert_eq!(
             result.component_statuses[0].component_type,
             ComponentType::IssueRaising
         );
-    }
-
-    #[tokio::test]
-    async fn returns_not_found_when_cycle_missing() {
-        let reader = Arc::new(MockCycleReader::new());
-
-        let handler = GetCycleHandler::new(reader);
-        let query = GetCycleQuery {
-            cycle_id: CycleId::new(),
-        };
-
-        let result = handler.handle(query).await;
-        assert!(matches!(result, Err(GetCycleError::NotFound(_))));
-    }
-
-    #[tokio::test]
-    async fn returns_infrastructure_error_on_read_failure() {
-        let reader = Arc::new(MockCycleReader::failing());
-
-        let handler = GetCycleHandler::new(reader);
-        let query = GetCycleQuery {
-            cycle_id: CycleId::new(),
-        };
-
-        let result = handler.handle(query).await;
-        assert!(matches!(result, Err(GetCycleError::Infrastructure(_))));
     }
 }

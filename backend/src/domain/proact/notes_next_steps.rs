@@ -43,6 +43,11 @@ impl NotesNextSteps {
         }
     }
 
+    /// Reconstitutes a NotesNextSteps component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: NotesNextStepsOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &NotesNextStepsOutput {
         &self.output

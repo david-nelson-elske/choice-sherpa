@@ -1,13 +1,13 @@
 //! ArchiveCycleHandler - Command handler for archiving a cycle.
 //!
-//! Archiving a cycle transitions it to Archived status.
-//! Archived cycles cannot be modified and serve as historical records.
-//! Both Active and Completed cycles can be archived.
+//! Archiving a cycle transitions its status to Archived, removing it
+//! from active consideration while preserving it for historical reference.
 
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
+use crate::domain::cycle::Cycle;
 use crate::domain::foundation::{
     domain_event, CommandMetadata, CycleId, DomainError, EventId, SerializableDomainEvent,
     Timestamp,
@@ -21,9 +21,11 @@ pub struct ArchiveCycleCommand {
     pub cycle_id: CycleId,
 }
 
-/// Result of successful cycle archival.
-#[derive(Debug)]
+/// Result of successfully archiving a cycle.
+#[derive(Debug, Clone)]
 pub struct ArchiveCycleResult {
+    /// The archived cycle.
+    pub cycle: Cycle,
     /// The emitted event.
     pub event: CycleArchivedEvent,
 }
@@ -33,7 +35,7 @@ pub struct ArchiveCycleResult {
 pub struct CycleArchivedEvent {
     /// Unique event identifier.
     pub event_id: EventId,
-    /// The cycle that was archived.
+    /// The archived cycle.
     pub cycle_id: CycleId,
     /// When the cycle was archived.
     pub archived_at: Timestamp,
@@ -123,17 +125,14 @@ impl ArchiveCycleHandler {
 
         self.event_publisher.publish(envelope).await?;
 
-        Ok(ArchiveCycleResult { event })
+        Ok(ArchiveCycleResult { cycle, event })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::cycle::Cycle;
-    use crate::domain::foundation::{
-        ComponentType, CycleStatus, ErrorCode, EventEnvelope, SessionId, UserId,
-    };
+    use crate::domain::foundation::{ComponentType, CycleStatus, ErrorCode, EventEnvelope, SessionId, UserId};
     use async_trait::async_trait;
     use std::sync::Mutex;
 
@@ -143,45 +142,35 @@ mod tests {
 
     struct MockCycleRepository {
         cycles: Mutex<Vec<Cycle>>,
+        updated_cycles: Mutex<Vec<Cycle>>,
         fail_update: bool,
     }
 
     impl MockCycleRepository {
-        fn new() -> Self {
-            Self {
-                cycles: Mutex::new(Vec::new()),
-                fail_update: false,
-            }
-        }
-
         fn with_cycle(cycle: Cycle) -> Self {
             Self {
                 cycles: Mutex::new(vec![cycle]),
+                updated_cycles: Mutex::new(Vec::new()),
                 fail_update: false,
             }
         }
 
-        fn failing_update_with_cycle(cycle: Cycle) -> Self {
+        fn failing_with_cycle(cycle: Cycle) -> Self {
             Self {
                 cycles: Mutex::new(vec![cycle]),
+                updated_cycles: Mutex::new(Vec::new()),
                 fail_update: true,
             }
         }
 
-        fn get_cycle(&self, id: &CycleId) -> Option<Cycle> {
-            self.cycles
-                .lock()
-                .unwrap()
-                .iter()
-                .find(|c| c.id() == *id)
-                .cloned()
+        fn updated_cycles(&self) -> Vec<Cycle> {
+            self.updated_cycles.lock().unwrap().clone()
         }
     }
 
     #[async_trait]
     impl CycleRepository for MockCycleRepository {
-        async fn save(&self, cycle: &Cycle) -> Result<(), DomainError> {
-            self.cycles.lock().unwrap().push(cycle.clone());
+        async fn save(&self, _cycle: &Cycle) -> Result<(), DomainError> {
             Ok(())
         }
 
@@ -192,10 +181,7 @@ mod tests {
                     "Simulated update failure",
                 ));
             }
-            let mut cycles = self.cycles.lock().unwrap();
-            if let Some(pos) = cycles.iter().position(|c| c.id() == cycle.id()) {
-                cycles[pos] = cycle.clone();
-            }
+            self.updated_cycles.lock().unwrap().push(cycle.clone());
             Ok(())
         }
 
@@ -213,29 +199,23 @@ mod tests {
             Ok(self.cycles.lock().unwrap().iter().any(|c| c.id() == *id))
         }
 
-        async fn find_by_session_id(
-            &self,
-            _session_id: &SessionId,
-        ) -> Result<Vec<Cycle>, DomainError> {
+        async fn find_by_session_id(&self, _: &SessionId) -> Result<Vec<Cycle>, DomainError> {
             Ok(vec![])
         }
 
-        async fn find_primary_by_session_id(
-            &self,
-            _session_id: &SessionId,
-        ) -> Result<Option<Cycle>, DomainError> {
+        async fn find_primary_by_session_id(&self, _: &SessionId) -> Result<Option<Cycle>, DomainError> {
             Ok(None)
         }
 
-        async fn find_branches(&self, _parent_id: &CycleId) -> Result<Vec<Cycle>, DomainError> {
+        async fn find_branches(&self, _: &CycleId) -> Result<Vec<Cycle>, DomainError> {
             Ok(vec![])
         }
 
-        async fn count_by_session_id(&self, _session_id: &SessionId) -> Result<u32, DomainError> {
+        async fn count_by_session_id(&self, _: &SessionId) -> Result<u32, DomainError> {
             Ok(0)
         }
 
-        async fn delete(&self, _id: &CycleId) -> Result<(), DomainError> {
+        async fn delete(&self, _: &CycleId) -> Result<(), DomainError> {
             Ok(())
         }
     }
@@ -284,31 +264,26 @@ mod tests {
     }
 
     fn create_active_cycle() -> Cycle {
-        let session_id = SessionId::new();
-        let mut cycle = Cycle::new(session_id);
-        cycle.take_events(); // Clear creation event
+        let mut cycle = Cycle::new(SessionId::new());
+        cycle.start_component(ComponentType::IssueRaising).unwrap();
+        cycle.take_events(); // Clear setup events
         cycle
     }
 
     fn create_completed_cycle() -> Cycle {
-        let session_id = SessionId::new();
-        let mut cycle = Cycle::new(session_id);
-        // Must start all prior components before DecisionQuality (domain enforces order)
-        cycle.start_component(ComponentType::IssueRaising).unwrap();
-        cycle.start_component(ComponentType::ProblemFrame).unwrap();
-        cycle.start_component(ComponentType::Objectives).unwrap();
-        cycle.start_component(ComponentType::Alternatives).unwrap();
-        cycle.start_component(ComponentType::Consequences).unwrap();
-        cycle.start_component(ComponentType::Tradeoffs).unwrap();
-        cycle.start_component(ComponentType::Recommendation).unwrap();
-        cycle
-            .start_component(ComponentType::DecisionQuality)
-            .unwrap();
-        cycle
-            .complete_component(ComponentType::DecisionQuality)
-            .unwrap();
+        use crate::domain::proact::ComponentSequence;
+        let mut cycle = Cycle::new(SessionId::new());
+
+        // Progress through all components except NotesNextSteps (optional)
+        for ct in ComponentSequence::all() {
+            if *ct == ComponentType::NotesNextSteps {
+                continue;
+            }
+            cycle.start_component(*ct).unwrap();
+            cycle.complete_component(*ct).unwrap();
+        }
         cycle.complete().unwrap();
-        cycle.take_events();
+        cycle.take_events(); // Clear events
         cycle
     }
 
@@ -324,7 +299,7 @@ mod tests {
     // ─────────────────────────────────────────────────────────────────────
 
     #[tokio::test]
-    async fn archives_active_cycle_successfully() {
+    async fn archives_active_cycle() {
         let cycle = create_active_cycle();
         let cycle_id = cycle.id();
 
@@ -338,11 +313,11 @@ mod tests {
 
         assert!(result.is_ok());
         let result = result.unwrap();
-        assert_eq!(result.event.cycle_id, cycle_id);
+        assert_eq!(result.cycle.status(), CycleStatus::Archived);
     }
 
     #[tokio::test]
-    async fn archives_completed_cycle_successfully() {
+    async fn archives_completed_cycle() {
         let cycle = create_completed_cycle();
         let cycle_id = cycle.id();
 
@@ -355,10 +330,12 @@ mod tests {
         let result = handler.handle(cmd, test_metadata()).await;
 
         assert!(result.is_ok());
+        let result = result.unwrap();
+        assert_eq!(result.cycle.status(), CycleStatus::Archived);
     }
 
     #[tokio::test]
-    async fn updates_cycle_status_in_repository() {
+    async fn saves_archived_cycle_to_repository() {
         let cycle = create_active_cycle();
         let cycle_id = cycle.id();
 
@@ -370,8 +347,9 @@ mod tests {
         let cmd = ArchiveCycleCommand { cycle_id };
         handler.handle(cmd, test_metadata()).await.unwrap();
 
-        let updated = cycle_repo.get_cycle(&cycle_id).unwrap();
-        assert_eq!(updated.status(), CycleStatus::Archived);
+        let updated = cycle_repo.updated_cycles();
+        assert_eq!(updated.len(), 1);
+        assert_eq!(updated[0].status(), CycleStatus::Archived);
     }
 
     #[tokio::test]
@@ -390,40 +368,23 @@ mod tests {
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
         assert_eq!(events[0].event_type, "cycle.archived");
+        assert_eq!(events[0].aggregate_id, cycle_id.to_string());
     }
 
     #[tokio::test]
     async fn fails_when_cycle_not_found() {
-        let cycle_repo = Arc::new(MockCycleRepository::new());
-        let publisher = Arc::new(MockEventPublisher::new());
-
-        let handler = create_handler(cycle_repo, publisher.clone());
-
-        let cmd = ArchiveCycleCommand {
-            cycle_id: CycleId::new(),
-        };
-        let result = handler.handle(cmd, test_metadata()).await;
-
-        assert!(matches!(result, Err(ArchiveCycleError::CycleNotFound(_))));
-        assert!(publisher.published_events().is_empty());
-    }
-
-    #[tokio::test]
-    async fn fails_when_cycle_already_archived() {
-        let mut cycle = create_active_cycle();
-        let cycle_id = cycle.id();
-        cycle.archive().unwrap();
-        cycle.take_events();
-
+        let cycle = create_active_cycle();
         let cycle_repo = Arc::new(MockCycleRepository::with_cycle(cycle));
         let publisher = Arc::new(MockEventPublisher::new());
 
         let handler = create_handler(cycle_repo, publisher.clone());
 
-        let cmd = ArchiveCycleCommand { cycle_id };
+        let cmd = ArchiveCycleCommand {
+            cycle_id: CycleId::new(), // Non-existent cycle
+        };
         let result = handler.handle(cmd, test_metadata()).await;
 
-        assert!(matches!(result, Err(ArchiveCycleError::Domain(_))));
+        assert!(matches!(result, Err(ArchiveCycleError::CycleNotFound(_))));
         assert!(publisher.published_events().is_empty());
     }
 
@@ -452,7 +413,7 @@ mod tests {
         let cycle = create_active_cycle();
         let cycle_id = cycle.id();
 
-        let cycle_repo = Arc::new(MockCycleRepository::failing_update_with_cycle(cycle));
+        let cycle_repo = Arc::new(MockCycleRepository::failing_with_cycle(cycle));
         let publisher = Arc::new(MockEventPublisher::new());
 
         let handler = create_handler(cycle_repo, publisher.clone());

@@ -59,6 +59,11 @@ impl Objectives {
         }
     }
 
+    /// Reconstitutes an Objectives component from persisted data.
+    pub(crate) fn reconstitute(base: ComponentBase, output: ObjectivesOutput) -> Self {
+        Self { base, output }
+    }
+
     /// Returns the output.
     pub fn output(&self) -> &ObjectivesOutput {
         &self.output

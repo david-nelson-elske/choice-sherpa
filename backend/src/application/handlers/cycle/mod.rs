@@ -1,6 +1,6 @@
 //! Cycle command and query handlers.
 //!
-//! Handlers for cycle lifecycle operations and read queries.
+//! Handlers for cycle lifecycle operations and queries.
 
 // Command handlers
 mod archive_cycle;
@@ -8,7 +8,7 @@ mod branch_cycle;
 mod complete_component;
 mod complete_cycle;
 mod create_cycle;
-mod navigate_component;
+mod navigate_to_component;
 mod start_component;
 mod update_component_output;
 
@@ -35,9 +35,9 @@ pub use complete_cycle::{
 pub use create_cycle::{
     CreateCycleCommand, CreateCycleError, CreateCycleHandler, CreateCycleResult, CycleCreatedEvent,
 };
-pub use navigate_component::{
-    NavigateComponentCommand, NavigateComponentError, NavigateComponentHandler,
-    NavigateComponentResult, NavigatedToComponentEvent,
+pub use navigate_to_component::{
+    NavigateToComponentCommand, NavigateToComponentError, NavigateToComponentHandler,
+    NavigateToComponentResult, NavigatedToComponentEvent,
 };
 pub use start_component::{
     ComponentStartedEvent, StartComponentCommand, StartComponentError, StartComponentHandler,
@@ -48,7 +48,7 @@ pub use update_component_output::{
     UpdateComponentOutputHandler, UpdateComponentOutputResult,
 };
 
-// Query exports
-pub use get_component::{GetComponentError, GetComponentHandler, GetComponentQuery, GetComponentResult};
-pub use get_cycle::{GetCycleError, GetCycleHandler, GetCycleQuery, GetCycleResult};
-pub use get_cycle_tree::{GetCycleTreeError, GetCycleTreeHandler, GetCycleTreeQuery, GetCycleTreeResult};
+// Query handlers
+pub use get_component::{GetComponentHandler, GetComponentQuery, GetComponentResult};
+pub use get_cycle::{GetCycleHandler, GetCycleQuery, GetCycleResult};
+pub use get_cycle_tree::{GetCycleTreeHandler, GetCycleTreeQuery, GetCycleTreeResult};

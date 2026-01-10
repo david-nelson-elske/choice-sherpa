@@ -1,9 +1,9 @@
 //! ComponentVariant - sum type for all PrOACT component types.
 
-use crate::domain::foundation::{ComponentId, ComponentStatus, ComponentType, Timestamp};
+use crate::domain::foundation::{ComponentId, ComponentStatus, ComponentType, DomainError, Timestamp};
 
 use super::{
-    Alternatives, Component, ComponentError, Consequences, DecisionQuality, IssueRaising,
+    Alternatives, Component, ComponentBase, ComponentError, Consequences, DecisionQuality, IssueRaising,
     NotesNextSteps, Objectives, ProblemFrame, Recommendation, Tradeoffs,
 };
 
@@ -228,6 +228,107 @@ impl ComponentVariant {
             ComponentVariant::DecisionQuality(c) => Some(c),
             _ => None,
         }
+    }
+
+    /// Reconstitutes a ComponentVariant from persisted data.
+    ///
+    /// This is used by repository implementations to reconstruct domain objects
+    /// from database records.
+    pub fn reconstitute(
+        id: ComponentId,
+        component_type: ComponentType,
+        status: ComponentStatus,
+        output: serde_json::Value,
+        created_at: Timestamp,
+        updated_at: Timestamp,
+    ) -> Result<Self, DomainError> {
+        let base = ComponentBase::reconstitute(id, component_type, status, created_at, updated_at, None);
+
+        let variant = match component_type {
+            ComponentType::IssueRaising => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize IssueRaising output: {}", e),
+                    )
+                })?;
+                ComponentVariant::IssueRaising(IssueRaising::reconstitute(base, out))
+            }
+            ComponentType::ProblemFrame => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize ProblemFrame output: {}", e),
+                    )
+                })?;
+                ComponentVariant::ProblemFrame(super::ProblemFrame::reconstitute(base, out))
+            }
+            ComponentType::Objectives => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize Objectives output: {}", e),
+                    )
+                })?;
+                ComponentVariant::Objectives(super::Objectives::reconstitute(base, out))
+            }
+            ComponentType::Alternatives => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize Alternatives output: {}", e),
+                    )
+                })?;
+                ComponentVariant::Alternatives(Alternatives::reconstitute(base, out))
+            }
+            ComponentType::Consequences => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize Consequences output: {}", e),
+                    )
+                })?;
+                ComponentVariant::Consequences(Consequences::reconstitute(base, out))
+            }
+            ComponentType::Tradeoffs => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize Tradeoffs output: {}", e),
+                    )
+                })?;
+                ComponentVariant::Tradeoffs(Tradeoffs::reconstitute(base, out))
+            }
+            ComponentType::Recommendation => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize Recommendation output: {}", e),
+                    )
+                })?;
+                ComponentVariant::Recommendation(Recommendation::reconstitute(base, out))
+            }
+            ComponentType::DecisionQuality => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize DecisionQuality output: {}", e),
+                    )
+                })?;
+                ComponentVariant::DecisionQuality(DecisionQuality::reconstitute(base, out))
+            }
+            ComponentType::NotesNextSteps => {
+                let out = serde_json::from_value(output).map_err(|e| {
+                    DomainError::new(
+                        crate::domain::foundation::ErrorCode::InvalidFormat,
+                        format!("Failed to deserialize NotesNextSteps output: {}", e),
+                    )
+                })?;
+                ComponentVariant::NotesNextSteps(NotesNextSteps::reconstitute(base, out))
+            }
+        };
+
+        Ok(variant)
     }
 }
 

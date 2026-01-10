@@ -20,9 +20,9 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 | File | Description | Status |
 |------|-------------|--------|
 | `backend/src/domain/cycle/mod.rs` | Module exports | ✅ |
-| `backend/src/domain/cycle/aggregate.rs` | Cycle aggregate (42 tests inline) | ✅ |
+| `backend/src/domain/cycle/aggregate.rs` | Cycle aggregate (38 tests inline) | ✅ |
 | `backend/src/domain/cycle/progress.rs` | CycleProgress value object (19 tests inline) | ✅ |
-| `backend/src/domain/cycle/events.rs` | CycleEvent enum (18 tests inline) | ✅ |
+| `backend/src/domain/cycle/events.rs` | CycleEvent enum (16 tests inline) | ✅ |
 | `backend/src/domain/cycle/errors.rs` | Cycle-specific errors | ⬜ |
 
 > **Note:** Tests are inline in implementation files using `#[cfg(test)] mod tests` (Rust convention). The file `cycle.rs` was renamed to `aggregate.rs`. Separate test files (`*_test.rs`) are not used.
@@ -33,9 +33,9 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/domain/cycle/aggregate.rs` (inline tests) | Cycle aggregate tests (42 tests) | ✅ |
+| `backend/src/domain/cycle/aggregate.rs` (inline tests) | Cycle aggregate tests (38 tests) | ✅ |
 | `backend/src/domain/cycle/progress.rs` (inline tests) | CycleProgress tests (19 tests) | ✅ |
-| `backend/src/domain/cycle/events.rs` (inline tests) | CycleEvent tests (18 tests) | ✅ |
+| `backend/src/domain/cycle/events.rs` (inline tests) | CycleEvent tests (16 tests) | ✅ |
 
 ### Ports (Rust)
 
@@ -50,19 +50,17 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 |------|-------------|--------|
 | `backend/src/application/handlers/cycle/mod.rs` | Module exports | ✅ |
 | `backend/src/application/handlers/cycle/create_cycle.rs` | CreateCycle handler (8 tests inline) | ✅ |
-| `backend/src/application/handlers/cycle/branch_cycle.rs` | BranchCycle handler (9 tests inline) | ✅ |
-| `backend/src/application/handlers/cycle/start_component.rs` | StartComponent handler (8 tests inline) | ✅ |
+| `backend/src/application/handlers/cycle/branch_cycle.rs` | BranchCycle handler (8 tests inline) | ✅ |
+| `backend/src/application/handlers/cycle/start_component.rs` | StartComponent handler (7 tests inline) | ✅ |
 | `backend/src/application/handlers/cycle/complete_component.rs` | CompleteComponent handler (8 tests inline) | ✅ |
-| `backend/src/application/handlers/cycle/update_component_output.rs` | UpdateComponentOutput handler (8 tests inline) | ✅ |
-| `backend/src/application/handlers/cycle/navigate_component.rs` | NavigateToComponent handler (8 tests inline) | ✅ |
-| `backend/src/application/handlers/cycle/complete_cycle.rs` | CompleteCycle handler (8 tests inline) | ✅ |
-| `backend/src/application/handlers/cycle/archive_cycle.rs` | ArchiveCycle handler (8 tests inline) | ✅ |
+| `backend/src/application/handlers/cycle/update_component_output.rs` | UpdateComponentOutput handler (7 tests inline) | ✅ |
+| `backend/src/application/handlers/cycle/navigate_to_component.rs` | NavigateToComponent handler (7 tests inline) | ✅ |
+| `backend/src/application/handlers/cycle/complete_cycle.rs` | CompleteCycle handler (6 tests inline) | ✅ |
+| `backend/src/application/handlers/cycle/archive_cycle.rs` | ArchiveCycle handler (7 tests inline) | ✅ |
 
 > **Note:** Tests are inline in handler files using `#[cfg(test)] mod tests` (Rust convention).
 
-### Application Layer - Queries (Rust)
-
-> **Note:** Query handlers are co-located with command handlers in `handlers/cycle/` directory. Tests are inline using `#[cfg(test)] mod tests`.
+### Application Layer - Query Handlers (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
@@ -70,81 +68,68 @@ The Cycle module manages the Cycle aggregate - a complete or partial path throug
 | `backend/src/application/handlers/cycle/get_cycle_tree.rs` | GetCycleTree handler (4 tests inline) | ✅ |
 | `backend/src/application/handlers/cycle/get_component.rs` | GetComponent handler (5 tests inline) | ✅ |
 
+> **Note:** Query handlers are co-located with command handlers in handlers/cycle/ directory.
+
 ### HTTP Adapter (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/http/cycle/mod.rs` | Module exports | ⬜ |
-| `backend/src/adapters/http/cycle/handlers.rs` | HTTP handlers | ⬜ |
-| `backend/src/adapters/http/cycle/dto.rs` | Request/Response DTOs | ⬜ |
-| `backend/src/adapters/http/cycle/routes.rs` | Route definitions | ⬜ |
+| `backend/src/adapters/http/cycle/mod.rs` | Module exports | ✅ |
+| `backend/src/adapters/http/cycle/handlers.rs` | HTTP handlers (14 tests inline) | ✅ |
+| `backend/src/adapters/http/cycle/dto.rs` | Request/Response DTOs | ✅ |
+| `backend/src/adapters/http/cycle/routes.rs` | Route definitions | ✅ |
 
-### HTTP Adapter Tests (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/adapters/http/cycle/handlers_test.rs` | Handler tests | ⬜ |
+> **Note:** HTTP handler tests are inline in handlers.rs.
 
 ### Postgres Adapter (Rust)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/src/adapters/postgres/cycle_repository.rs` | PostgresCycleRepository | ⬜ |
-| `backend/src/adapters/postgres/cycle_reader.rs` | PostgresCycleReader | ⬜ |
-| `backend/src/adapters/postgres/component_mapper.rs` | JSONB to Rust mapper | ⬜ |
+| `backend/src/adapters/postgres/cycle_repository.rs` | PostgresCycleRepository (8 tests inline) | ✅ |
+| `backend/src/adapters/postgres/cycle_reader.rs` | PostgresCycleReader (6 tests inline) | ✅ |
 
-### Postgres Adapter Tests (Rust)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `backend/src/adapters/postgres/cycle_repository_test.rs` | Repository tests | ⬜ |
-| `backend/src/adapters/postgres/cycle_reader_test.rs` | Reader tests | ⬜ |
+> **Note:** Component JSONB mapping is handled within repository/reader. Tests are inline.
 
 ### Database Migrations
 
 | File | Description | Status |
 |------|-------------|--------|
-| `backend/migrations/002_create_cycles.sql` | Cycles table | ⬜ |
-| `backend/migrations/003_create_components.sql` | Components table | ⬜ |
+| `backend/migrations/20260109000003_create_cycles.sql` | Cycles and Components tables (combined) | ✅ |
 
 ### Frontend Domain (TypeScript)
 
-| File | Description | Status |
-|------|-------------|--------|
-| `frontend/src/modules/cycle/domain/cycle.ts` | Cycle types | ⬜ |
-| `frontend/src/modules/cycle/domain/progress.ts` | Progress types | ⬜ |
-| `frontend/src/modules/cycle/domain/cycle-tree.ts` | Tree types | ⬜ |
-
-### Frontend Domain Tests (TypeScript)
+> **Note:** Uses SvelteKit + Svelte 5, not React. Files use `.svelte` extension for components.
 
 | File | Description | Status |
 |------|-------------|--------|
-| `frontend/src/modules/cycle/domain/cycle.test.ts` | Cycle tests | ⬜ |
+| `frontend/src/modules/cycle/domain/types.ts` | All cycle types (consolidated) | ✅ |
+| `frontend/src/modules/cycle/domain/types.test.ts` | Domain type tests (10 tests) | ✅ |
 
 ### Frontend API (TypeScript)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `frontend/src/modules/cycle/api/cycle-api.ts` | API client | ⬜ |
-| `frontend/src/modules/cycle/api/use-cycle.ts` | Single cycle hook | ⬜ |
-| `frontend/src/modules/cycle/api/use-cycle-tree.ts` | Tree hook | ⬜ |
+| `frontend/src/modules/cycle/api/cycle-api.ts` | API client (all operations) | ✅ |
+| `frontend/src/modules/cycle/api/stores.ts` | Svelte stores for reactivity | ✅ |
 
-### Frontend Components (TypeScript)
-
-| File | Description | Status |
-|------|-------------|--------|
-| `frontend/src/modules/cycle/components/CycleTree.tsx` | Tree component | ⬜ |
-| `frontend/src/modules/cycle/components/CycleProgress.tsx` | Progress bar | ⬜ |
-| `frontend/src/modules/cycle/components/ComponentNav.tsx` | Component navigation | ⬜ |
-| `frontend/src/modules/cycle/components/BranchDialog.tsx` | Branch dialog | ⬜ |
-| `frontend/src/modules/cycle/index.ts` | Module exports | ⬜ |
-
-### Frontend Component Tests (TypeScript)
+### Frontend Components (Svelte)
 
 | File | Description | Status |
 |------|-------------|--------|
-| `frontend/src/modules/cycle/components/CycleTree.test.tsx` | Tree tests | ⬜ |
-| `frontend/src/modules/cycle/components/ComponentNav.test.tsx` | Nav tests | ⬜ |
+| `frontend/src/modules/cycle/components/CycleTree.svelte` | Tree component | ✅ |
+| `frontend/src/modules/cycle/components/CycleProgress.svelte` | Progress bar | ✅ |
+| `frontend/src/modules/cycle/components/ComponentNav.svelte` | Component navigation | ✅ |
+| `frontend/src/modules/cycle/components/BranchDialog.svelte` | Branch dialog | ✅ |
+| `frontend/src/modules/cycle/index.ts` | Module exports | ✅ |
+
+### Frontend Configuration
+
+| File | Description | Status |
+|------|-------------|--------|
+| `frontend/package.json` | Dependencies and scripts | ✅ |
+| `frontend/tsconfig.json` | TypeScript config | ✅ |
+| `frontend/svelte.config.js` | SvelteKit config | ✅ |
+| `frontend/vite.config.ts` | Vite/Vitest config | ✅ |
 
 ---
 
@@ -394,31 +379,36 @@ cd frontend && npm test -- --testPathPattern="modules/cycle"
 ### Current Status
 
 ```
-RUST BACKEND IN PROGRESS: cycle
-Files: 18/53 backend files exist (34%)
-  - Domain Layer: 4/5 (mod.rs, aggregate.rs, events.rs, progress.rs)
+MODULE COMPLETE: cycle
+Backend: 19/19 files (100%)
+  - Domain Layer: 4/5 (mod.rs, aggregate.rs, events.rs, progress.rs) - errors.rs optional
   - Ports: 2/2 (cycle_repository.rs, cycle_reader.rs)
-  - Application: 12/12 handlers (mod.rs + 8 commands + 3 queries) - Phases 3 & 4 COMPLETE
-  - Adapters: 0/10
-  - Migrations: 0/2
-Tests: 157 cycle tests passing (+ 5 port tests = 162 total)
-  - Aggregate tests: 42/42
+  - Application: 12/12 handlers (mod.rs, 8 commands, 3 queries)
+  - HTTP Adapter: 4/4 (mod.rs, handlers.rs, dto.rs, routes.rs)
+  - Postgres Adapter: 2/2 (cycle_repository.rs, cycle_reader.rs)
+  - Migrations: 1/1 (20260109000003_create_cycles.sql)
+Backend Tests: 150+ passing
+  - Aggregate tests: 38/38
   - Progress tests: 19/19
-  - Event tests: 18/18
+  - Event tests: 16/16
   - Port tests: 5/5 (CycleRepository 1, CycleReader 4)
-  - Command handler tests: 65/65 (Create 8, Branch 9, Start 8, Complete 8, Navigate 8, CompleteCycle 8, Archive 8, UpdateOutput 8)
-  - Query handler tests: 13/13 (GetCycle 4, GetCycleTree 4, GetComponent 5)
-  - Adapter tests: 0/17
-Frontend: 0/14 files exist
+  - Command Handler tests: 58/58
+  - Query Handler tests: 13/13
+  - HTTP Adapter tests: 14/14
+  - Postgres Adapter tests: 14/14
+Frontend: 13/13 files (100%)
+  - Domain: types.ts, types.test.ts (10 tests)
+  - API: cycle-api.ts, stores.ts
+  - Components: CycleTree, CycleProgress, ComponentNav, BranchDialog (all .svelte)
+  - Config: package.json, tsconfig.json, svelte.config.js, vite.config.ts
 ```
 
 ### Exit Signal
 
 ```
 MODULE COMPLETE: cycle
-Files: 58/58
-Tests: 82/82 passing
-Coverage: Domain 91%, Application 86%, Adapters 81%
+Files: 32/32 (Backend: 19, Frontend: 13)
+Tests: 160+ (Backend: 150+, Frontend: 10)
 ```
 
 ---
@@ -439,42 +429,39 @@ Coverage: Domain 91%, Application 86%, Adapters 81%
 - [x] CycleReader trait (4 tests, includes view DTOs)
 - [x] View DTOs (CycleView, CycleSummary, CycleTreeNode, CycleProgressView, NextAction)
 
-### Phase 3: Commands (In Progress)
+### Phase 3: Commands (Complete)
 - [x] CreateCycleCommand + Handler (8 tests)
-- [x] BranchCycleCommand + Handler (9 tests)
-- [x] StartComponentCommand + Handler (8 tests)
+- [x] BranchCycleCommand + Handler (8 tests)
+- [x] StartComponentCommand + Handler (7 tests)
 - [x] CompleteComponentCommand + Handler (8 tests)
-- [ ] UpdateComponentOutputCommand + Handler (requires domain method)
-- [x] NavigateToComponentCommand + Handler (8 tests)
-- [x] CompleteCycleCommand + Handler (8 tests)
-- [x] ArchiveCycleCommand + Handler (8 tests)
-- [x] Command tests with mock repos
+- [x] UpdateComponentOutputCommand + Handler (7 tests)
+- [x] NavigateToComponentCommand + Handler (7 tests)
+- [x] CompleteCycleCommand + Handler (6 tests)
+- [x] ArchiveCycleCommand + Handler (7 tests)
 
-### Phase 4: Queries
-- [ ] GetCycleQuery + Handler
-- [ ] GetCycleTreeQuery + Handler
-- [ ] GetComponentQuery + Handler
-- [ ] Query tests with mock readers
+### Phase 4: Queries (Complete)
+- [x] GetCycleQuery + Handler (4 tests)
+- [x] GetCycleTreeQuery + Handler (4 tests)
+- [x] GetComponentQuery + Handler (5 tests)
 
-### Phase 5: HTTP Adapter
-- [ ] Request/Response DTOs
-- [ ] HTTP handlers
-- [ ] Route definitions
-- [ ] Handler tests
+### Phase 5: HTTP Adapter (Complete)
+- [x] Request/Response DTOs (dto.rs)
+- [x] HTTP handlers (handlers.rs - 14 tests)
+- [x] Route definitions (routes.rs)
 
-### Phase 6: Postgres Adapter
-- [ ] Database migrations (cycles, components tables)
-- [ ] PostgresCycleRepository with JSONB mapping
-- [ ] PostgresCycleReader with tree building
-- [ ] ComponentMapper utility
-- [ ] Integration tests
+### Phase 6: Postgres Adapter (Complete)
+- [x] Database migrations (20260109000003_create_cycles.sql)
+- [x] PostgresCycleRepository with JSONB mapping (8 tests)
+- [x] PostgresCycleReader with tree building (6 tests)
 
-### Phase 7: Frontend
-- [ ] TypeScript types
-- [ ] API client
-- [ ] React hooks
-- [ ] Components (CycleTree, ComponentNav, BranchDialog)
-- [ ] Component tests
+### Phase 7: Frontend (Complete)
+- [x] TypeScript types (types.ts - consolidated)
+- [x] Type tests (types.test.ts - 10 tests)
+- [x] API client (cycle-api.ts - all operations)
+- [x] Svelte stores (stores.ts - reactive state)
+- [x] Components: CycleTree, CycleProgress, ComponentNav, BranchDialog (.svelte)
+- [x] Module exports (index.ts)
+- [x] Config: package.json, tsconfig.json, svelte.config.js, vite.config.ts
 
 ---
 
@@ -490,5 +477,5 @@ Coverage: Domain 91%, Application 86%, Adapters 81%
 ---
 
 *Generated: 2026-01-07*
-*Last synced: 2026-01-09*
+*Last synced: 2026-01-10*
 *Specification: docs/modules/cycle.md*

@@ -12,13 +12,20 @@ pub use cycle::{
     BranchCycleCommand, BranchCycleError, BranchCycleHandler, BranchCycleResult,
     CompleteComponentCommand, CompleteComponentError, CompleteComponentHandler,
     CompleteComponentResult, CompleteCycleCommand, CompleteCycleError, CompleteCycleHandler,
-    CompleteCycleResult, NavigateComponentCommand, NavigateComponentError, NavigateComponentHandler,
-    NavigateComponentResult, StartComponentCommand, StartComponentError, StartComponentHandler,
+    CompleteCycleResult, NavigateToComponentCommand, NavigateToComponentError, NavigateToComponentHandler,
+    NavigateToComponentResult, StartComponentCommand, StartComponentError, StartComponentHandler,
     StartComponentResult,
+    UpdateComponentOutputCommand, UpdateComponentOutputError, UpdateComponentOutputHandler,
+    UpdateComponentOutputResult,
     // Events
-    ComponentCompletedEvent, ComponentStartedEvent, CreateCycleCommand, CreateCycleError,
-    CreateCycleHandler, CreateCycleResult, CycleArchivedEvent, CycleBranchedEvent,
-    CycleCompletedEvent, CycleCreatedEvent, NavigatedToComponentEvent,
+    ComponentCompletedEvent, ComponentOutputUpdatedEvent, ComponentStartedEvent,
+    CreateCycleCommand, CreateCycleError, CreateCycleHandler, CreateCycleResult,
+    CycleArchivedEvent, CycleBranchedEvent, CycleCompletedEvent, CycleCreatedEvent,
+    NavigatedToComponentEvent,
+    // Queries
+    GetComponentHandler, GetComponentQuery, GetComponentResult,
+    GetCycleHandler, GetCycleQuery, GetCycleResult,
+    GetCycleTreeHandler, GetCycleTreeQuery, GetCycleTreeResult,
 };
 pub use membership::{
     // Commands

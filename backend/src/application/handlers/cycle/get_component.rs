@@ -1,16 +1,14 @@
-//! GetComponentHandler - Query handler for retrieving a component's details.
+//! GetComponentHandler - Query handler for retrieving component output.
 //!
-//! Returns the full component data including status and output.
-//! Uses CycleRepository to access the aggregate for full output data.
+//! Returns the structured output data and status of a specific component
+//! within a cycle. The output schema varies by component type.
 
 use std::sync::Arc;
 
-use serde::{Deserialize, Serialize};
+use crate::domain::foundation::{ComponentType, CycleId, DomainError};
+use crate::ports::{ComponentOutputView, CycleReader};
 
-use crate::domain::foundation::{ComponentStatus, ComponentType, CycleId, DomainError, ErrorCode};
-use crate::ports::CycleRepository;
-
-/// Query to get a component from a cycle.
+/// Query to get a component's output from a cycle.
 #[derive(Debug, Clone)]
 pub struct GetComponentQuery {
     /// The cycle containing the component.
@@ -20,189 +18,112 @@ pub struct GetComponentQuery {
 }
 
 /// Result of successful component query.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GetComponentResult {
-    /// The cycle ID.
-    pub cycle_id: CycleId,
-    /// The component type.
-    pub component_type: ComponentType,
-    /// The component status.
-    pub status: ComponentStatus,
-    /// The component output as JSON.
-    pub output: serde_json::Value,
-}
+pub type GetComponentResult = Option<ComponentOutputView>;
 
-/// Error type for getting a component.
-#[derive(Debug, Clone)]
-pub enum GetComponentError {
-    /// Cycle not found.
-    CycleNotFound(CycleId),
-    /// Component not found.
-    ComponentNotFound(CycleId, ComponentType),
-    /// Infrastructure error.
-    Infrastructure(String),
-}
-
-impl std::fmt::Display for GetComponentError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            GetComponentError::CycleNotFound(id) => write!(f, "Cycle not found: {}", id),
-            GetComponentError::ComponentNotFound(cycle_id, ct) => {
-                write!(f, "Component {:?} not found in cycle: {}", ct, cycle_id)
-            }
-            GetComponentError::Infrastructure(msg) => write!(f, "Infrastructure error: {}", msg),
-        }
-    }
-}
-
-impl std::error::Error for GetComponentError {}
-
-impl From<DomainError> for GetComponentError {
-    fn from(err: DomainError) -> Self {
-        match err.code {
-            ErrorCode::CycleNotFound => GetComponentError::CycleNotFound(CycleId::new()),
-            ErrorCode::ComponentNotFound => {
-                GetComponentError::ComponentNotFound(CycleId::new(), ComponentType::IssueRaising)
-            }
-            _ => GetComponentError::Infrastructure(err.message),
-        }
-    }
-}
-
-/// Handler for retrieving component details.
+/// Handler for retrieving component output.
 ///
-/// Uses CycleRepository to access the aggregate for full output data.
-/// This is a pragmatic approach - a dedicated ComponentReader port
-/// could be added for performance optimization in the future.
+/// Returns the component's structured output and status,
+/// or `None` if the cycle is not found.
 pub struct GetComponentHandler {
-    cycle_repository: Arc<dyn CycleRepository>,
+    reader: Arc<dyn CycleReader>,
 }
 
 impl GetComponentHandler {
-    pub fn new(cycle_repository: Arc<dyn CycleRepository>) -> Self {
-        Self { cycle_repository }
+    pub fn new(reader: Arc<dyn CycleReader>) -> Self {
+        Self { reader }
     }
 
-    pub async fn handle(
-        &self,
-        query: GetComponentQuery,
-    ) -> Result<GetComponentResult, GetComponentError> {
-        // Get the cycle
-        let cycle = self
-            .cycle_repository
-            .find_by_id(&query.cycle_id)
-            .await?
-            .ok_or(GetComponentError::CycleNotFound(query.cycle_id))?;
-
-        // Get the component
-        let component = cycle.component(query.component_type).ok_or(
-            GetComponentError::ComponentNotFound(query.cycle_id, query.component_type),
-        )?;
-
-        Ok(GetComponentResult {
-            cycle_id: query.cycle_id,
-            component_type: query.component_type,
-            status: component.status(),
-            output: component.output_as_value(),
-        })
+    pub async fn handle(&self, query: GetComponentQuery) -> Result<GetComponentResult, DomainError> {
+        self.reader
+            .get_component_output(&query.cycle_id, query.component_type)
+            .await
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::cycle::Cycle;
-    use crate::domain::foundation::SessionId;
+    use crate::domain::foundation::{ComponentStatus, SessionId, Timestamp};
+    use crate::ports::{CycleProgressView, CycleSummary, CycleTreeNode, CycleView};
     use async_trait::async_trait;
-    use std::sync::Mutex;
+    use serde_json::json;
 
     // ─────────────────────────────────────────────────────────────────────
     // Mock Implementation
     // ─────────────────────────────────────────────────────────────────────
 
-    struct MockCycleRepository {
-        cycles: Mutex<Vec<Cycle>>,
+    struct MockCycleReader {
+        outputs: Vec<ComponentOutputView>,
         fail_read: bool,
     }
 
-    impl MockCycleRepository {
+    impl MockCycleReader {
         fn new() -> Self {
             Self {
-                cycles: Mutex::new(Vec::new()),
+                outputs: Vec::new(),
                 fail_read: false,
             }
         }
 
-        fn with_cycle(cycle: Cycle) -> Self {
+        fn with_output(output: ComponentOutputView) -> Self {
             Self {
-                cycles: Mutex::new(vec![cycle]),
+                outputs: vec![output],
                 fail_read: false,
             }
         }
 
         fn failing() -> Self {
             Self {
-                cycles: Mutex::new(Vec::new()),
+                outputs: Vec::new(),
                 fail_read: true,
             }
         }
     }
 
     #[async_trait]
-    impl CycleRepository for MockCycleRepository {
-        async fn save(&self, cycle: &Cycle) -> Result<(), DomainError> {
-            self.cycles.lock().unwrap().push(cycle.clone());
-            Ok(())
+    impl CycleReader for MockCycleReader {
+        async fn get_by_id(&self, _id: &CycleId) -> Result<Option<CycleView>, DomainError> {
+            Ok(None)
         }
 
-        async fn update(&self, _cycle: &Cycle) -> Result<(), DomainError> {
-            Ok(())
+        async fn list_by_session_id(
+            &self,
+            _session_id: &SessionId,
+        ) -> Result<Vec<CycleSummary>, DomainError> {
+            Ok(vec![])
         }
 
-        async fn find_by_id(&self, id: &CycleId) -> Result<Option<Cycle>, DomainError> {
+        async fn get_tree(
+            &self,
+            _session_id: &SessionId,
+        ) -> Result<Option<CycleTreeNode>, DomainError> {
+            Ok(None)
+        }
+
+        async fn get_progress(&self, _id: &CycleId) -> Result<Option<CycleProgressView>, DomainError> {
+            Ok(None)
+        }
+
+        async fn get_lineage(&self, _id: &CycleId) -> Result<Vec<CycleSummary>, DomainError> {
+            Ok(vec![])
+        }
+
+        async fn get_component_output(
+            &self,
+            cycle_id: &CycleId,
+            component_type: ComponentType,
+        ) -> Result<Option<ComponentOutputView>, DomainError> {
             if self.fail_read {
                 return Err(DomainError::new(
-                    ErrorCode::DatabaseError,
+                    crate::domain::foundation::ErrorCode::DatabaseError,
                     "Simulated read failure",
                 ));
             }
             Ok(self
-                .cycles
-                .lock()
-                .unwrap()
+                .outputs
                 .iter()
-                .find(|c| c.id() == *id)
+                .find(|o| o.cycle_id == *cycle_id && o.component_type == component_type)
                 .cloned())
-        }
-
-        async fn exists(&self, _id: &CycleId) -> Result<bool, DomainError> {
-            Ok(false)
-        }
-
-        async fn find_by_session_id(
-            &self,
-            _session_id: &SessionId,
-        ) -> Result<Vec<Cycle>, DomainError> {
-            Ok(vec![])
-        }
-
-        async fn find_primary_by_session_id(
-            &self,
-            _session_id: &SessionId,
-        ) -> Result<Option<Cycle>, DomainError> {
-            Ok(None)
-        }
-
-        async fn find_branches(&self, _parent_id: &CycleId) -> Result<Vec<Cycle>, DomainError> {
-            Ok(vec![])
-        }
-
-        async fn count_by_session_id(&self, _session_id: &SessionId) -> Result<u32, DomainError> {
-            Ok(0)
-        }
-
-        async fn delete(&self, _id: &CycleId) -> Result<(), DomainError> {
-            Ok(())
         }
     }
 
@@ -210,19 +131,20 @@ mod tests {
     // Test Helpers
     // ─────────────────────────────────────────────────────────────────────
 
-    fn create_cycle_with_started_component() -> Cycle {
-        let session_id = SessionId::new();
-        let mut cycle = Cycle::new(session_id);
-        cycle.start_component(ComponentType::IssueRaising).unwrap();
-        cycle.take_events();
-        cycle
-    }
-
-    fn create_fresh_cycle() -> Cycle {
-        let session_id = SessionId::new();
-        let mut cycle = Cycle::new(session_id);
-        cycle.take_events();
-        cycle
+    fn create_test_output(cycle_id: CycleId) -> ComponentOutputView {
+        ComponentOutputView {
+            cycle_id,
+            component_type: ComponentType::IssueRaising,
+            status: ComponentStatus::InProgress,
+            output: json!({
+                "potential_decisions": ["Should we expand?"],
+                "objectives": ["Increase revenue"],
+                "uncertainties": ["Market conditions"],
+                "considerations": ["Budget constraints"],
+                "user_confirmed": false
+            }),
+            updated_at: Timestamp::now(),
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -230,88 +152,91 @@ mod tests {
     // ─────────────────────────────────────────────────────────────────────
 
     #[tokio::test]
-    async fn returns_component_when_exists() {
-        let cycle = create_cycle_with_started_component();
-        let cycle_id = cycle.id();
-        let repo = Arc::new(MockCycleRepository::with_cycle(cycle));
+    async fn returns_output_when_found() {
+        let cycle_id = CycleId::new();
+        let output = create_test_output(cycle_id);
 
-        let handler = GetComponentHandler::new(repo);
+        let reader = Arc::new(MockCycleReader::with_output(output));
+        let handler = GetComponentHandler::new(reader);
+
         let query = GetComponentQuery {
             cycle_id,
             component_type: ComponentType::IssueRaising,
         };
-
         let result = handler.handle(query).await;
-        assert!(result.is_ok());
 
-        let component = result.unwrap();
-        assert_eq!(component.cycle_id, cycle_id);
-        assert_eq!(component.component_type, ComponentType::IssueRaising);
-        assert_eq!(component.status, ComponentStatus::InProgress);
+        assert!(result.is_ok());
+        let result = result.unwrap();
+        assert!(result.is_some());
+        let output = result.unwrap();
+        assert_eq!(output.cycle_id, cycle_id);
+        assert_eq!(output.component_type, ComponentType::IssueRaising);
     }
 
     #[tokio::test]
-    async fn returns_component_output_as_json() {
-        let cycle = create_cycle_with_started_component();
-        let cycle_id = cycle.id();
-        let repo = Arc::new(MockCycleRepository::with_cycle(cycle));
+    async fn returns_none_when_not_found() {
+        let reader = Arc::new(MockCycleReader::new());
+        let handler = GetComponentHandler::new(reader);
 
-        let handler = GetComponentHandler::new(repo);
+        let query = GetComponentQuery {
+            cycle_id: CycleId::new(),
+            component_type: ComponentType::IssueRaising,
+        };
+        let result = handler.handle(query).await;
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn returns_error_on_read_failure() {
+        let reader = Arc::new(MockCycleReader::failing());
+        let handler = GetComponentHandler::new(reader);
+
+        let query = GetComponentQuery {
+            cycle_id: CycleId::new(),
+            component_type: ComponentType::IssueRaising,
+        };
+        let result = handler.handle(query).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn returns_none_for_different_component_type() {
+        let cycle_id = CycleId::new();
+        let output = create_test_output(cycle_id);
+
+        let reader = Arc::new(MockCycleReader::with_output(output));
+        let handler = GetComponentHandler::new(reader);
+
+        // Query for a different component type
+        let query = GetComponentQuery {
+            cycle_id,
+            component_type: ComponentType::ProblemFrame, // Different from IssueRaising
+        };
+        let result = handler.handle(query).await;
+
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn includes_status_and_output_data() {
+        let cycle_id = CycleId::new();
+        let output = create_test_output(cycle_id);
+
+        let reader = Arc::new(MockCycleReader::with_output(output));
+        let handler = GetComponentHandler::new(reader);
+
         let query = GetComponentQuery {
             cycle_id,
             component_type: ComponentType::IssueRaising,
         };
+        let result = handler.handle(query).await.unwrap().unwrap();
 
-        let result = handler.handle(query).await.unwrap();
-        assert!(result.output.is_object());
-        // IssueRaising output has potential_decisions field
+        assert_eq!(result.status, ComponentStatus::InProgress);
         assert!(result.output.get("potential_decisions").is_some());
-    }
-
-    #[tokio::test]
-    async fn returns_not_started_component() {
-        let cycle = create_fresh_cycle();
-        let cycle_id = cycle.id();
-        let repo = Arc::new(MockCycleRepository::with_cycle(cycle));
-
-        let handler = GetComponentHandler::new(repo);
-        let query = GetComponentQuery {
-            cycle_id,
-            component_type: ComponentType::IssueRaising,
-        };
-
-        let result = handler.handle(query).await;
-        assert!(result.is_ok());
-
-        let component = result.unwrap();
-        assert_eq!(component.status, ComponentStatus::NotStarted);
-    }
-
-    #[tokio::test]
-    async fn returns_cycle_not_found_when_missing() {
-        let repo = Arc::new(MockCycleRepository::new());
-
-        let handler = GetComponentHandler::new(repo);
-        let query = GetComponentQuery {
-            cycle_id: CycleId::new(),
-            component_type: ComponentType::IssueRaising,
-        };
-
-        let result = handler.handle(query).await;
-        assert!(matches!(result, Err(GetComponentError::CycleNotFound(_))));
-    }
-
-    #[tokio::test]
-    async fn returns_infrastructure_error_on_read_failure() {
-        let repo = Arc::new(MockCycleRepository::failing());
-
-        let handler = GetComponentHandler::new(repo);
-        let query = GetComponentQuery {
-            cycle_id: CycleId::new(),
-            component_type: ComponentType::IssueRaising,
-        };
-
-        let result = handler.handle(query).await;
-        assert!(matches!(result, Err(GetComponentError::Infrastructure(_))));
+        assert!(result.output.get("objectives").is_some());
     }
 }
