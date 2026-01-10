@@ -27,6 +27,9 @@ pub use ai::{
 pub use auth::{MockAuthProvider, MockSessionValidator};
 pub use events::{IdempotentHandler, InMemoryEventBus, OutboxPublisher, OutboxPublisherConfig};
 pub use membership::StubAccessChecker;
-pub use postgres::{PostgresAccessChecker, PostgresCycleReader, PostgresCycleRepository, PostgresMembershipReader, PostgresMembershipRepository};
+pub use postgres::{
+    PostgresAccessChecker, PostgresCycleReader, PostgresCycleRepository,
+    PostgresMembershipReader, PostgresMembershipRepository,
+};
 pub use stripe::{MockPaymentProvider, StripeConfig, StripePaymentAdapter};
 pub use validation::JsonSchemaValidator;
