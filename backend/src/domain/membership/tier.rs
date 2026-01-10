@@ -36,6 +36,11 @@ impl MembershipTier {
         !matches!(self, MembershipTier::Free)
     }
 
+    /// Returns true if this is the annual tier.
+    pub fn is_annual(&self) -> bool {
+        matches!(self, MembershipTier::Annual)
+    }
+
     /// Returns the display name for this tier.
     pub fn display_name(&self) -> &'static str {
         match self {

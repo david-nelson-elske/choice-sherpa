@@ -90,6 +90,24 @@ pub trait MembershipRepository: Send + Sync {
     /// - `MembershipNotFound` if membership doesn't exist
     /// - `DatabaseError` on persistence failure
     async fn delete(&self, id: &MembershipId) -> Result<(), DomainError>;
+
+    /// Find a membership by its Stripe subscription ID.
+    ///
+    /// Returns `None` if no membership has this subscription ID.
+    /// Used for processing webhook events from Stripe.
+    async fn find_by_stripe_subscription_id(
+        &self,
+        subscription_id: &str,
+    ) -> Result<Option<Membership>, DomainError>;
+
+    /// Find a membership by its Stripe customer ID.
+    ///
+    /// Returns `None` if no membership has this customer ID.
+    /// Used for processing webhook events from Stripe.
+    async fn find_by_stripe_customer_id(
+        &self,
+        customer_id: &str,
+    ) -> Result<Option<Membership>, DomainError>;
 }
 
 #[cfg(test)]

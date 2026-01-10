@@ -11,7 +11,7 @@
 //! - `MembershipCreated` not `CreateMembership`
 //! - `PaymentFailed` not `FailPayment`
 
-use crate::domain::foundation::{MembershipId, Timestamp, UserId};
+use crate::domain::foundation::{DomainEvent, EventId, MembershipId, Timestamp, UserId};
 use serde::{Deserialize, Serialize};
 
 use super::MembershipTier;
@@ -29,6 +29,7 @@ pub enum MembershipEvent {
     /// - Free membership created with valid promo code
     /// - Paid membership checkout initiated
     Created {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         tier: MembershipTier,
@@ -43,6 +44,7 @@ pub enum MembershipEvent {
     ///
     /// Trigger: `checkout.session.completed` webhook
     Activated {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         tier: MembershipTier,
@@ -57,6 +59,7 @@ pub enum MembershipEvent {
     ///
     /// Trigger: `invoice.payment_succeeded` webhook for existing subscription
     Renewed {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         new_period_start: Timestamp,
@@ -70,6 +73,7 @@ pub enum MembershipEvent {
     ///
     /// Trigger: `invoice.payment_failed` webhook
     PaymentFailed {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         attempt_count: u32,
@@ -83,6 +87,7 @@ pub enum MembershipEvent {
     ///
     /// Trigger: `invoice.payment_succeeded` webhook after failed attempts
     PaymentRecovered {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         occurred_at: Timestamp,
@@ -94,6 +99,7 @@ pub enum MembershipEvent {
     ///
     /// Trigger: User action via cancel endpoint
     Cancelled {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         effective_at: Timestamp,
@@ -106,6 +112,7 @@ pub enum MembershipEvent {
     ///
     /// Trigger: User action via reactivate endpoint (before period_end)
     Reactivated {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         occurred_at: Timestamp,
@@ -120,6 +127,7 @@ pub enum MembershipEvent {
     /// - Grace period exceeded for PastDue
     /// - Payment timeout (72h) for Pending
     Expired {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         reason: ExpiredReason,
@@ -130,6 +138,7 @@ pub enum MembershipEvent {
     ///
     /// Trigger: User initiated upgrade (e.g., Free → Monthly, Monthly → Annual)
     TierUpgraded {
+        event_id: EventId,
         membership_id: MembershipId,
         user_id: UserId,
         previous_tier: MembershipTier,
@@ -141,6 +150,7 @@ pub enum MembershipEvent {
     ///
     /// Note: This is a high-volume event, may be sampled in production.
     AccessChecked {
+        event_id: EventId,
         membership_id: Option<MembershipId>,
         user_id: UserId,
         resource: String,
@@ -240,6 +250,47 @@ impl MembershipEvent {
             | MembershipEvent::AccessChecked { occurred_at, .. } => *occurred_at,
         }
     }
+
+    /// Returns the event ID for this event.
+    pub fn event_id(&self) -> &EventId {
+        match self {
+            MembershipEvent::Created { event_id, .. }
+            | MembershipEvent::Activated { event_id, .. }
+            | MembershipEvent::Renewed { event_id, .. }
+            | MembershipEvent::PaymentFailed { event_id, .. }
+            | MembershipEvent::PaymentRecovered { event_id, .. }
+            | MembershipEvent::Cancelled { event_id, .. }
+            | MembershipEvent::Reactivated { event_id, .. }
+            | MembershipEvent::Expired { event_id, .. }
+            | MembershipEvent::TierUpgraded { event_id, .. }
+            | MembershipEvent::AccessChecked { event_id, .. } => event_id,
+        }
+    }
+}
+
+impl DomainEvent for MembershipEvent {
+    fn event_type(&self) -> &'static str {
+        MembershipEvent::event_type(self)
+    }
+
+    fn aggregate_id(&self) -> String {
+        // For AccessChecked, use user_id if no membership_id
+        self.membership_id()
+            .map(|id| id.to_string())
+            .unwrap_or_else(|| self.user_id().to_string())
+    }
+
+    fn aggregate_type(&self) -> &'static str {
+        "Membership"
+    }
+
+    fn occurred_at(&self) -> Timestamp {
+        MembershipEvent::occurred_at(self)
+    }
+
+    fn event_id(&self) -> EventId {
+        MembershipEvent::event_id(self).clone()
+    }
 }
 
 #[cfg(test)]
@@ -254,6 +305,10 @@ mod tests {
         UserId::new("user-test-123").unwrap()
     }
 
+    fn test_event_id() -> EventId {
+        EventId::new()
+    }
+
     fn now() -> Timestamp {
         Timestamp::now()
     }
@@ -265,6 +320,7 @@ mod tests {
     #[test]
     fn created_event_for_free_membership() {
         let event = MembershipEvent::Created {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             tier: MembershipTier::Free,
@@ -280,6 +336,7 @@ mod tests {
     #[test]
     fn created_event_for_paid_membership() {
         let event = MembershipEvent::Created {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             tier: MembershipTier::Monthly,
@@ -301,6 +358,7 @@ mod tests {
         let period_end = now().add_days(30);
 
         let event = MembershipEvent::Activated {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             tier: MembershipTier::Monthly,
@@ -328,6 +386,7 @@ mod tests {
         let next_retry = now().add_days(1);
 
         let event = MembershipEvent::PaymentFailed {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             attempt_count: 2,
@@ -354,6 +413,7 @@ mod tests {
         let effective = now().add_days(30);
 
         let event = MembershipEvent::Cancelled {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             effective_at: effective,
@@ -371,6 +431,7 @@ mod tests {
     #[test]
     fn expired_event_captures_reason() {
         let event = MembershipEvent::Expired {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             reason: ExpiredReason::GracePeriodExceeded,
@@ -388,6 +449,7 @@ mod tests {
     #[test]
     fn tier_upgraded_event_captures_both_tiers() {
         let event = MembershipEvent::TierUpgraded {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             previous_tier: MembershipTier::Free,
@@ -412,6 +474,7 @@ mod tests {
     #[test]
     fn access_checked_event_allows_none_membership() {
         let event = MembershipEvent::AccessChecked {
+            event_id: test_event_id(),
             membership_id: None,
             user_id: test_user_id(),
             resource: "session.create".to_string(),
@@ -431,6 +494,7 @@ mod tests {
     fn all_event_types_are_namespaced() {
         let events = vec![
             MembershipEvent::Created {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 tier: MembershipTier::Free,
@@ -439,6 +503,7 @@ mod tests {
                 occurred_at: now(),
             },
             MembershipEvent::Activated {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 tier: MembershipTier::Monthly,
@@ -447,6 +512,7 @@ mod tests {
                 occurred_at: now(),
             },
             MembershipEvent::Renewed {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 new_period_start: now(),
@@ -454,6 +520,7 @@ mod tests {
                 occurred_at: now(),
             },
             MembershipEvent::PaymentFailed {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 attempt_count: 1,
@@ -461,28 +528,33 @@ mod tests {
                 occurred_at: now(),
             },
             MembershipEvent::PaymentRecovered {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 occurred_at: now(),
             },
             MembershipEvent::Cancelled {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 effective_at: now(),
                 occurred_at: now(),
             },
             MembershipEvent::Reactivated {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 occurred_at: now(),
             },
             MembershipEvent::Expired {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 reason: ExpiredReason::CancelledPeriodEnd,
                 occurred_at: now(),
             },
             MembershipEvent::TierUpgraded {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: test_user_id(),
                 previous_tier: MembershipTier::Free,
@@ -490,6 +562,7 @@ mod tests {
                 occurred_at: now(),
             },
             MembershipEvent::AccessChecked {
+                event_id: test_event_id(),
                 membership_id: Some(test_membership_id()),
                 user_id: test_user_id(),
                 resource: "test".to_string(),
@@ -548,6 +621,7 @@ mod tests {
     #[test]
     fn membership_event_serializes_to_json() {
         let event = MembershipEvent::Created {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             tier: MembershipTier::Monthly,
@@ -566,6 +640,7 @@ mod tests {
     #[test]
     fn membership_event_deserializes_from_json() {
         let event = MembershipEvent::PaymentRecovered {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             occurred_at: now(),
@@ -586,6 +661,7 @@ mod tests {
         let user_id = test_user_id();
         let events = vec![
             MembershipEvent::Created {
+                event_id: test_event_id(),
                 membership_id: test_membership_id(),
                 user_id: user_id.clone(),
                 tier: MembershipTier::Free,
@@ -594,6 +670,7 @@ mod tests {
                 occurred_at: now(),
             },
             MembershipEvent::AccessChecked {
+                event_id: test_event_id(),
                 membership_id: None,
                 user_id: user_id.clone(),
                 resource: "test".to_string(),
@@ -611,6 +688,7 @@ mod tests {
     fn occurred_at_accessor_returns_correct_value() {
         let occurred_at = now();
         let event = MembershipEvent::Reactivated {
+            event_id: test_event_id(),
             membership_id: test_membership_id(),
             user_id: test_user_id(),
             occurred_at,
