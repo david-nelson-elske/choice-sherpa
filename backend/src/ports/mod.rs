@@ -43,6 +43,8 @@ mod auth_provider;
 mod circuit_breaker;
 mod confirmation_request_repository;
 mod connection_registry;
+mod conversation_reader;
+mod conversation_repository;
 mod cycle_reader;
 mod cycle_repository;
 mod dashboard_reader;
@@ -71,6 +73,8 @@ pub use ai_provider::{
 pub use auth_provider::AuthProvider;
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
+pub use conversation_reader::{ConversationReader, ConversationView, ReaderError as ConversationReaderError};
+pub use conversation_repository::{ConversationRepository, RepositoryError as ConversationRepositoryError};
 pub use cycle_reader::{
     ComponentOutputView, ComponentStatusItem, CycleProgressView, CycleReader, CycleSummary,
     CycleTreeNode, CycleView, NextAction, NextActionType, ProgressStep,
