@@ -355,6 +355,204 @@ pub enum DeserializeError {
 }
 
 // ============================================
+// Event Replayer
+// ============================================
+
+/// Statistics from an event replay operation.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct ReplayStats {
+    /// Total number of events examined.
+    pub total: u64,
+
+    /// Number of events successfully processed.
+    pub processed: u64,
+
+    /// Number of events skipped (not handled by handler).
+    pub skipped: u64,
+
+    /// Number of events that failed to process.
+    pub failed: u64,
+
+    /// Error messages for failed events.
+    pub errors: Vec<String>,
+}
+
+impl ReplayStats {
+    /// Creates a new empty stats object.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Records a processed event.
+    pub fn record_processed(&mut self) {
+        self.total += 1;
+        self.processed += 1;
+    }
+
+    /// Records a skipped event.
+    pub fn record_skipped(&mut self) {
+        self.total += 1;
+        self.skipped += 1;
+    }
+
+    /// Records a failed event with error message.
+    pub fn record_failed(&mut self, error: impl ToString) {
+        self.total += 1;
+        self.failed += 1;
+        self.errors.push(error.to_string());
+    }
+
+    /// Returns success rate as a percentage (0.0 to 1.0).
+    pub fn success_rate(&self) -> f64 {
+        if self.total == 0 {
+            1.0
+        } else {
+            self.processed as f64 / self.total as f64
+        }
+    }
+
+    /// Returns whether the replay was fully successful (no failures).
+    pub fn is_successful(&self) -> bool {
+        self.failed == 0
+    }
+}
+
+/// Replays historical events with automatic upcasting.
+///
+/// Used for rebuilding projections, recovering from failures,
+/// or migrating to new event schemas.
+///
+/// # Example
+///
+/// ```ignore
+/// let replayer = EventReplayer::new(registry);
+///
+/// // Replay all events for an aggregate
+/// let stats = replayer.replay_events(events, &handler).await?;
+/// println!("Replayed {} events", stats.processed);
+/// ```
+pub struct EventReplayer {
+    registry: UpcasterRegistry,
+}
+
+impl EventReplayer {
+    /// Creates a new replayer with the given registry.
+    pub fn new(registry: UpcasterRegistry) -> Self {
+        Self { registry }
+    }
+
+    /// Replays a collection of event envelopes through a handler.
+    ///
+    /// Events are automatically upcasted to current version before being
+    /// passed to the handler. The handler decides which events to process.
+    ///
+    /// # Arguments
+    ///
+    /// * `events` - Collection of event envelopes to replay
+    /// * `handler` - Callback function that processes each event
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(ReplayStats)` - Statistics about the replay operation
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let stats = replayer.replay_events(events, |envelope| {
+    ///     if envelope.event_type == "session.created.v1" {
+    ///         let event: SessionCreated = deserializer.deserialize(envelope)?;
+    ///         index.add_session(event)?;
+    ///         Ok(true) // Processed
+    ///     } else {
+    ///         Ok(false) // Skipped
+    ///     }
+    /// }).await?;
+    /// ```
+    pub fn replay_events<F, E>(
+        &self,
+        events: Vec<EventEnvelope>,
+        mut handler: F,
+    ) -> Result<ReplayStats, E>
+    where
+        F: FnMut(EventEnvelope) -> Result<bool, E>,
+        E: ToString,
+    {
+        let mut stats = ReplayStats::new();
+
+        for envelope in events {
+            // Try to upcast to current version
+            let current = match self.registry.upcast_to_current(envelope) {
+                Ok(e) => e,
+                Err(e) => {
+                    stats.record_failed(e);
+                    continue;
+                }
+            };
+
+            // Pass to handler
+            match handler(current) {
+                Ok(true) => stats.record_processed(),
+                Ok(false) => stats.record_skipped(),
+                Err(e) => stats.record_failed(e),
+            }
+        }
+
+        Ok(stats)
+    }
+
+    /// Replays events and collects results.
+    ///
+    /// Similar to `replay_events` but collects all successfully processed
+    /// results into a vector.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// let (results, stats) = replayer.replay_and_collect(events, |envelope| {
+    ///     let event: SessionCreated = deserializer.deserialize(envelope)?;
+    ///     Ok(Some(event.session_id))
+    /// }).await?;
+    ///
+    /// println!("Collected {} session IDs", results.len());
+    /// ```
+    pub fn replay_and_collect<F, T, E>(
+        &self,
+        events: Vec<EventEnvelope>,
+        mut handler: F,
+    ) -> Result<(Vec<T>, ReplayStats), E>
+    where
+        F: FnMut(EventEnvelope) -> Result<Option<T>, E>,
+        E: ToString,
+    {
+        let mut stats = ReplayStats::new();
+        let mut results = Vec::new();
+
+        for envelope in events {
+            // Try to upcast to current version
+            let current = match self.registry.upcast_to_current(envelope) {
+                Ok(e) => e,
+                Err(e) => {
+                    stats.record_failed(e);
+                    continue;
+                }
+            };
+
+            // Pass to handler
+            match handler(current) {
+                Ok(Some(result)) => {
+                    stats.record_processed();
+                    results.push(result);
+                }
+                Ok(None) => stats.record_skipped(),
+                Err(e) => stats.record_failed(e),
+            }
+        }
+
+        Ok((results, stats))
+    }
+}
+
+// ============================================
 // Tests
 // ============================================
 
@@ -741,5 +939,239 @@ mod tests {
 
         assert!(result.is_err());
         assert!(matches!(result, Err(DeserializeError::Upcast(_))));
+    }
+
+    // ============================================================
+    // EventReplayer Tests
+    // ============================================================
+
+    #[test]
+    fn replayer_processes_all_events() {
+        let mut registry = UpcasterRegistry::new();
+        registry.register(Arc::new(TestEventV1ToV2));
+        registry.set_current_version("test.event", 2);
+
+        let replayer = EventReplayer::new(registry);
+
+        let events = vec![
+            EventEnvelope {
+                event_id: EventId::from_string("evt-1"),
+                event_type: "test.event.v1".to_string(),
+                schema_version: 1,
+                aggregate_id: "agg-1".to_string(),
+                aggregate_type: "Test".to_string(),
+                occurred_at: Timestamp::now(),
+                payload: json!({"data": "test1"}),
+                metadata: EventMetadata::default(),
+            },
+            EventEnvelope {
+                event_id: EventId::from_string("evt-2"),
+                event_type: "test.event.v1".to_string(),
+                schema_version: 1,
+                aggregate_id: "agg-2".to_string(),
+                aggregate_type: "Test".to_string(),
+                occurred_at: Timestamp::now(),
+                payload: json!({"data": "test2"}),
+                metadata: EventMetadata::default(),
+            },
+        ];
+
+        let stats = replayer
+            .replay_events(events, |_envelope| Ok::<bool, String>(true))
+            .unwrap();
+
+        assert_eq!(stats.total, 2);
+        assert_eq!(stats.processed, 2);
+        assert_eq!(stats.skipped, 0);
+        assert_eq!(stats.failed, 0);
+        assert!(stats.is_successful());
+        assert_eq!(stats.success_rate(), 1.0);
+    }
+
+    #[test]
+    fn replayer_tracks_skipped_events() {
+        let registry = UpcasterRegistry::new();
+        let replayer = EventReplayer::new(registry);
+
+        let events = vec![
+            EventEnvelope {
+                event_id: EventId::from_string("evt-1"),
+                event_type: "test.event.v1".to_string(),
+                schema_version: 1,
+                aggregate_id: "agg-1".to_string(),
+                aggregate_type: "Test".to_string(),
+                occurred_at: Timestamp::now(),
+                payload: json!({"data": "test1"}),
+                metadata: EventMetadata::default(),
+            },
+            EventEnvelope {
+                event_id: EventId::from_string("evt-2"),
+                event_type: "other.event.v1".to_string(),
+                schema_version: 1,
+                aggregate_id: "agg-2".to_string(),
+                aggregate_type: "Other".to_string(),
+                occurred_at: Timestamp::now(),
+                payload: json!({"data": "test2"}),
+                metadata: EventMetadata::default(),
+            },
+        ];
+
+        let stats = replayer
+            .replay_events(events, |envelope| {
+                // Only process test.event, skip others
+                Ok::<bool, String>(envelope.event_type == "test.event.v1")
+            })
+            .unwrap();
+
+        assert_eq!(stats.total, 2);
+        assert_eq!(stats.processed, 1);
+        assert_eq!(stats.skipped, 1);
+        assert_eq!(stats.failed, 0);
+    }
+
+    #[test]
+    fn replayer_tracks_failed_events() {
+        let registry = UpcasterRegistry::new();
+        let replayer = EventReplayer::new(registry);
+
+        let events = vec![
+            EventEnvelope {
+                event_id: EventId::from_string("evt-1"),
+                event_type: "test.event.v1".to_string(),
+                schema_version: 1,
+                aggregate_id: "agg-1".to_string(),
+                aggregate_type: "Test".to_string(),
+                occurred_at: Timestamp::now(),
+                payload: json!({"data": "test1"}),
+                metadata: EventMetadata::default(),
+            },
+            EventEnvelope {
+                event_id: EventId::from_string("evt-2"),
+                event_type: "test.event.v1".to_string(),
+                schema_version: 1,
+                aggregate_id: "bad".to_string(),
+                aggregate_type: "Test".to_string(),
+                occurred_at: Timestamp::now(),
+                payload: json!({"data": "test2"}),
+                metadata: EventMetadata::default(),
+            },
+        ];
+
+        let stats = replayer
+            .replay_events(events, |envelope| {
+                if envelope.aggregate_id == "bad" {
+                    Err("Processing failed".to_string())
+                } else {
+                    Ok(true)
+                }
+            })
+            .unwrap();
+
+        assert_eq!(stats.total, 2);
+        assert_eq!(stats.processed, 1);
+        assert_eq!(stats.skipped, 0);
+        assert_eq!(stats.failed, 1);
+        assert!(!stats.is_successful());
+        assert_eq!(stats.success_rate(), 0.5);
+        assert_eq!(stats.errors.len(), 1);
+        assert!(stats.errors[0].contains("Processing failed"));
+    }
+
+    #[test]
+    fn replayer_and_collect_gathers_results() {
+        let mut registry = UpcasterRegistry::new();
+        registry.register(Arc::new(TestEventV1ToV2));
+        registry.set_current_version("test.event", 2);
+
+        let replayer = EventReplayer::new(registry);
+
+        let events = vec![
+            EventEnvelope {
+                event_id: EventId::from_string("evt-1"),
+                event_type: "test.event.v1".to_string(),
+                schema_version: 1,
+                aggregate_id: "agg-1".to_string(),
+                aggregate_type: "Test".to_string(),
+                occurred_at: Timestamp::now(),
+                payload: json!({"data": "test1"}),
+                metadata: EventMetadata::default(),
+            },
+            EventEnvelope {
+                event_id: EventId::from_string("evt-2"),
+                event_type: "test.event.v1".to_string(),
+                schema_version: 1,
+                aggregate_id: "agg-2".to_string(),
+                aggregate_type: "Test".to_string(),
+                occurred_at: Timestamp::now(),
+                payload: json!({"data": "test2"}),
+                metadata: EventMetadata::default(),
+            },
+        ];
+
+        let (results, stats) = replayer
+            .replay_and_collect(events, |envelope| {
+                Ok::<Option<String>, String>(Some(envelope.aggregate_id.clone()))
+            })
+            .unwrap();
+
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0], "agg-1");
+        assert_eq!(results[1], "agg-2");
+        assert_eq!(stats.processed, 2);
+        assert_eq!(stats.failed, 0);
+    }
+
+    #[test]
+    fn replayer_tracks_upcast_failures() {
+        let mut registry = UpcasterRegistry::new();
+        registry.set_current_version("test.event", 3);
+        // No upcasters registered
+
+        let replayer = EventReplayer::new(registry);
+
+        let events = vec![EventEnvelope {
+            event_id: EventId::from_string("evt-1"),
+            event_type: "test.event.v1".to_string(),
+            schema_version: 1,
+            aggregate_id: "agg-1".to_string(),
+            aggregate_type: "Test".to_string(),
+            occurred_at: Timestamp::now(),
+            payload: json!({"data": "test"}),
+            metadata: EventMetadata::default(),
+        }];
+
+        let stats = replayer
+            .replay_events(events, |_envelope| Ok::<bool, String>(true))
+            .unwrap();
+
+        assert_eq!(stats.total, 1);
+        assert_eq!(stats.processed, 0);
+        assert_eq!(stats.failed, 1);
+        assert!(!stats.is_successful());
+        assert!(stats.errors[0].contains("incompatible"));
+    }
+
+    #[test]
+    fn replay_stats_calculates_success_rate_correctly() {
+        let mut stats = ReplayStats::new();
+
+        // Empty stats
+        assert_eq!(stats.success_rate(), 1.0);
+
+        // 50% success
+        stats.record_processed();
+        stats.record_failed("error");
+        assert_eq!(stats.success_rate(), 0.5);
+
+        // 100% success
+        stats = ReplayStats::new();
+        stats.record_processed();
+        stats.record_processed();
+        assert_eq!(stats.success_rate(), 1.0);
+
+        // 0% success
+        stats = ReplayStats::new();
+        stats.record_failed("error");
+        assert_eq!(stats.success_rate(), 0.0);
     }
 }
