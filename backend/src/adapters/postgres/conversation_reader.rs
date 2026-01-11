@@ -1,14 +1,13 @@
 //! PostgreSQL implementation of ConversationReader.
 //!
-//! Provides optimized read access to conversation data.
+//! Provides read-optimized queries for conversation data.
 
 use async_trait::async_trait;
 use sqlx::{PgPool, Row};
 
-use crate::domain::conversation::{AgentPhase, ConversationState};
-use crate::domain::foundation::{ComponentId, ComponentType, ConversationId, Timestamp};
-use crate::domain::proact::{Message, MessageId, MessageMetadata, Role};
-use crate::ports::{ConversationReader, ConversationReaderError, ConversationView};
+use crate::domain::conversation::{ConversationState, Role};
+use crate::domain::foundation::{ComponentId, ConversationId, DomainError, ErrorCode, Timestamp};
+use crate::ports::{ConversationReader, ConversationView, MessageList, MessageListOptions, MessageView};
 
 /// PostgreSQL implementation of ConversationReader.
 #[derive(Clone)]
@@ -25,258 +24,200 @@ impl PostgresConversationReader {
 
 #[async_trait]
 impl ConversationReader for PostgresConversationReader {
+    async fn get(&self, id: &ConversationId) -> Result<Option<ConversationView>, DomainError> {
+        let row = sqlx::query(
+            r#"
+            SELECT
+                c.id, c.component_id, c.state, c.created_at, c.updated_at,
+                COUNT(m.id)::int as message_count
+            FROM conversations c
+            LEFT JOIN messages m ON c.id = m.conversation_id
+            WHERE c.id = $1
+            GROUP BY c.id, c.component_id, c.state, c.created_at, c.updated_at
+            "#,
+        )
+        .bind(id.as_uuid())
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| {
+            DomainError::new(
+                ErrorCode::DatabaseError,
+                format!("Failed to fetch conversation: {}", e),
+            )
+        })?;
+
+        row.map(row_to_view).transpose()
+    }
+
     async fn get_by_component(
         &self,
         component_id: &ComponentId,
-    ) -> Result<Option<ConversationView>, ConversationReaderError> {
-        // Fetch conversation
-        let conv_row = sqlx::query(
+    ) -> Result<Option<ConversationView>, DomainError> {
+        let row = sqlx::query(
             r#"
-            SELECT id, component_id, component_type, state, current_phase,
-                   pending_extraction, created_at, updated_at
-            FROM conversations
-            WHERE component_id = $1
+            SELECT
+                c.id, c.component_id, c.state, c.created_at, c.updated_at,
+                COUNT(m.id)::int as message_count
+            FROM conversations c
+            LEFT JOIN messages m ON c.id = m.conversation_id
+            WHERE c.component_id = $1
+            GROUP BY c.id, c.component_id, c.state, c.created_at, c.updated_at
             "#,
         )
         .bind(component_id.as_uuid())
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| {
-            ConversationReaderError::Database(format!(
-                "Failed to fetch conversation by component: {}",
-                e
-            ))
+            DomainError::new(
+                ErrorCode::DatabaseError,
+                format!("Failed to fetch conversation by component: {}", e),
+            )
         })?;
 
-        let conv_row = match conv_row {
-            Some(row) => row,
-            None => return Ok(None),
-        };
-
-        let id_uuid: uuid::Uuid = conv_row.get("id");
-        let conversation_id = ConversationId::from_uuid(id_uuid);
-
-        // Reuse get_by_id
-        self.get_by_id(&conversation_id).await
+        row.map(row_to_view).transpose()
     }
 
-    async fn get_by_id(
+    async fn get_messages(
         &self,
         conversation_id: &ConversationId,
-    ) -> Result<Option<ConversationView>, ConversationReaderError> {
-        // Fetch conversation with message count and last message timestamp
-        let conv_row = sqlx::query(
-            r#"
-            SELECT c.id, c.component_id, c.component_type, c.state, c.current_phase,
-                   c.pending_extraction, c.created_at, c.updated_at,
-                   COUNT(m.id) as message_count,
-                   MAX(m.created_at) as last_message_at
-            FROM conversations c
-            LEFT JOIN messages m ON m.conversation_id = c.id
-            WHERE c.id = $1
-            GROUP BY c.id, c.component_id, c.component_type, c.state, c.current_phase,
-                     c.pending_extraction, c.created_at, c.updated_at
-            "#,
-        )
-        .bind(conversation_id.as_uuid())
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|e| {
-            ConversationReaderError::Database(format!(
-                "Failed to fetch conversation: {}",
-                e
-            ))
-        })?;
+        options: &MessageListOptions,
+    ) -> Result<MessageList, DomainError> {
+        let limit = options.effective_limit() as i64;
+        let offset = options.effective_offset() as i64;
 
-        let conv_row = match conv_row {
-            Some(row) => row,
-            None => return Ok(None),
+        // Build query based on filter options
+        let (messages_query, count_query) = if options.user_visible_only {
+            (
+                r#"
+                SELECT id, role, content, created_at
+                FROM messages
+                WHERE conversation_id = $1 AND role IN ('user', 'assistant')
+                ORDER BY created_at ASC
+                LIMIT $2 OFFSET $3
+                "#,
+                r#"
+                SELECT COUNT(*)::bigint as total
+                FROM messages
+                WHERE conversation_id = $1 AND role IN ('user', 'assistant')
+                "#,
+            )
+        } else {
+            (
+                r#"
+                SELECT id, role, content, created_at
+                FROM messages
+                WHERE conversation_id = $1
+                ORDER BY created_at ASC
+                LIMIT $2 OFFSET $3
+                "#,
+                r#"
+                SELECT COUNT(*)::bigint as total
+                FROM messages
+                WHERE conversation_id = $1
+                "#,
+            )
         };
 
         // Fetch messages
-        let message_rows = sqlx::query(
-            r#"
-            SELECT id, role, content, created_at
-            FROM messages
-            WHERE conversation_id = $1
-            ORDER BY created_at ASC
-            "#,
-        )
-        .bind(conversation_id.as_uuid())
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| {
-            ConversationReaderError::Database(format!("Failed to fetch messages: {}", e))
-        })?;
+        let rows = sqlx::query(messages_query)
+            .bind(conversation_id.as_uuid())
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| {
+                DomainError::new(
+                    ErrorCode::DatabaseError,
+                    format!("Failed to fetch messages: {}", e),
+                )
+            })?;
 
-        // Reconstruct messages
-        let messages: Vec<Message> = message_rows
-            .iter()
+        // Fetch total count
+        let count_row = sqlx::query(count_query)
+            .bind(conversation_id.as_uuid())
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| {
+                DomainError::new(
+                    ErrorCode::DatabaseError,
+                    format!("Failed to count messages: {}", e),
+                )
+            })?;
+
+        let total: i64 = count_row.get("total");
+
+        let items: Result<Vec<MessageView>, DomainError> = rows
+            .into_iter()
             .map(|row| {
                 let id: uuid::Uuid = row.get("id");
-                let role_str: &str = row.get("role");
+                let role: String = row.get("role");
                 let content: String = row.get("content");
                 let created_at: chrono::DateTime<chrono::Utc> = row.get("created_at");
 
-                Message {
-                    id: MessageId::from_uuid(id),
-                    role: str_to_role(role_str),
+                Ok(MessageView {
+                    id: id.to_string(),
+                    role: str_to_role(&role)?,
                     content,
-                    metadata: MessageMetadata::default(),
-                    timestamp: Timestamp::from_datetime(created_at),
-                }
+                    created_at: Timestamp::from_datetime(created_at),
+                })
             })
             .collect();
 
-        // Build view
-        let id_uuid: uuid::Uuid = conv_row.get("id");
-        let component_id_uuid: uuid::Uuid = conv_row.get("component_id");
-        let component_type_str: &str = conv_row.get("component_type");
-        let state_str: &str = conv_row.get("state");
-        let phase_str: &str = conv_row.get("current_phase");
-        let pending_extraction: Option<serde_json::Value> = conv_row.get("pending_extraction");
-        let created_at: chrono::DateTime<chrono::Utc> = conv_row.get("created_at");
-        let updated_at: chrono::DateTime<chrono::Utc> = conv_row.get("updated_at");
-        let message_count: i64 = conv_row.get("message_count");
-        let last_message_at: Option<chrono::DateTime<chrono::Utc>> = conv_row.get("last_message_at");
+        let items = items?;
+        let has_more = (offset + items.len() as i64) < total;
 
-        let view = ConversationView {
-            id: ConversationId::from_uuid(id_uuid),
-            component_id: ComponentId::from_uuid(component_id_uuid),
-            component_type: str_to_component_type(component_type_str)?,
-            messages,
-            state: str_to_conversation_state(state_str)?,
-            current_phase: str_to_agent_phase(phase_str)?,
-            pending_extraction,
-            message_count: message_count as usize,
-            last_message_at: last_message_at.map(Timestamp::from_datetime),
-        };
-
-        Ok(Some(view))
-    }
-
-    async fn get_message_count(
-        &self,
-        conversation_id: ConversationId,
-    ) -> Result<usize, ConversationReaderError> {
-        let row = sqlx::query(
-            r#"
-            SELECT COUNT(*) as count
-            FROM messages
-            WHERE conversation_id = $1
-            "#,
-        )
-        .bind(conversation_id.as_uuid())
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|e| {
-            ConversationReaderError::Database(format!("Failed to count messages: {}", e))
-        })?;
-
-        let count: i64 = row.get("count");
-        Ok(count as usize)
-    }
-
-    async fn get_recent_messages(
-        &self,
-        conversation_id: ConversationId,
-        limit: usize,
-    ) -> Result<Vec<Message>, ConversationReaderError> {
-        let message_rows = sqlx::query(
-            r#"
-            SELECT id, role, content, created_at
-            FROM messages
-            WHERE conversation_id = $1
-            ORDER BY created_at DESC
-            LIMIT $2
-            "#,
-        )
-        .bind(conversation_id.as_uuid())
-        .bind(limit as i64)
-        .fetch_all(&self.pool)
-        .await
-        .map_err(|e| {
-            ConversationReaderError::Database(format!("Failed to fetch recent messages: {}", e))
-        })?;
-
-        let mut messages: Vec<Message> = message_rows
-            .iter()
-            .map(|row| {
-                let id: uuid::Uuid = row.get("id");
-                let role_str: &str = row.get("role");
-                let content: String = row.get("content");
-                let created_at: chrono::DateTime<chrono::Utc> = row.get("created_at");
-
-                Message {
-                    id: MessageId::from_uuid(id),
-                    role: str_to_role(role_str),
-                    content,
-                    metadata: MessageMetadata::default(),
-                    timestamp: Timestamp::from_datetime(created_at),
-                }
-            })
-            .collect();
-
-        // Reverse to get chronological order
-        messages.reverse();
-
-        Ok(messages)
+        Ok(MessageList {
+            items,
+            total: total as u64,
+            has_more,
+        })
     }
 }
 
-// === Helper Functions ===
+// ─────────────────────────────────────────────────────────────────────────────
+// Helper functions
+// ─────────────────────────────────────────────────────────────────────────────
 
-fn str_to_conversation_state(s: &str) -> Result<ConversationState, ConversationReaderError> {
+fn row_to_view(row: sqlx::postgres::PgRow) -> Result<ConversationView, DomainError> {
+    let id: uuid::Uuid = row.get("id");
+    let component_id: uuid::Uuid = row.get("component_id");
+    let state: String = row.get("state");
+    let created_at: chrono::DateTime<chrono::Utc> = row.get("created_at");
+    let updated_at: chrono::DateTime<chrono::Utc> = row.get("updated_at");
+    let message_count: i32 = row.get("message_count");
+
+    Ok(ConversationView {
+        id: ConversationId::from_uuid(id),
+        component_id: ComponentId::from_uuid(component_id),
+        state: str_to_state(&state)?,
+        message_count: message_count as u32,
+        created_at: Timestamp::from_datetime(created_at),
+        updated_at: Timestamp::from_datetime(updated_at),
+    })
+}
+
+fn str_to_state(s: &str) -> Result<ConversationState, DomainError> {
     match s {
         "initializing" => Ok(ConversationState::Initializing),
         "ready" => Ok(ConversationState::Ready),
         "in_progress" => Ok(ConversationState::InProgress),
         "confirmed" => Ok(ConversationState::Confirmed),
         "complete" => Ok(ConversationState::Complete),
-        _ => Err(ConversationReaderError::Serialization(format!(
-            "Invalid conversation state: {}",
-            s
-        ))),
+        _ => Err(DomainError::new(
+            ErrorCode::DatabaseError,
+            format!("Invalid conversation state: {}", s),
+        )),
     }
 }
 
-fn str_to_agent_phase(s: &str) -> Result<AgentPhase, ConversationReaderError> {
+fn str_to_role(s: &str) -> Result<Role, DomainError> {
     match s {
-        "intro" => Ok(AgentPhase::Intro),
-        "gather" => Ok(AgentPhase::Gather),
-        "clarify" => Ok(AgentPhase::Clarify),
-        "extract" => Ok(AgentPhase::Extract),
-        "confirm" => Ok(AgentPhase::Confirm),
-        _ => Err(ConversationReaderError::Serialization(format!(
-            "Invalid agent phase: {}",
-            s
-        ))),
-    }
-}
-
-fn str_to_component_type(s: &str) -> Result<ComponentType, ConversationReaderError> {
-    match s {
-        "issue_raising" => Ok(ComponentType::IssueRaising),
-        "problem_frame" => Ok(ComponentType::ProblemFrame),
-        "objectives" => Ok(ComponentType::Objectives),
-        "alternatives" => Ok(ComponentType::Alternatives),
-        "consequences" => Ok(ComponentType::Consequences),
-        "tradeoffs" => Ok(ComponentType::Tradeoffs),
-        "recommendation" => Ok(ComponentType::Recommendation),
-        "decision_quality" => Ok(ComponentType::DecisionQuality),
-        "notes_next_steps" => Ok(ComponentType::NotesNextSteps),
-        _ => Err(ConversationReaderError::Serialization(format!(
-            "Invalid component type: {}",
-            s
-        ))),
-    }
-}
-
-fn str_to_role(s: &str) -> Role {
-    match s {
-        "user" => Role::User,
-        "assistant" => Role::Assistant,
-        "system" => Role::System,
-        _ => Role::System, // Default fallback
+        "system" => Ok(Role::System),
+        "user" => Ok(Role::User),
+        "assistant" => Ok(Role::Assistant),
+        _ => Err(DomainError::new(
+            ErrorCode::DatabaseError,
+            format!("Invalid message role: {}", s),
+        )),
     }
 }

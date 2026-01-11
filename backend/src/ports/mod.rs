@@ -78,8 +78,10 @@ pub use ai_provider::{
 pub use auth_provider::AuthProvider;
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
-pub use conversation_reader::{ConversationReader, ConversationView, ReaderError as ConversationReaderError};
-pub use conversation_repository::{ConversationRepository, RepositoryError as ConversationRepositoryError};
+pub use conversation_reader::{
+    ConversationReader, ConversationView, MessageList, MessageListOptions, MessageView,
+};
+pub use conversation_repository::ConversationRepository;
 pub use cycle_reader::{
     ComponentOutputView, ComponentStatusItem, CycleProgressView, CycleReader, CycleSummary,
     CycleTreeNode, CycleView, NextAction, NextActionType, ProgressStep,

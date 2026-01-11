@@ -106,7 +106,7 @@ impl PostgresAccessChecker {
             false
         } else if status == MembershipStatus::Cancelled {
             // Cancelled memberships have access until period end
-            period_end.map_or(false, |end| now <= end)
+            period_end.is_some_and(|end| now <= end)
         } else {
             true
         };

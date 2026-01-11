@@ -16,17 +16,25 @@ The Conversation module manages AI agent behavior, conversation flow, and messag
 ## Current Status
 
 ```
-IN PROGRESS: conversation
+IN PROGRESS: conversation-persistence
 Files: 13/75 (17%)
-Tests: 200 passing
+Tests: 308 passing
 Frontend: Not started
 ```
 
-**Note:** Core domain types, phase transitions, data extraction, and context management are implemented. Still needed: persistence layer, HTTP adapters, and frontend.
+**Archived:** Core domain types complete (see `docs/features/conversation/conversation-lifecycle.md`)
+**Remaining:** Persistence layer, HTTP adapters, frontend
 
 ---
 
-## File Inventory
+## Archived: Conversation Lifecycle (COMPLETE)
+
+> **Spec:** `docs/features/conversation/conversation-lifecycle.md`
+> **Completed:** 2026-01-10
+> **Tests:** 308 passing
+
+<details>
+<summary>Click to expand archived implementation details</summary>
 
 ### Domain Layer - Core (Rust)
 
@@ -61,62 +69,21 @@ Frontend: Not started
 |------|-------------|--------|
 | `docs/api/streaming-protocol.md` | WebSocket streaming specification | :white_check_mark: |
 
----
+### Implemented Features
 
-## Implemented Features
+- ConversationState enum with state machine transitions
+- AgentPhase enum with phase ordering and progression
+- PhaseTransitionEngine for phase transition logic
+- DataExtractor with security sanitization and validation
+- ContextWindowManager for token budget management
+- AgentConfig for all 9 PrOACT components
+- StreamingMessageHandler with WebSocket support
 
-### ConversationState (state.rs)
-- [x] State enum: Initializing, Ready, InProgress, Confirmed, Complete
-- [x] State machine transitions with validation
-- [x] `can_transition_to()` method
-- [x] `valid_transitions()` method
-- [x] Helper methods: `is_active()`, `accepts_user_input()`, `can_generate_response()`
-- [x] Serialization to snake_case
-
-### AgentPhase (phase.rs)
-- [x] Phase enum: Greeting, Probing, Clarifying, Synthesizing, Confirming, Extracting, Transitioning
-- [x] Phase ordering and progression
-- [x] Phase-specific behaviors
-- [x] Serialization support
-
-### PhaseTransitionEngine (engine.rs)
-- [x] Phase progression logic
-- [x] Conversation snapshots
-- [x] Phase transition configuration
-- [x] Integration with component types
-
-### DataExtractor (extractor.rs)
-- [x] JSON extraction from AI responses
-- [x] Security sanitization
-- [x] Field length limits (MAX_FIELD_LENGTH)
-- [x] Response length limits (MAX_RESPONSE_LENGTH)
-- [x] XSS/injection prevention
-- [x] Comprehensive error handling
-
-### ContextWindowManager (context.rs)
-- [x] Token budget management
-- [x] Message role handling
-- [x] Context building for AI requests
-- [x] Configuration options
-
-### AgentConfig (configs/)
-- [x] Component-specific configurations for all 9 PrOACT components
-- [x] Phase prompts per component
-- [x] Completion criteria
-- [x] Opening messages per component
-- [x] Extraction prompts per component
-
-### StreamingMessageHandler (application/handlers/)
-- [x] WebSocket message types
-- [x] Streaming response handling
-- [x] Token usage tracking
-- [x] Broadcasting interface
-- [x] Repository interface
-- [x] AI provider interface
+</details>
 
 ---
 
-## NOT YET IMPLEMENTED
+## Remaining Work: Conversation Persistence & HTTP
 
 ### Domain Layer
 
@@ -193,7 +160,7 @@ Frontend: Not started
 
 ## Test Summary
 
-### Implemented Tests (200 total)
+### Archived Tests (308 passing)
 
 | Category | Count | Description |
 |----------|-------|-------------|
@@ -203,6 +170,8 @@ Frontend: Not started
 | DataExtractor | ~52 | Extraction, sanitization, limits |
 | ContextWindowManager | ~32 | Token budgets, context building |
 | AgentConfig | ~15 | Component configs, templates |
+| Tools | ~80 | Tool definitions, registry, invocations |
+| StreamingHandler | ~23 | Message handling, WebSocket types |
 
 ---
 
@@ -210,7 +179,7 @@ Frontend: Not started
 
 ```bash
 # Run all conversation tests
-cargo test --lib conversation
+cd backend && cargo test --lib conversation
 
 # Run specific category
 cargo test --lib conversation::state
@@ -219,6 +188,7 @@ cargo test --lib conversation::engine
 cargo test --lib conversation::extractor
 cargo test --lib conversation::context
 cargo test --lib conversation::configs
+cargo test --lib conversation::tools
 
 # Count tests
 cargo test --lib conversation 2>&1 | grep -E "^test " | wc -l
@@ -229,39 +199,43 @@ cargo test --lib && cargo clippy -- -D warnings
 
 ---
 
-## Exit Criteria (Updated)
+## Exit Criteria
 
-### Current Progress: ~40%
+### Phase 1: Conversation Lifecycle (COMPLETE)
 
-The core domain logic for conversation management is implemented:
 - [x] State machine for conversation lifecycle
 - [x] Phase management for AI agent behavior
 - [x] Data extraction with security measures
 - [x] Context window management
 - [x] Component-specific configurations
 - [x] Streaming message handler skeleton
+- [x] Tool definitions for all components
 
-### Remaining Work: ~60%
+### Phase 2: Persistence & HTTP (NOT STARTED)
 
 - [ ] Conversation entity and ID
 - [ ] Persistence layer (ports + adapters)
 - [ ] HTTP/WebSocket adapters
 - [ ] Additional application commands
 - [ ] Database migrations
-- [ ] Frontend implementation
+
+### Phase 3: Frontend (NOT STARTED)
+
+- [ ] TypeScript types
+- [ ] API client and hooks
+- [ ] Chat UI components
 
 ---
 
 ## Notes
 
-- Core domain types recovered from feat/conversation-lifecycle branch
-- 200 tests passing covering state, phase, engine, extractor, context, configs
+- **Archived:** `docs/features/conversation/conversation-lifecycle.md` (2026-01-10)
+- 308 tests passing covering domain types and tool definitions
 - AI provider ports already exist in infrastructure (ports/ai_provider.rs)
 - Streaming protocol documented in docs/api/streaming-protocol.md
 - Templates include prompts for all 9 PrOACT components
 
 ---
 
-*Updated: 2026-01-09*
-*Source: Recovered from feat/conversation-lifecycle branch*
-*Test Count: 200 (domain) + handlers*
+*Updated: 2026-01-10*
+*Test Count: 308 passing*

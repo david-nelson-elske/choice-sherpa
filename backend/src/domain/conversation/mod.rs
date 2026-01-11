@@ -2,8 +2,15 @@
 //!
 //! Manages AI-guided dialogues within each PrOACT component.
 //! Handles conversation lifecycle, agent phases, and data extraction.
+//!
+//! # Aggregate Structure
+//!
+//! - `Conversation` is the aggregate root
+//! - `Message` is a child entity owned by Conversation
+//! - Each component has at most one conversation
 
-mod conversation;
+mod aggregate;
+mod message;
 mod state;
 mod phase;
 mod engine;
@@ -12,7 +19,8 @@ mod context;
 pub mod configs;
 pub mod tools;
 
-pub use conversation::Conversation;
+pub use aggregate::Conversation;
+pub use message::{Message, MessageId, Role};
 pub use state::ConversationState;
 pub use phase::AgentPhase;
 pub use engine::{PhaseTransitionEngine, PhaseTransitionConfig, ConversationSnapshot};

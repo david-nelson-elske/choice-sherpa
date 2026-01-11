@@ -17,7 +17,7 @@ pub mod tools;
 
 // Re-export key types for convenience
 pub use conversation::conversation_routes;
-pub use conversation::ConversationHandlers;
+pub use conversation::ConversationAppState;
 pub use cycle::CycleAppState;
 pub use dashboard::dashboard_routes;
 pub use dashboard::DashboardAppState;

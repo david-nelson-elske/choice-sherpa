@@ -7,8 +7,8 @@
 //! - `sessions` - Session aggregate data
 //! - `cycles` - Cycle aggregate metadata
 //! - `components` - Component data with JSONB outputs
-//! - `conversations` - Conversation state and metadata
-//! - `messages` - Conversation message history
+//! - `conversations` - Conversation aggregate
+//! - `messages` - Messages within conversations
 //! - `memberships` - User membership/subscription data
 //! - `promo_codes` - Promotional codes for free access
 

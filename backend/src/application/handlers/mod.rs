@@ -56,7 +56,12 @@ pub use session::{
 pub use analysis::{AnalysisTriggerHandler, ComponentCompletedPayload};
 pub use conversation::{
     // Commands
-    SendMessageCommand, SendMessageHandler, SendMessageResult,
+    SendMessageCommand, SendMessageError, SendMessageHandler, SendMessageResult,
+    RegenerateResponseCommand, RegenerateResponseError, RegenerateResponseHandler, RegenerateResponseResult,
     // Queries
     GetConversationHandler, GetConversationQuery,
+    // Types
+    MessageId, MessageRole, StoredMessage, StreamEvent,
+    // Ports
+    ComponentOwnershipChecker, ConversationRepository, ConversationRepositoryExt, ConversationRecord, OwnershipInfo,
 };

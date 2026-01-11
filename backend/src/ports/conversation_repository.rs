@@ -1,53 +1,101 @@
-//! Conversation Repository Port - Write-side persistence for conversations.
+//! Conversation repository port (write side).
+//!
+//! Defines the contract for persisting and retrieving Conversation aggregates.
+//! Implementations handle the actual database operations.
+//!
+//! # Design
+//!
+//! - **Write-focused**: Optimized for aggregate persistence
+//! - **Component-scoped**: One conversation per component (unique constraint)
+//! - **Message ownership**: Messages are owned by Conversation
 
+use crate::domain::conversation::{Conversation, Message};
+use crate::domain::foundation::{ComponentId, ConversationId, DomainError};
 use async_trait::async_trait;
-use crate::domain::conversation::Conversation;
-use crate::domain::foundation::{ComponentId, ConversationId};
-use crate::domain::proact::Message;
 
-/// Port for persisting conversations (write-side).
+/// Repository port for Conversation aggregate persistence.
 ///
-/// This port handles all write operations for conversations,
-/// including creation, updates, and message appending.
-#[async_trait::async_trait]
+/// Handles write operations for conversation lifecycle management.
+/// Implementations must ensure:
+/// - One conversation per component (unique constraint)
+/// - Messages are persisted in order
+/// - Domain event publication on state changes
+#[async_trait]
 pub trait ConversationRepository: Send + Sync {
-    /// Persists a new conversation.
-    async fn save(&self, conversation: &Conversation) -> Result<(), RepositoryError>;
+    /// Save a new conversation.
+    ///
+    /// # Errors
+    ///
+    /// - `AlreadyExists` if component already has a conversation
+    /// - `DatabaseError` on persistence failure
+    async fn save(&self, conversation: &Conversation) -> Result<(), DomainError>;
 
-    /// Updates an existing conversation.
-    async fn update(&self, conversation: &Conversation) -> Result<(), RepositoryError>;
+    /// Update an existing conversation.
+    ///
+    /// Updates the conversation state and metadata. Does NOT update messages
+    /// (use `add_message` for that).
+    ///
+    /// # Errors
+    ///
+    /// - `ConversationNotFound` if conversation doesn't exist
+    /// - `DatabaseError` on persistence failure
+    async fn update(&self, conversation: &Conversation) -> Result<(), DomainError>;
 
-    /// Finds a conversation by component ID.
-    async fn find_by_component(
+    /// Add a message to a conversation.
+    ///
+    /// Messages are appended in order. The conversation must exist.
+    ///
+    /// # Errors
+    ///
+    /// - `ConversationNotFound` if conversation doesn't exist
+    /// - `DatabaseError` on persistence failure
+    async fn add_message(
         &self,
-        component_id: ComponentId,
-    ) -> Result<Option<Conversation>, RepositoryError>;
+        conversation_id: &ConversationId,
+        message: &Message,
+    ) -> Result<(), DomainError>;
 
-    /// Finds a conversation by ID.
+    /// Find a conversation by its ID.
+    ///
+    /// Returns the full conversation including all messages.
+    ///
+    /// Returns `None` if not found.
     async fn find_by_id(
         &self,
-        id: ConversationId,
-    ) -> Result<Option<Conversation>, RepositoryError>;
+        id: &ConversationId,
+    ) -> Result<Option<Conversation>, DomainError>;
 
-    /// Appends a message to a conversation (optimized for append-only).
-    async fn append_message(
+    /// Find a conversation by component ID.
+    ///
+    /// Each component has at most one conversation.
+    ///
+    /// Returns `None` if no conversation exists for the component.
+    async fn find_by_component(
         &self,
-        conversation_id: ConversationId,
-        message: &Message,
-    ) -> Result<(), RepositoryError>;
+        component_id: &ComponentId,
+    ) -> Result<Option<Conversation>, DomainError>;
 
-    /// Deletes a conversation.
-    async fn delete(&self, id: ConversationId) -> Result<(), RepositoryError>;
+    /// Check if a conversation exists for a component.
+    async fn exists_for_component(&self, component_id: &ComponentId) -> Result<bool, DomainError>;
+
+    /// Delete a conversation (primarily for testing).
+    ///
+    /// In production, conversations should generally not be deleted.
+    ///
+    /// # Errors
+    ///
+    /// - `ConversationNotFound` if conversation doesn't exist
+    /// - `DatabaseError` on persistence failure
+    async fn delete(&self, id: &ConversationId) -> Result<(), DomainError>;
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum RepositoryError {
-    #[error("Conversation not found: {0}")]
-    NotFound(ConversationId),
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    #[error("Database error: {0}")]
-    Database(String),
-
-    #[error("Serialization error: {0}")]
-    Serialization(String),
+    // Trait object safety test
+    #[test]
+    fn conversation_repository_is_object_safe() {
+        fn _accepts_dyn(_repo: &dyn ConversationRepository) {}
+    }
 }

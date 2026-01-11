@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use crate::domain::foundation::{ComponentId, ConversationId, DomainError, ErrorCode};
-use crate::ports::{ConversationReader, ConversationReaderError, ConversationView};
+use crate::ports::{ConversationReader, ConversationView};
 
 /// Query to get a conversation.
 #[derive(Debug, Clone)]
@@ -31,29 +31,18 @@ impl GetConversationHandler {
                 ErrorCode::ConversationNotFound,
                 format!("No conversation found for component {}", query.component_id),
             )),
-            Err(e) => Err(map_reader_error(e)),
+            Err(e) => Err(e),
         }
     }
 
     pub async fn get_by_id(&self, conversation_id: &ConversationId) -> Result<ConversationView, DomainError> {
-        match self.reader.get_by_id(conversation_id).await {
+        match self.reader.get(conversation_id).await {
             Ok(Some(view)) => Ok(view),
             Ok(None) => Err(DomainError::new(
                 ErrorCode::ConversationNotFound,
                 format!("Conversation not found: {}", conversation_id),
             )),
-            Err(e) => Err(map_reader_error(e)),
-        }
-    }
-}
-
-fn map_reader_error(e: ConversationReaderError) -> DomainError {
-    match e {
-        ConversationReaderError::Database(msg) => {
-            DomainError::new(ErrorCode::DatabaseError, msg)
-        }
-        ConversationReaderError::Serialization(msg) => {
-            DomainError::new(ErrorCode::InternalError, format!("Serialization error: {}", msg))
+            Err(e) => Err(e),
         }
     }
 }
@@ -61,10 +50,9 @@ fn map_reader_error(e: ConversationReaderError) -> DomainError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::conversation::{AgentPhase, ConversationState};
-    use crate::domain::foundation::{ComponentType, Timestamp};
-    use crate::domain::proact::Message;
-    use crate::ports::ConversationReader;
+    use crate::domain::conversation::ConversationState;
+    use crate::domain::foundation::Timestamp;
+    use crate::ports::{ConversationReader, MessageList, MessageListOptions};
     use async_trait::async_trait;
 
     #[derive(Clone)]
@@ -84,48 +72,43 @@ mod tests {
 
     #[async_trait]
     impl ConversationReader for MockReader {
+        async fn get(
+            &self,
+            _id: &ConversationId,
+        ) -> Result<Option<ConversationView>, DomainError> {
+            Ok(self.view.clone())
+        }
+
         async fn get_by_component(
             &self,
             _component_id: &ComponentId,
-        ) -> Result<Option<ConversationView>, ConversationReaderError> {
+        ) -> Result<Option<ConversationView>, DomainError> {
             Ok(self.view.clone())
         }
 
-        async fn get_by_id(
+        async fn get_messages(
             &self,
             _conversation_id: &ConversationId,
-        ) -> Result<Option<ConversationView>, ConversationReaderError> {
-            Ok(self.view.clone())
-        }
-
-        async fn get_message_count(
-            &self,
-            _conversation_id: ConversationId,
-        ) -> Result<usize, ConversationReaderError> {
-            Ok(self.view.as_ref().map(|v| v.message_count).unwrap_or(0))
-        }
-
-        async fn get_recent_messages(
-            &self,
-            _conversation_id: ConversationId,
-            _limit: usize,
-        ) -> Result<Vec<Message>, ConversationReaderError> {
-            Ok(self.view.as_ref().map(|v| v.messages.clone()).unwrap_or_default())
+            _options: &MessageListOptions,
+        ) -> Result<MessageList, DomainError> {
+            Ok(MessageList {
+                items: vec![],
+                total: 0,
+                has_more: false,
+            })
         }
     }
 
     #[tokio::test]
     async fn get_conversation_returns_view_when_found() {
+        let now = Timestamp::now();
         let view = ConversationView {
             id: ConversationId::new(),
             component_id: ComponentId::new(),
-            component_type: ComponentType::IssueRaising,
-            messages: vec![],
             state: ConversationState::Ready,
-            current_phase: AgentPhase::Intro,
-            pending_extraction: None,
             message_count: 0,
-            last_message_at: None,
+            created_at: now,
+            updated_at: now,
         };
 
         let reader = Arc::new(MockReader::with_view(view.clone()));
