@@ -673,7 +673,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "analysis.pugh_scores_computed");
+        assert_eq!(events[0].event_type, "analysis.pugh_scores_computed.v1");
     }
 
     #[tokio::test]
@@ -697,7 +697,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "analysis.dq_scores_computed");
+        assert_eq!(events[0].event_type, "analysis.dq_scores_computed.v1");
     }
 
     #[tokio::test]
@@ -721,7 +721,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "analysis.tradeoffs_analyzed");
+        assert_eq!(events[0].event_type, "analysis.tradeoffs_analyzed.v1");
     }
 
     #[tokio::test]

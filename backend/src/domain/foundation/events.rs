@@ -484,13 +484,14 @@ mod tests {
     #[test]
     fn event_envelope_new_creates_with_defaults() {
         let envelope = EventEnvelope::new(
-            "session.created",
+            "session.created.v1",
             "session-123",
             "Session",
             json!({"title": "Test"}),
         );
 
-        assert_eq!(envelope.event_type, "session.created");
+        assert_eq!(envelope.event_type, "session.created.v1");
+        assert_eq!(envelope.schema_version, 1);
         assert_eq!(envelope.aggregate_id, "session-123");
         assert_eq!(envelope.aggregate_type, "Session");
         assert_eq!(envelope.payload["title"], "Test");

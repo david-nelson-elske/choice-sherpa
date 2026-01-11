@@ -38,7 +38,7 @@ pub struct PughScoresComputed {
 
 domain_event!(
     PughScoresComputed,
-    event_type = "analysis.pugh_scores_computed",
+    event_type = "analysis.pugh_scores_computed.v1",
     schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Analysis",
@@ -83,7 +83,7 @@ pub struct DQScoresComputed {
 
 domain_event!(
     DQScoresComputed,
-    event_type = "analysis.dq_scores_computed",
+    event_type = "analysis.dq_scores_computed.v1",
     schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Analysis",
@@ -128,7 +128,7 @@ pub struct TradeoffsAnalyzed {
 
 domain_event!(
     TradeoffsAnalyzed,
-    event_type = "analysis.tradeoffs_analyzed",
+    event_type = "analysis.tradeoffs_analyzed.v1",
     schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Analysis",
@@ -169,7 +169,7 @@ mod tests {
             computed_at: Timestamp::now(),
         };
 
-        assert_eq!(event.event_type(), "analysis.pugh_scores_computed");
+        assert_eq!(event.event_type(), "analysis.pugh_scores_computed.v1");
     }
 
     #[test]
@@ -220,7 +220,7 @@ mod tests {
 
         let envelope = event.to_envelope();
 
-        assert_eq!(envelope.event_type, "analysis.pugh_scores_computed");
+        assert_eq!(envelope.event_type, "analysis.pugh_scores_computed.v1");
         assert_eq!(envelope.aggregate_type, "Analysis");
         assert_eq!(envelope.event_id.as_str(), "evt-pugh-1");
     }
@@ -272,7 +272,7 @@ mod tests {
             computed_at: Timestamp::now(),
         };
 
-        assert_eq!(event.event_type(), "analysis.dq_scores_computed");
+        assert_eq!(event.event_type(), "analysis.dq_scores_computed.v1");
     }
 
     #[test]
@@ -334,7 +334,7 @@ mod tests {
 
         let envelope = event.to_envelope();
 
-        assert_eq!(envelope.event_type, "analysis.dq_scores_computed");
+        assert_eq!(envelope.event_type, "analysis.dq_scores_computed.v1");
         assert_eq!(envelope.event_id.as_str(), "evt-dq-1");
     }
 
@@ -386,7 +386,7 @@ mod tests {
             analyzed_at: Timestamp::now(),
         };
 
-        assert_eq!(event.event_type(), "analysis.tradeoffs_analyzed");
+        assert_eq!(event.event_type(), "analysis.tradeoffs_analyzed.v1");
     }
 
     #[test]
@@ -479,7 +479,7 @@ mod tests {
 
         let envelope = event.to_envelope();
 
-        assert_eq!(envelope.event_type, "analysis.tradeoffs_analyzed");
+        assert_eq!(envelope.event_type, "analysis.tradeoffs_analyzed.v1");
         assert_eq!(envelope.event_id.as_str(), "evt-tradeoffs-1");
         assert_eq!(envelope.aggregate_type, "Analysis");
     }

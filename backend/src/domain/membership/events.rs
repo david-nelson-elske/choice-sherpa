@@ -190,16 +190,16 @@ impl MembershipEvent {
     /// Returns the event type string for routing and filtering.
     pub fn event_type(&self) -> &'static str {
         match self {
-            MembershipEvent::Created { .. } => "membership.created",
-            MembershipEvent::Activated { .. } => "membership.activated",
-            MembershipEvent::Renewed { .. } => "membership.renewed",
-            MembershipEvent::PaymentFailed { .. } => "membership.payment_failed",
-            MembershipEvent::PaymentRecovered { .. } => "membership.payment_recovered",
-            MembershipEvent::Cancelled { .. } => "membership.cancelled",
-            MembershipEvent::Reactivated { .. } => "membership.reactivated",
-            MembershipEvent::Expired { .. } => "membership.expired",
-            MembershipEvent::TierUpgraded { .. } => "membership.tier_upgraded",
-            MembershipEvent::AccessChecked { .. } => "membership.access_checked",
+            MembershipEvent::Created { .. } => "membership.created.v1",
+            MembershipEvent::Activated { .. } => "membership.activated.v1",
+            MembershipEvent::Renewed { .. } => "membership.renewed.v1",
+            MembershipEvent::PaymentFailed { .. } => "membership.payment_failed.v1",
+            MembershipEvent::PaymentRecovered { .. } => "membership.payment_recovered.v1",
+            MembershipEvent::Cancelled { .. } => "membership.cancelled.v1",
+            MembershipEvent::Reactivated { .. } => "membership.reactivated.v1",
+            MembershipEvent::Expired { .. } => "membership.expired.v1",
+            MembershipEvent::TierUpgraded { .. } => "membership.tier_upgraded.v1",
+            MembershipEvent::AccessChecked { .. } => "membership.access_checked.v1",
         }
     }
 
@@ -334,7 +334,7 @@ mod tests {
             occurred_at: now(),
         };
 
-        assert_eq!(event.event_type(), "membership.created");
+        assert_eq!(event.event_type(), "membership.created.v1");
         assert!(event.membership_id().is_some());
     }
 
@@ -350,7 +350,7 @@ mod tests {
             occurred_at: now(),
         };
 
-        assert_eq!(event.event_type(), "membership.created");
+        assert_eq!(event.event_type(), "membership.created.v1");
         assert!(!matches!(
             event,
             MembershipEvent::Created { is_free: true, .. }
@@ -372,7 +372,7 @@ mod tests {
             occurred_at: now(),
         };
 
-        assert_eq!(event.event_type(), "membership.activated");
+        assert_eq!(event.event_type(), "membership.activated.v1");
         if let MembershipEvent::Activated {
             period_start: ps,
             period_end: pe,
@@ -399,7 +399,7 @@ mod tests {
             occurred_at: now(),
         };
 
-        assert_eq!(event.event_type(), "membership.payment_failed");
+        assert_eq!(event.event_type(), "membership.payment_failed.v1");
         if let MembershipEvent::PaymentFailed {
             attempt_count,
             next_retry_at,
@@ -425,7 +425,7 @@ mod tests {
             occurred_at: now(),
         };
 
-        assert_eq!(event.event_type(), "membership.cancelled");
+        assert_eq!(event.event_type(), "membership.cancelled.v1");
         if let MembershipEvent::Cancelled { effective_at, .. } = event {
             assert_eq!(effective_at, effective);
         } else {
@@ -443,7 +443,7 @@ mod tests {
             occurred_at: now(),
         };
 
-        assert_eq!(event.event_type(), "membership.expired");
+        assert_eq!(event.event_type(), "membership.expired.v1");
         if let MembershipEvent::Expired { reason, .. } = event {
             assert_eq!(reason, ExpiredReason::GracePeriodExceeded);
         } else {
@@ -462,7 +462,7 @@ mod tests {
             occurred_at: now(),
         };
 
-        assert_eq!(event.event_type(), "membership.tier_upgraded");
+        assert_eq!(event.event_type(), "membership.tier_upgraded.v1");
         if let MembershipEvent::TierUpgraded {
             previous_tier,
             new_tier,
@@ -487,7 +487,7 @@ mod tests {
             occurred_at: now(),
         };
 
-        assert_eq!(event.event_type(), "membership.access_checked");
+        assert_eq!(event.event_type(), "membership.access_checked.v1");
         assert!(event.membership_id().is_none());
     }
 

@@ -147,7 +147,7 @@ mod tests {
 
         let envelope = EventEnvelope {
             event_id: EventId::new(),
-            event_type: "session.created".to_string(),
+            event_type: "session.created.v1".to_string(),
             schema_version: 1,
             aggregate_id: "session-123".to_string(),
             aggregate_type: "Session".to_string(),

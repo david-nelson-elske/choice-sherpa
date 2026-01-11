@@ -43,7 +43,7 @@ pub struct SessionCreated {
 
 domain_event!(
     SessionCreated,
-    event_type = "session.created",
+    event_type = "session.created.v1",
     schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
@@ -81,7 +81,7 @@ pub struct SessionRenamed {
 
 domain_event!(
     SessionRenamed,
-    event_type = "session.renamed",
+    event_type = "session.renamed.v1",
     schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
@@ -119,7 +119,7 @@ pub struct SessionDescriptionUpdated {
 
 domain_event!(
     SessionDescriptionUpdated,
-    event_type = "session.description_updated",
+    event_type = "session.description_updated.v1",
     schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
@@ -151,7 +151,7 @@ pub struct SessionArchived {
 
 domain_event!(
     SessionArchived,
-    event_type = "session.archived",
+    event_type = "session.archived.v1",
     schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
@@ -187,7 +187,7 @@ pub struct CycleAddedToSession {
 
 domain_event!(
     CycleAddedToSession,
-    event_type = "session.cycle_added",
+    event_type = "session.cycle_added.v1",
     schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
@@ -219,7 +219,7 @@ mod tests {
             created_at: Timestamp::now(),
         };
 
-        assert_eq!(event.event_type(), "session.created");
+        assert_eq!(event.event_type(), "session.created.v1");
         assert_eq!(event.aggregate_type(), "Session");
         assert!(!event.aggregate_id().is_empty());
     }
@@ -253,7 +253,7 @@ mod tests {
         };
 
         let envelope = event.to_envelope();
-        assert_eq!(envelope.event_type, "session.created");
+        assert_eq!(envelope.event_type, "session.created.v1");
         assert_eq!(envelope.aggregate_type, "Session");
         assert_eq!(envelope.event_id.as_str(), "evt-123");
     }
@@ -275,7 +275,7 @@ mod tests {
 
         assert_eq!(event.old_title, "Old Title");
         assert_eq!(event.new_title, "New Title");
-        assert_eq!(event.event_type(), "session.renamed");
+        assert_eq!(event.event_type(), "session.renamed.v1");
     }
 
     #[test]
@@ -311,7 +311,7 @@ mod tests {
 
         assert_eq!(event.old_description, Some("Old desc".to_string()));
         assert_eq!(event.new_description, Some("New desc".to_string()));
-        assert_eq!(event.event_type(), "session.description_updated");
+        assert_eq!(event.event_type(), "session.description_updated.v1");
     }
 
     #[test]
@@ -342,7 +342,7 @@ mod tests {
             archived_at: Timestamp::now(),
         };
 
-        assert_eq!(event.event_type(), "session.archived");
+        assert_eq!(event.event_type(), "session.archived.v1");
         assert_eq!(event.aggregate_type(), "Session");
     }
 
@@ -375,7 +375,7 @@ mod tests {
             added_at: Timestamp::now(),
         };
 
-        assert_eq!(event.event_type(), "session.cycle_added");
+        assert_eq!(event.event_type(), "session.cycle_added.v1");
         assert_eq!(event.aggregate_type(), "Session");
     }
 

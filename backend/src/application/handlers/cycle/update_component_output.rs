@@ -50,7 +50,7 @@ pub struct ComponentOutputUpdatedEvent {
 
 domain_event!(
     ComponentOutputUpdatedEvent,
-    event_type = "component.output_updated",
+    event_type = "component.output_updated.v1",
     schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
@@ -366,7 +366,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "component.output_updated");
+        assert_eq!(events[0].event_type, "component.output_updated.v1");
         assert_eq!(events[0].aggregate_id, cycle_id.to_string());
     }
 

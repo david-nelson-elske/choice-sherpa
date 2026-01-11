@@ -48,7 +48,7 @@ pub struct ComponentStartedEvent {
 
 domain_event!(
     ComponentStartedEvent,
-    event_type = "component.started",
+    event_type = "component.started.v1",
     schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
@@ -370,7 +370,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "component.started");
+        assert_eq!(events[0].event_type, "component.started.v1");
         assert_eq!(events[0].aggregate_id, cycle_id.to_string());
     }
 
