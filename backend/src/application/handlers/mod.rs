@@ -4,6 +4,7 @@
 
 pub mod analysis;
 pub mod cycle;
+pub mod dashboard;
 pub mod membership;
 pub mod session;
 
@@ -27,6 +28,12 @@ pub use cycle::{
     GetComponentHandler, GetComponentQuery, GetComponentResult,
     GetCycleHandler, GetCycleQuery, GetCycleResult,
     GetCycleTreeHandler, GetCycleTreeQuery, GetCycleTreeResult,
+};
+pub use dashboard::{
+    // Queries
+    CompareCyclesHandler, CompareCyclesQuery, CompareCyclesResult,
+    GetComponentDetailHandler, GetComponentDetailQuery, GetComponentDetailResult,
+    GetDashboardOverviewHandler, GetDashboardOverviewQuery, GetDashboardOverviewResult,
 };
 pub use membership::{
     // Commands

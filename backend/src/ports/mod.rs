@@ -43,11 +43,9 @@ mod auth_provider;
 mod circuit_breaker;
 mod confirmation_request_repository;
 mod connection_registry;
-mod revisit_suggestion_repository;
-mod tool_executor;
-mod tool_invocation_repository;
 mod cycle_reader;
 mod cycle_repository;
+mod dashboard_reader;
 mod event_publisher;
 mod event_subscriber;
 mod membership_reader;
@@ -56,10 +54,13 @@ mod outbox_writer;
 mod payment_provider;
 mod processed_event_store;
 mod promo_code_validator;
+mod revisit_suggestion_repository;
 mod schema_validator;
 mod session_reader;
 mod session_repository;
 mod session_validator;
+mod tool_executor;
+mod tool_invocation_repository;
 mod usage_tracker;
 
 pub use access_checker::{AccessChecker, AccessDeniedReason, AccessResult, UsageStats};
@@ -75,6 +76,7 @@ pub use cycle_reader::{
     CycleTreeNode, CycleView, NextAction, NextActionType, ProgressStep,
 };
 pub use cycle_repository::CycleRepository;
+pub use dashboard_reader::{DashboardError, DashboardReader};
 pub use event_publisher::EventPublisher;
 pub use event_subscriber::{EventBus, EventHandler, EventSubscriber};
 pub use membership_reader::{

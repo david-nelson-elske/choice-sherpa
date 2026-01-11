@@ -12,11 +12,13 @@
 mod access_checker_impl;
 mod cycle_reader;
 mod cycle_repository;
+mod dashboard_reader;
 mod membership_reader;
 mod membership_repository;
 
 pub use access_checker_impl::PostgresAccessChecker;
 pub use cycle_reader::PostgresCycleReader;
 pub use cycle_repository::PostgresCycleRepository;
+pub use dashboard_reader::PostgresDashboardReader;
 pub use membership_reader::PostgresMembershipReader;
 pub use membership_repository::PostgresMembershipRepository;
