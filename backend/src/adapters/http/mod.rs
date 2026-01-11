@@ -11,6 +11,7 @@ pub mod cycle;
 pub mod dashboard;
 pub mod membership;
 pub mod middleware;
+pub mod profile;
 pub mod session;
 pub mod tools;
 
@@ -23,6 +24,8 @@ pub use dashboard::DashboardAppState;
 pub use membership::MembershipAppState;
 pub use membership::membership_router;
 pub use middleware::{auth_middleware, AuthRejection, AuthState, OptionalAuth, RequireAuth};
+pub use profile::profile_routes;
+pub use profile::ProfileHandlers;
 pub use session::session_routes;
 pub use session::SessionHandlers;
 pub use tools::ToolsAppState;
