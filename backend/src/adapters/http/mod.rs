@@ -7,6 +7,7 @@
 //! - `middleware::auth` - Authentication middleware and extractors
 //! - `middleware::rate_limit` - Rate limiting middleware
 
+pub mod ai_engine;
 pub mod conversation;
 pub mod cycle;
 pub mod dashboard;
@@ -16,6 +17,7 @@ pub mod session;
 pub mod tools;
 
 // Re-export key types for convenience
+pub use ai_engine::AIEngineAppState;
 pub use conversation::conversation_routes;
 pub use conversation::ConversationAppState;
 pub use cycle::CycleAppState;

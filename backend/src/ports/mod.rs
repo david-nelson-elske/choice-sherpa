@@ -42,6 +42,7 @@
 //! See `docs/architecture/SCALING-READINESS.md` for architectural details.
 
 mod access_checker;
+mod ai_engine;
 mod ai_provider;
 mod auth_provider;
 mod circuit_breaker;
@@ -66,11 +67,14 @@ mod schema_validator;
 mod session_reader;
 mod session_repository;
 mod session_validator;
+mod state_storage;
+mod step_agent;
 mod tool_executor;
 mod tool_invocation_repository;
 mod usage_tracker;
 
 pub use access_checker::{AccessChecker, AccessDeniedReason, AccessResult, UsageStats};
+pub use ai_engine::{AIEngine, ResponseChunk, SessionHandle};
 pub use ai_provider::{
     AIError, AIProvider, CompletionRequest, CompletionResponse, FinishReason, Message,
     MessageRole, ProviderInfo, RequestMetadata, StreamChunk, TokenUsage,
@@ -102,10 +106,6 @@ pub use payment_provider::{
     SubscriptionStatus, WebhookEvent, WebhookEventData, WebhookEventType,
 };
 pub use processed_event_store::ProcessedEventStore;
-pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};
-pub use session_reader::{ListOptions, SessionList, SessionReader, SessionSummary, SessionView};
-pub use session_repository::SessionRepository;
-pub use session_validator::SessionValidator;
 pub use promo_code_validator::{
     PromoCodeInvalidReason, PromoCodeValidation, PromoCodeValidator,
 };
@@ -113,15 +113,21 @@ pub use rate_limiter::{
     RateLimitDenied, RateLimitError, RateLimitKey, RateLimitResult, RateLimitScope,
     RateLimitStatus, RateLimiter,
 };
-pub use usage_tracker::{
-    ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
+pub use revisit_suggestion_repository::{
+    RevisitSuggestionRepository, RevisitSuggestionRepoError, RevisitSuggestionCounts,
 };
+pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};
+pub use session_reader::{ListOptions, SessionList, SessionReader, SessionSummary, SessionView};
+pub use session_repository::SessionRepository;
+pub use session_validator::SessionValidator;
+pub use state_storage::{StateStorage, StateStorageError};
+pub use step_agent::{StepAgent, ToolDefinition};
 pub use tool_executor::{ToolExecutor, ToolExecutionContext, ToolExecutionError};
 pub use tool_invocation_repository::{
     ToolInvocationRepository, ToolInvocationRepoError, ToolInvocationStats,
 };
-pub use revisit_suggestion_repository::{
-    RevisitSuggestionRepository, RevisitSuggestionRepoError, RevisitSuggestionCounts,
+pub use usage_tracker::{
+    ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
 };
 pub use confirmation_request_repository::{
     ConfirmationRequestRepository, ConfirmationRequestRepoError, ConfirmationRequestCounts,
