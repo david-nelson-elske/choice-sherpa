@@ -106,7 +106,7 @@ impl PostgresAccessChecker {
             false
         } else if status == MembershipStatus::Cancelled {
             // Cancelled memberships have access until period end
-            period_end.map_or(false, |end| now <= end)
+            period_end.is_some_and(|end| now <= end)
         } else {
             true
         };
@@ -214,10 +214,10 @@ impl AccessChecker for PostgresAccessChecker {
         let limits = TierLimits::for_tier(membership.tier);
         let active_sessions = self.count_active_sessions(user_id).await?;
 
-        if limits.session_limit_reached(active_sessions) {
+        if !limits.can_create_session(active_sessions) {
             return Ok(AccessResult::Denied(AccessDeniedReason::SessionLimitReached {
                 current: active_sessions,
-                max: limits.max_sessions.unwrap_or(0),
+                max: limits.max_active_sessions.unwrap_or(0),
             }));
         }
 
@@ -250,7 +250,7 @@ impl AccessChecker for PostgresAccessChecker {
         let limits = TierLimits::for_tier(membership.tier);
         let session_cycles = self.count_session_cycles(session_id).await?;
 
-        if limits.cycle_limit_reached(session_cycles) {
+        if !limits.can_create_cycle(session_cycles) {
             return Ok(AccessResult::Denied(AccessDeniedReason::CycleLimitReached {
                 current: session_cycles,
                 max: limits.max_cycles_per_session.unwrap_or(0),
@@ -272,7 +272,7 @@ impl AccessChecker for PostgresAccessChecker {
 
         // Check if tier allows export
         let limits = TierLimits::for_tier(membership.tier);
-        if !limits.export_enabled {
+        if !limits.can_export_pdf() {
             return Ok(AccessResult::Denied(AccessDeniedReason::FeatureNotIncluded {
                 feature: "Export".to_string(),
                 required_tier: MembershipTier::Monthly,

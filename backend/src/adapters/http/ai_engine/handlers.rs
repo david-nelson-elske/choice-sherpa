@@ -8,7 +8,7 @@ use axum::extract::{Json, Path, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 
-use crate::application::handlers::{
+use crate::application::handlers::ai_engine::{
     EndConversationCommand, EndConversationError, EndConversationHandler,
     GetConversationStateError, GetConversationStateHandler, GetConversationStateQuery,
     SendMessageCommand, SendMessageError, SendMessageHandler, StartConversationCommand,

@@ -20,6 +20,8 @@ pub struct CreateCycleRequest {
 #[derive(Debug, Clone, Deserialize)]
 pub struct BranchCycleRequest {
     pub branch_point: ComponentType,
+    #[serde(default)]
+    pub branch_label: Option<String>,
 }
 
 // ════════════════════════════════════════════════════════════════════════════════

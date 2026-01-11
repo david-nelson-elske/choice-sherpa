@@ -77,6 +77,22 @@ impl Timestamp {
             .and_utc();
         Self(start)
     }
+
+    /// Creates a timestamp from Unix seconds.
+    pub fn from_unix_secs(secs: u64) -> Self {
+        use chrono::TimeZone;
+        Self(Utc.timestamp_opt(secs as i64, 0).unwrap())
+    }
+
+    /// Returns the timestamp as Unix seconds.
+    pub fn as_unix_secs(&self) -> u64 {
+        self.0.timestamp() as u64
+    }
+
+    /// Creates a new timestamp by adding the specified number of seconds.
+    pub fn plus_secs(&self, secs: u64) -> Self {
+        Self(self.0 + Duration::seconds(secs as i64))
+    }
 }
 
 impl Default for Timestamp {
@@ -88,7 +104,7 @@ impl Default for Timestamp {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::Datelike;
+    use chrono::{Datelike, Timelike};
     use std::thread::sleep;
     use std::time::Duration;
 
@@ -156,5 +172,28 @@ mod tests {
 
         assert!(ts1 < ts2);
         assert!(ts2 > ts1);
+    }
+
+    #[test]
+    fn timestamp_from_unix_secs_works() {
+        // 2024-01-15T00:00:00Z
+        let ts = Timestamp::from_unix_secs(1705276800);
+        assert_eq!(ts.as_datetime().year(), 2024);
+        assert_eq!(ts.as_datetime().month(), 1);
+        assert_eq!(ts.as_datetime().day(), 15);
+    }
+
+    #[test]
+    fn timestamp_as_unix_secs_roundtrips() {
+        let unix_secs = 1705276800_u64;
+        let ts = Timestamp::from_unix_secs(unix_secs);
+        assert_eq!(ts.as_unix_secs(), unix_secs);
+    }
+
+    #[test]
+    fn timestamp_plus_secs_adds_correctly() {
+        let ts1 = Timestamp::from_unix_secs(1000);
+        let ts2 = ts1.plus_secs(60);
+        assert_eq!(ts2.as_unix_secs(), 1060);
     }
 }

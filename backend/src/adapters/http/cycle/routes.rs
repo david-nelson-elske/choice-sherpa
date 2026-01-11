@@ -2,10 +2,12 @@
 //!
 //! Defines the routing table for all cycle-related HTTP endpoints.
 
-use axum::routing::post;
+use axum::routing::{get, post};
 use axum::Router;
 
-use super::handlers::{branch_cycle, create_cycle, CycleAppState};
+use super::handlers::{
+    branch_cycle, create_cycle, get_cycle_tree, get_proact_tree_view, CycleAppState,
+};
 
 /// Creates routes for cycle endpoints.
 ///
@@ -21,16 +23,28 @@ use super::handlers::{branch_cycle, create_cycle, CycleAppState};
 /// - POST /api/cycles/{cycle_id}/components/start - Start a component
 /// - POST /api/cycles/{cycle_id}/components/complete - Complete a component
 /// - POST /api/cycles/{cycle_id}/components/output - Update component output
-/// - GET /api/sessions/{session_id}/cycles/tree - Get cycle tree
 pub fn cycle_routes() -> Router<CycleAppState> {
     Router::new()
         .route("/", post(create_cycle))
         .route("/{cycle_id}/branch", post(branch_cycle))
 }
 
+/// Creates routes for session-related cycle queries.
+///
+/// Current endpoints:
+/// - GET /api/sessions/{session_id}/cycles/tree - Get cycle tree
+/// - GET /api/sessions/{session_id}/cycles/proact-tree - Get PrOACT tree visualization
+pub fn session_cycle_routes() -> Router<CycleAppState> {
+    Router::new()
+        .route("/:session_id/cycles/tree", get(get_cycle_tree))
+        .route("/:session_id/cycles/proact-tree", get(get_proact_tree_view))
+}
+
 /// Combined router with all cycle routes.
 pub fn cycle_router() -> Router<CycleAppState> {
-    Router::new().nest("/api/cycles", cycle_routes())
+    Router::new()
+        .nest("/api/cycles", cycle_routes())
+        .nest("/api/sessions", session_cycle_routes())
 }
 
 #[cfg(test)]

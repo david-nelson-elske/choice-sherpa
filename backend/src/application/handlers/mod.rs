@@ -3,7 +3,10 @@
 //! Command and query handlers that orchestrate domain operations.
 
 pub mod ai_engine;
+pub mod analysis;
+pub mod conversation;
 pub mod cycle;
+pub mod dashboard;
 pub mod membership;
 pub mod session;
 
@@ -28,6 +31,12 @@ pub use cycle::{
     GetCycleHandler, GetCycleQuery, GetCycleResult,
     GetCycleTreeHandler, GetCycleTreeQuery, GetCycleTreeResult,
 };
+pub use dashboard::{
+    // Queries
+    CompareCyclesHandler, CompareCyclesQuery, CompareCyclesResult,
+    GetComponentDetailHandler, GetComponentDetailQuery, GetComponentDetailResult,
+    GetDashboardOverviewHandler, GetDashboardOverviewQuery, GetDashboardOverviewResult,
+};
 pub use membership::{
     // Commands
     CancelMembershipCommand, CancelMembershipHandler, CancelMembershipResult,
@@ -48,9 +57,22 @@ pub use session::{
 pub use ai_engine::{
     // Commands
     StartConversationCommand, StartConversationHandler, StartConversationResult, StartConversationError,
-    SendMessageCommand, SendMessageHandler, SendMessageResult, SendMessageError,
+    SendMessageCommand as AIEngineSendMessageCommand, SendMessageHandler as AIEngineSendMessageHandler,
+    SendMessageResult as AIEngineSendMessageResult, SendMessageError as AIEngineSendMessageError,
     RouteIntentCommand, RouteIntentHandler, RouteIntentResult, RouteIntentError,
     EndConversationCommand, EndConversationHandler, EndConversationError,
     // Queries
     GetConversationStateError, GetConversationStateHandler, GetConversationStateQuery, GetConversationStateResult,
+};
+pub use analysis::{AnalysisTriggerHandler, ComponentCompletedPayload};
+pub use conversation::{
+    // Commands
+    SendMessageCommand, SendMessageError, SendMessageHandler, SendMessageResult,
+    RegenerateResponseCommand, RegenerateResponseError, RegenerateResponseHandler, RegenerateResponseResult,
+    // Queries
+    GetConversationHandler, GetConversationQuery,
+    // Types
+    MessageId, MessageRole, StoredMessage, StreamEvent,
+    // Ports
+    ComponentOwnershipChecker, ConversationRepository, ConversationRepositoryExt, ConversationRecord, OwnershipInfo,
 };

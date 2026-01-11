@@ -10,11 +10,13 @@
 //! - `analysis` - Pure domain services for decision analysis (Pugh, DQ, tradeoffs)
 //! - `conversation` - AI-guided dialogues within PrOACT components
 //! - `ai_engine` - AI conversation orchestration and PrOACT flow management
+//! - `dashboard` - Read models and view compositions for dashboard interface
 
 pub mod ai_engine;
 pub mod analysis;
 pub mod conversation;
 pub mod cycle;
+pub mod dashboard;
 pub mod foundation;
 pub mod membership;
 pub mod proact;

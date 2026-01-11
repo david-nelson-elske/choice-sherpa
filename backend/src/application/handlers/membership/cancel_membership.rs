@@ -304,7 +304,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "membership.cancelled");
+        assert_eq!(events[0].event_type, "membership.cancelled.v1");
     }
 
     #[tokio::test]

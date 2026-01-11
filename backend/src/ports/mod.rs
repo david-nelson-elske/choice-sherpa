@@ -35,6 +35,10 @@
 //! - `ConnectionRegistry` - Multi-server WebSocket connection tracking
 //! - `CircuitBreaker` - External service resilience pattern
 //!
+//! ## Rate Limiting Port
+//!
+//! - `RateLimiter` - Port for rate limiting API requests
+//!
 //! See `docs/architecture/SCALING-READINESS.md` for architectural details.
 
 mod access_checker;
@@ -44,8 +48,11 @@ mod auth_provider;
 mod circuit_breaker;
 mod confirmation_request_repository;
 mod connection_registry;
+mod conversation_reader;
+mod conversation_repository;
 mod cycle_reader;
 mod cycle_repository;
+mod dashboard_reader;
 mod event_publisher;
 mod event_subscriber;
 mod membership_reader;
@@ -54,6 +61,7 @@ mod outbox_writer;
 mod payment_provider;
 mod processed_event_store;
 mod promo_code_validator;
+mod rate_limiter;
 mod revisit_suggestion_repository;
 mod schema_validator;
 mod session_reader;
@@ -74,11 +82,16 @@ pub use ai_provider::{
 pub use auth_provider::AuthProvider;
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
+pub use conversation_reader::{
+    ConversationReader, ConversationView, MessageList, MessageListOptions, MessageView,
+};
+pub use conversation_repository::ConversationRepository;
 pub use cycle_reader::{
     ComponentOutputView, ComponentStatusItem, CycleProgressView, CycleReader, CycleSummary,
     CycleTreeNode, CycleView, NextAction, NextActionType, ProgressStep,
 };
 pub use cycle_repository::CycleRepository;
+pub use dashboard_reader::{DashboardError, DashboardReader};
 pub use event_publisher::EventPublisher;
 pub use event_subscriber::{EventBus, EventHandler, EventSubscriber};
 pub use membership_reader::{
@@ -93,24 +106,28 @@ pub use payment_provider::{
     SubscriptionStatus, WebhookEvent, WebhookEventData, WebhookEventType,
 };
 pub use processed_event_store::ProcessedEventStore;
+pub use promo_code_validator::{
+    PromoCodeInvalidReason, PromoCodeValidation, PromoCodeValidator,
+};
+pub use rate_limiter::{
+    RateLimitDenied, RateLimitError, RateLimitKey, RateLimitResult, RateLimitScope,
+    RateLimitStatus, RateLimiter,
+};
+pub use revisit_suggestion_repository::{
+    RevisitSuggestionRepository, RevisitSuggestionRepoError, RevisitSuggestionCounts,
+};
 pub use schema_validator::{ComponentSchemaValidator, SchemaValidationError};
 pub use session_reader::{ListOptions, SessionList, SessionReader, SessionSummary, SessionView};
 pub use session_repository::SessionRepository;
 pub use session_validator::SessionValidator;
 pub use state_storage::{StateStorage, StateStorageError};
 pub use step_agent::{StepAgent, ToolDefinition};
-pub use promo_code_validator::{
-    PromoCodeInvalidReason, PromoCodeValidation, PromoCodeValidator,
-};
-pub use usage_tracker::{
-    ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
-};
 pub use tool_executor::{ToolExecutor, ToolExecutionContext, ToolExecutionError};
 pub use tool_invocation_repository::{
     ToolInvocationRepository, ToolInvocationRepoError, ToolInvocationStats,
 };
-pub use revisit_suggestion_repository::{
-    RevisitSuggestionRepository, RevisitSuggestionRepoError, RevisitSuggestionCounts,
+pub use usage_tracker::{
+    ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
 };
 pub use confirmation_request_repository::{
     ConfirmationRequestRepository, ConfirmationRequestRepoError, ConfirmationRequestCounts,
