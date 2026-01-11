@@ -347,12 +347,12 @@ impl ProfileReader for PgProfileReader {
                     actual_consequences,
                     vec![], // Surprises not stored in this query
                     would_decide_same,
-                )?)
+                ).map_err(|e| DomainError::new(ErrorCode::InternalError, format!("Invalid outcome: {}", e)))?)
             } else {
                 None
             };
 
-            let record = DecisionRecord::new(
+            let mut record = DecisionRecord::new(
                 crate::domain::foundation::CycleId::from_uuid(cycle_id),
                 crate::domain::foundation::Timestamp::from_datetime(decision_date),
                 title,
@@ -360,7 +360,11 @@ impl ProfileReader for PgProfileReader {
                 dq_score.map(|s| s as u8),
                 key_tradeoff,
                 chosen_alternative,
-            )?;
+            ).map_err(|e| DomainError::new(ErrorCode::InternalError, format!("Invalid decision record: {}", e)))?;
+
+            if let Some(outcome) = outcome {
+                record.record_outcome(outcome);
+            }
 
             records.push(record);
         }
@@ -441,7 +445,7 @@ impl ProfileReader for PgProfileReader {
                 dq_score.map(|s| s as u8),
                 key_tradeoff,
                 chosen_alternative,
-            )?;
+            ).map_err(|e| DomainError::new(ErrorCode::InternalError, format!("Invalid decision record: {}", e)))?;
 
             records.push(record);
         }

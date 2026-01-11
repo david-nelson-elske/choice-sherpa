@@ -204,7 +204,7 @@ impl ProfileConsent {
 /// DecisionProfile aggregate root
 ///
 /// A user-owned artifact that captures decision-making patterns across sessions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DecisionProfile {
     // Identity
     id: DecisionProfileId,
@@ -252,6 +252,44 @@ impl DecisionProfile {
             profile_confidence: ProfileConfidence::Low,
             consent,
         })
+    }
+
+    /// Reconstruct a profile from its parts (for database deserialization)
+    ///
+    /// This is used by adapters to rebuild a profile from stored data.
+    /// Unlike `new()`, this preserves all existing state.
+    pub(crate) fn from_parts(
+        id: DecisionProfileId,
+        user_id: UserId,
+        risk_profile: RiskProfile,
+        values_priorities: ValuesPriorities,
+        decision_style: DecisionMakingStyle,
+        blind_spots_growth: BlindSpotsGrowth,
+        communication_prefs: CommunicationPreferences,
+        decision_history: DecisionHistory,
+        version: ProfileVersion,
+        created_at: Timestamp,
+        updated_at: Timestamp,
+        decisions_analyzed: u32,
+        profile_confidence: ProfileConfidence,
+        consent: ProfileConsent,
+    ) -> Self {
+        Self {
+            id,
+            user_id,
+            risk_profile,
+            values_priorities,
+            decision_style,
+            blind_spots_growth,
+            communication_prefs,
+            decision_history,
+            version,
+            created_at,
+            updated_at,
+            decisions_analyzed,
+            profile_confidence,
+            consent,
+        }
     }
 
     // Getters

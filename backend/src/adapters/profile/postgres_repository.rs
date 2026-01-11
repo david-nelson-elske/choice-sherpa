@@ -127,10 +127,10 @@ impl PgProfileRepository {
 
         let profile_id = DecisionProfileId::from_uuid(id);
         let user_id = UserId::new(user_id)
-            .map_err(|e| DomainError::validation(format!("Invalid user ID: {}", e)))?;
+            .map_err(|e| DomainError::validation("user_id", format!("Invalid user ID: {}", e)))?;
 
         let profile_version = ProfileVersion::from_u32(version as u32)
-            .map_err(|e| DomainError::validation(format!("Invalid version: {}", e)))?;
+            .map_err(|e| DomainError::validation("version", format!("Invalid version: {}", e)))?;
 
         let confidence = match confidence_str.as_str() {
             "low" => ProfileConfidence::Low,
@@ -138,32 +138,30 @@ impl PgProfileRepository {
             "high" => ProfileConfidence::High,
             "very_high" => ProfileConfidence::VeryHigh,
             _ => {
-                return Err(DomainError::validation(format!(
-                    "Invalid confidence: {}",
-                    confidence_str
-                )))
+                return Err(DomainError::validation(
+                    "profile_confidence",
+                    format!("Invalid confidence: {}", confidence_str),
+                ))
             }
         };
 
-        // Reconstruct profile using private fields
-        // Note: This requires either making fields pub(crate) or adding a reconstruction method
-        // For now, I'll create a new profile and update it
-        let mut profile = DecisionProfile::new(user_id, consent.clone(), Timestamp::from_datetime(created_at))?;
-
-        // Update with stored data
-        profile.update_from_analysis(
+        // Reconstruct profile from parts
+        Ok(DecisionProfile::from_parts(
+            profile_id,
+            user_id,
             risk_profile,
             values_priorities,
             decision_style,
             blind_spots_growth,
             communication_prefs,
-            DecisionHistory::default(), // Will be loaded separately
+            DecisionHistory::default(), // Will be loaded separately if needed
+            profile_version,
+            Timestamp::from_datetime(created_at),
             Timestamp::from_datetime(updated_at),
-        );
-
-        // Manually set metadata (this is a limitation of the current design)
-        // In production, you'd want a from_parts constructor
-        Ok(profile)
+            decisions_analyzed as u32,
+            confidence,
+            consent,
+        ))
     }
 }
 
@@ -195,7 +193,7 @@ impl ProfileRepository for PgProfileRepository {
         let row_data = self.to_db_row(profile, file_path_str, &checksum);
 
         // Insert into database
-        sqlx::query!(
+        sqlx::query(
             r#"
             INSERT INTO decision_profiles (
                 id, user_id, file_path, content_checksum, version,
@@ -205,22 +203,22 @@ impl ProfileRepository for PgProfileRepository {
                 created_at, updated_at
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             "#,
-            row_data.0,
-            row_data.1,
-            row_data.2,
-            row_data.3,
-            row_data.4,
-            row_data.5,
-            row_data.6,
-            row_data.7,
-            row_data.8,
-            row_data.9,
-            row_data.10,
-            row_data.11,
-            row_data.12,
-            row_data.13,
-            row_data.14,
         )
+        .bind(row_data.0)
+        .bind(row_data.1)
+        .bind(row_data.2)
+        .bind(row_data.3)
+        .bind(row_data.4)
+        .bind(row_data.5)
+        .bind(row_data.6)
+        .bind(row_data.7)
+        .bind(row_data.8)
+        .bind(row_data.9)
+        .bind(row_data.10)
+        .bind(row_data.11)
+        .bind(row_data.12)
+        .bind(row_data.13)
+        .bind(row_data.14)
         .execute(&self.pool)
         .await
         .map_err(|e| DomainError::new(ErrorCode::InternalError, format!("Database error: {}", e)))?;
@@ -250,7 +248,7 @@ impl ProfileRepository for PgProfileRepository {
         let row_data = self.to_db_row(profile, file_path_str, &checksum);
 
         // Update database with optimistic locking
-        let result = sqlx::query!(
+        let result = sqlx::query(
             r#"
             UPDATE decision_profiles
             SET file_path = $2,
@@ -267,27 +265,28 @@ impl ProfileRepository for PgProfileRepository {
                 updated_at = $13
             WHERE id = $1 AND version = $4 - 1
             "#,
-            row_data.0,
-            row_data.2,
-            row_data.3,
-            row_data.4,
-            row_data.5,
-            row_data.6,
-            row_data.7,
-            row_data.8,
-            row_data.9,
-            row_data.10,
-            row_data.11,
-            row_data.12,
-            row_data.14,
         )
+        .bind(row_data.0)
+        .bind(row_data.2)
+        .bind(row_data.3)
+        .bind(row_data.4)
+        .bind(row_data.5)
+        .bind(row_data.6)
+        .bind(row_data.7)
+        .bind(row_data.8)
+        .bind(row_data.9)
+        .bind(row_data.10)
+        .bind(row_data.11)
+        .bind(row_data.12)
+        .bind(row_data.14)
         .execute(&self.pool)
         .await
         .map_err(|e| DomainError::new(ErrorCode::InternalError, format!("Database error: {}", e)))?;
 
         if result.rows_affected() == 0 {
-            return Err(DomainError::conflict(
-                "Profile was modified by another process",
+            return Err(DomainError::new(
+                ErrorCode::InternalError,
+                "Profile was modified by another process (optimistic lock failure)",
             ));
         }
 
@@ -340,7 +339,7 @@ impl ProfileRepository for PgProfileRepository {
         if let Some(row) = row {
             let user_id_str: String = row.get("user_id");
             let user_id = UserId::new(user_id_str)
-                .map_err(|e| DomainError::validation(format!("Invalid user ID: {}", e)))?;
+                .map_err(|e| DomainError::validation("user_id", format!("Invalid user ID: {}", e)))?;
 
             // Delete from database (CASCADE will delete history)
             sqlx::query("DELETE FROM decision_profiles WHERE id = $1")
