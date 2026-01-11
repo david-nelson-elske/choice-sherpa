@@ -5,6 +5,7 @@
 //! ## Middleware
 //!
 //! - `middleware::auth` - Authentication middleware and extractors
+//! - `middleware::rate_limit` - Rate limiting middleware
 
 pub mod conversation;
 pub mod cycle;
@@ -23,6 +24,9 @@ pub use dashboard::DashboardAppState;
 pub use membership::MembershipAppState;
 pub use membership::membership_router;
 pub use middleware::{auth_middleware, AuthRejection, AuthState, OptionalAuth, RequireAuth};
+pub use middleware::{
+    rate_limit_middleware, RateLimitCheck, RateLimitRejection, RateLimiterState,
+};
 pub use session::session_routes;
 pub use session::SessionHandlers;
 pub use tools::ToolsAppState;

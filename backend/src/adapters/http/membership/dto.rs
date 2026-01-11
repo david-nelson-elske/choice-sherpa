@@ -94,16 +94,49 @@ impl From<MembershipView> for MembershipViewResponse {
 }
 
 /// Response for tier limits.
+///
+/// Contains all feature limits and capabilities for the user's membership tier.
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TierLimitsResponse {
     /// The membership tier.
     pub tier: MembershipTier,
+
+    // Session & Cycle Limits
     /// Maximum active sessions (null = unlimited).
-    pub max_sessions: Option<u32>,
+    pub max_active_sessions: Option<u32>,
     /// Maximum cycles per session (null = unlimited).
     pub max_cycles_per_session: Option<u32>,
-    /// Whether PDF/CSV export is enabled.
-    pub export_enabled: bool,
+    /// Maximum archived sessions (null = unlimited).
+    pub max_archived_sessions: Option<u32>,
+    /// Session history retention in days (null = forever).
+    pub session_history_days: Option<u32>,
+
+    // AI Features
+    /// Whether AI conversations are enabled.
+    pub ai_enabled: bool,
+    /// Maximum AI messages per day (null = unlimited).
+    pub ai_messages_per_day: Option<u32>,
+    /// AI model tier (standard or advanced).
+    pub ai_model_tier: String,
+
+    // Component Access
+    /// Whether the Decision Quality component is accessible.
+    pub dq_component_enabled: bool,
+
+    // Analysis Features
+    /// Whether full tradeoff analysis is available.
+    pub full_tradeoff_analysis: bool,
+    /// Whether DQ scoring is enabled.
+    pub dq_scoring_enabled: bool,
+    /// Whether improvement suggestions are shown.
+    pub improvement_suggestions_enabled: bool,
+
+    // Export & Sharing
+    /// Whether PDF export is enabled.
+    pub pdf_export_enabled: bool,
+    /// Whether share link generation is enabled.
+    pub share_link_enabled: bool,
     /// Whether API access is enabled.
     pub api_access: bool,
 }
@@ -112,9 +145,19 @@ impl From<TierLimits> for TierLimitsResponse {
     fn from(limits: TierLimits) -> Self {
         Self {
             tier: limits.tier,
-            max_sessions: limits.max_sessions,
+            max_active_sessions: limits.max_active_sessions,
             max_cycles_per_session: limits.max_cycles_per_session,
-            export_enabled: limits.export_enabled,
+            max_archived_sessions: limits.max_archived_sessions,
+            session_history_days: limits.session_history_days,
+            ai_enabled: limits.ai_enabled,
+            ai_messages_per_day: limits.ai_messages_per_day,
+            ai_model_tier: limits.ai_model_tier.model_id().to_string(),
+            dq_component_enabled: limits.dq_component_enabled,
+            full_tradeoff_analysis: limits.full_tradeoff_analysis,
+            dq_scoring_enabled: limits.dq_scoring_enabled,
+            improvement_suggestions_enabled: limits.improvement_suggestions_enabled,
+            pdf_export_enabled: limits.pdf_export_enabled,
+            share_link_enabled: limits.share_link_enabled,
             api_access: limits.api_access,
         }
     }
@@ -325,8 +368,9 @@ mod tests {
         let response = TierLimitsResponse::from(limits);
 
         assert_eq!(response.tier, MembershipTier::Free);
-        assert_eq!(response.max_sessions, Some(3));
-        assert!(!response.export_enabled);
+        assert_eq!(response.max_active_sessions, Some(3));
+        assert!(!response.pdf_export_enabled);
+        assert!(!response.dq_component_enabled);
     }
 
     #[test]
@@ -335,7 +379,8 @@ mod tests {
         let response = TierLimitsResponse::from(limits);
 
         let json = serde_json::to_string(&response).unwrap();
-        assert!(json.contains(r#""max_sessions":null"#));
+        // Note: camelCase serialization
+        assert!(json.contains(r#""maxActiveSessions":null"#));
     }
 
     #[test]

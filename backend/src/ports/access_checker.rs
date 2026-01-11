@@ -203,7 +203,7 @@ impl UsageStats {
 
     /// Check if user is at or over their session limit for the given tier.
     pub fn at_session_limit(&self, limits: &TierLimits) -> bool {
-        limits.session_limit_reached(self.active_sessions)
+        !limits.can_create_session(self.active_sessions)
     }
 }
 

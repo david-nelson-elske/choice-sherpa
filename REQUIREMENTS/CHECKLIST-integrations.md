@@ -19,10 +19,10 @@ This checklist tracks implementation of cross-cutting integration features that 
 | Membership Access Control | `features/integrations/membership-access-control.md` | 3/22 | In progress |
 | Notification Service | `features/integrations/notification-service.md` | 0/25 | Not started |
 | Observability | `features/integrations/observability.md` | 0/25 | Not started |
-| Rate Limiting | `features/integrations/rate-limiting.md` | 0/25 | Not started |
+| Rate Limiting | `features/integrations/rate-limiting.md` | 8/11 | In progress |
 | WebSocket Dashboard | `features/integrations/websocket-dashboard.md` | 0/16 | Not started |
 
-**Total Progress: 16/165 (10%)**
+**Total Progress: 24/151 (16%)**
 
 ---
 
@@ -183,24 +183,24 @@ This checklist tracks implementation of cross-cutting integration features that 
 
 ### Domain Layer
 
-- [ ] Define RateLimiter port
-- [ ] Create rate limit configuration types
-- [ ] Define rate limit rules per endpoint
+- [x] Define RateLimiter port
+- [x] Create rate limit configuration types
+- [x] Define rate limit rules per endpoint (via tier-based configuration)
 
 ### Adapters
 
-- [ ] Implement InMemoryRateLimiter for testing
-- [ ] Implement RedisRateLimiter with Lua scripts
+- [x] Implement InMemoryRateLimiter for testing
+- [x] Implement RedisRateLimiter (fixed-window counter algorithm)
 
 ### Middleware
 
-- [ ] Create rate limit middleware
+- [x] Create rate limit middleware
 - [ ] Add bypass for internal services
-- [ ] Implement retry-after headers
+- [x] Implement retry-after headers
 
 ### Testing
 
-- [ ] Write unit tests for token bucket algorithm
+- [x] Write unit tests for rate limiter (43 tests)
 - [ ] Integration tests for Redis adapter
 - [ ] Load tests for limit enforcement
 
@@ -246,9 +246,9 @@ This checklist tracks implementation of cross-cutting integration features that 
 | Membership Access Control | 22 | 3 | 14% |
 | Notification Service | 25 | 0 | 0% |
 | Observability | 25 | 0 | 0% |
-| Rate Limiting | 25 | 0 | 0% |
+| Rate Limiting | 11 | 8 | 73% |
 | WebSocket Dashboard | 16 | 0 | 0% |
-| **Total** | **165** | **16** | **10%** |
+| **Total** | **151** | **24** | **16%** |
 
 ---
 

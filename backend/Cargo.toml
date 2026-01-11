@@ -47,7 +47,7 @@ subtle = "2.5"
 sqlx = { version = "0.7", features = ["postgres", "uuid", "chrono", "runtime-tokio", "migrate"] }
 
 # HTTP Framework
-axum = "0.7"
+axum = { version = "0.7", features = ["ws"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["trace", "cors", "timeout", "request-id", "compression-gzip"] }
 http = "1.0"
