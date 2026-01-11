@@ -9,6 +9,7 @@
 //! - `postgres` - PostgreSQL database implementations
 //! - `stripe` - Stripe payment provider implementation
 //! - `validation` - Schema validation implementations
+//! - `websocket` - WebSocket real-time update implementations
 
 pub mod ai;
 pub mod auth;
@@ -18,6 +19,7 @@ pub mod membership;
 pub mod postgres;
 pub mod stripe;
 pub mod validation;
+pub mod websocket;
 
 pub use ai::{
     ai_events, AIEventCallback, AIUsageHandler, AnthropicConfig, AnthropicProvider,
@@ -33,3 +35,7 @@ pub use postgres::{
 };
 pub use stripe::{MockPaymentProvider, StripeConfig, StripePaymentAdapter};
 pub use validation::JsonSchemaValidator;
+pub use websocket::{
+    websocket_router, ClientId, DashboardUpdate, DashboardUpdateType, RoomManager, ServerMessage,
+    WebSocketEventBridge, WebSocketState, DASHBOARD_EVENT_TYPES,
+};
