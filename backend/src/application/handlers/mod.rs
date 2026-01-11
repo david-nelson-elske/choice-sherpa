@@ -3,6 +3,7 @@
 //! Command and query handlers that orchestrate domain operations.
 
 pub mod analysis;
+pub mod conversation;
 pub mod cycle;
 pub mod dashboard;
 pub mod membership;
@@ -53,3 +54,9 @@ pub use session::{
     RenameSessionCommand, RenameSessionHandler, RenameSessionResult,
 };
 pub use analysis::{AnalysisTriggerHandler, ComponentCompletedPayload};
+pub use conversation::{
+    // Commands
+    SendMessageCommand, SendMessageHandler, SendMessageResult,
+    // Queries
+    GetConversationHandler, GetConversationQuery,
+};

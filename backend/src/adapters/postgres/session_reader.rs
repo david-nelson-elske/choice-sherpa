@@ -113,7 +113,7 @@ impl SessionReader for PostgresSessionReader {
 
         // Calculate has_more
         let offset = options.offset.unwrap_or(0) as u64;
-        let has_more = offset + items.len() as u64 < total;
+        let has_more = offset + (items.len() as u64) < total;
 
         Ok(SessionList {
             items,
