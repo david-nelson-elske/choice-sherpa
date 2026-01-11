@@ -152,6 +152,7 @@ pub async fn branch_cycle(
     let cmd = BranchCycleCommand {
         parent_cycle_id: cycle_id,
         branch_point: request.branch_point,
+        branch_label: request.branch_label,
     };
     let metadata = CommandMetadata::new(user.user_id);
 

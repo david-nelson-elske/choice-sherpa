@@ -11,7 +11,7 @@ use crate::domain::foundation::{
 };
 use crate::domain::proact::{ComponentSequence, ComponentVariant};
 
-use super::CycleEvent;
+use super::{BranchMetadata, CycleEvent};
 
 /// The Cycle aggregate root.
 ///
@@ -23,6 +23,8 @@ pub struct Cycle {
     session_id: SessionId,
     parent_cycle_id: Option<CycleId>,
     branch_point: Option<ComponentType>,
+    /// Metadata for branch visualization (label, position hints)
+    branch_metadata: BranchMetadata,
     status: CycleStatus,
     current_step: ComponentType,
     components: HashMap<ComponentType, ComponentVariant>,
@@ -48,6 +50,7 @@ impl Cycle {
             session_id,
             parent_cycle_id: None,
             branch_point: None,
+            branch_metadata: BranchMetadata::root(),
             status: CycleStatus::Active,
             current_step: ComponentSequence::first(),
             components,
@@ -74,6 +77,7 @@ impl Cycle {
         session_id: SessionId,
         parent_cycle_id: Option<CycleId>,
         branch_point: Option<ComponentType>,
+        branch_metadata: BranchMetadata,
         status: CycleStatus,
         current_step: ComponentType,
         components: HashMap<ComponentType, ComponentVariant>,
@@ -85,6 +89,7 @@ impl Cycle {
             session_id,
             parent_cycle_id,
             branch_point,
+            branch_metadata,
             status,
             current_step,
             components,
@@ -116,6 +121,11 @@ impl Cycle {
     /// Returns the component type where branching occurred.
     pub fn branch_point(&self) -> Option<ComponentType> {
         self.branch_point
+    }
+
+    /// Returns the branch metadata (label, position hints).
+    pub fn branch_metadata(&self) -> &BranchMetadata {
+        &self.branch_metadata
     }
 
     /// Returns the cycle status.
@@ -526,7 +536,13 @@ impl Cycle {
     /// Components before the branch point are copied with Complete status.
     /// The branch point component is copied with NeedsRevision status.
     /// Components after the branch point start fresh.
-    pub fn branch_at(&self, branch_point: ComponentType) -> Result<Cycle, DomainError> {
+    ///
+    /// Optionally accepts a branch label for visualization purposes.
+    pub fn branch_at(
+        &self,
+        branch_point: ComponentType,
+        branch_label: Option<String>,
+    ) -> Result<Cycle, DomainError> {
         self.validate_can_branch_at(branch_point)?;
 
         let id = CycleId::new();
@@ -560,6 +576,7 @@ impl Cycle {
             session_id: self.session_id,
             parent_cycle_id: Some(self.id),
             branch_point: Some(branch_point),
+            branch_metadata: BranchMetadata::branched(branch_label),
             status: CycleStatus::Active,
             current_step: branch_point,
             components: new_components,
@@ -1047,7 +1064,7 @@ mod tests {
             .unwrap();
         cycle.start_component(ComponentType::Objectives).unwrap();
 
-        let branch = cycle.branch_at(ComponentType::Objectives).unwrap();
+        let branch = cycle.branch_at(ComponentType::Objectives, None).unwrap();
 
         assert!(branch.is_branch());
         assert_eq!(branch.parent_cycle_id(), Some(cycle.id()));
@@ -1067,7 +1084,7 @@ mod tests {
             .unwrap();
         cycle.start_component(ComponentType::Objectives).unwrap();
 
-        let branch = cycle.branch_at(ComponentType::Objectives).unwrap();
+        let branch = cycle.branch_at(ComponentType::Objectives, None).unwrap();
 
         // Components before branch point should be Complete
         assert_eq!(
@@ -1089,7 +1106,7 @@ mod tests {
             .unwrap();
         cycle.start_component(ComponentType::ProblemFrame).unwrap();
 
-        let branch = cycle.branch_at(ComponentType::ProblemFrame).unwrap();
+        let branch = cycle.branch_at(ComponentType::ProblemFrame, None).unwrap();
 
         // Branch point should be NeedsRevision
         assert_eq!(
@@ -1107,7 +1124,7 @@ mod tests {
             .unwrap();
         cycle.start_component(ComponentType::ProblemFrame).unwrap();
 
-        let branch = cycle.branch_at(ComponentType::ProblemFrame).unwrap();
+        let branch = cycle.branch_at(ComponentType::ProblemFrame, None).unwrap();
 
         // Components after branch point should be NotStarted
         assert_eq!(
@@ -1129,7 +1146,7 @@ mod tests {
             .unwrap();
         cycle.start_component(ComponentType::ProblemFrame).unwrap();
 
-        let branch = cycle.branch_at(ComponentType::ProblemFrame).unwrap();
+        let branch = cycle.branch_at(ComponentType::ProblemFrame, None).unwrap();
 
         assert_eq!(branch.current_step(), ComponentType::ProblemFrame);
     }
@@ -1137,7 +1154,7 @@ mod tests {
     #[test]
     fn cannot_branch_at_not_started_component() {
         let cycle = create_test_cycle();
-        let result = cycle.branch_at(ComponentType::ProblemFrame);
+        let result = cycle.branch_at(ComponentType::ProblemFrame, None);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err().code, ErrorCode::CannotBranch);
     }
@@ -1147,7 +1164,7 @@ mod tests {
         let mut cycle = create_test_cycle();
         cycle.start_component(ComponentType::IssueRaising).unwrap();
 
-        let mut branch = cycle.branch_at(ComponentType::IssueRaising).unwrap();
+        let mut branch = cycle.branch_at(ComponentType::IssueRaising, None).unwrap();
         let events = branch.take_events();
 
         assert_eq!(events.len(), 1);
