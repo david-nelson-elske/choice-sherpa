@@ -44,6 +44,7 @@ pub struct SessionCreated {
 domain_event!(
     SessionCreated,
     event_type = "session.created",
+    schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
     occurred_at = created_at,
@@ -81,6 +82,7 @@ pub struct SessionRenamed {
 domain_event!(
     SessionRenamed,
     event_type = "session.renamed",
+    schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
     occurred_at = renamed_at,
@@ -118,6 +120,7 @@ pub struct SessionDescriptionUpdated {
 domain_event!(
     SessionDescriptionUpdated,
     event_type = "session.description_updated",
+    schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
     occurred_at = updated_at,
@@ -149,6 +152,7 @@ pub struct SessionArchived {
 domain_event!(
     SessionArchived,
     event_type = "session.archived",
+    schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
     occurred_at = archived_at,
@@ -184,6 +188,7 @@ pub struct CycleAddedToSession {
 domain_event!(
     CycleAddedToSession,
     event_type = "session.cycle_added",
+    schema_version = 1,
     aggregate_id = session_id,
     aggregate_type = "Session",
     occurred_at = added_at,

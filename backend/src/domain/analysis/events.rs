@@ -39,6 +39,7 @@ pub struct PughScoresComputed {
 domain_event!(
     PughScoresComputed,
     event_type = "analysis.pugh_scores_computed",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Analysis",
     occurred_at = computed_at,
@@ -83,6 +84,7 @@ pub struct DQScoresComputed {
 domain_event!(
     DQScoresComputed,
     event_type = "analysis.dq_scores_computed",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Analysis",
     occurred_at = computed_at,
@@ -127,6 +129,7 @@ pub struct TradeoffsAnalyzed {
 domain_event!(
     TradeoffsAnalyzed,
     event_type = "analysis.tradeoffs_analyzed",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Analysis",
     occurred_at = analyzed_at,

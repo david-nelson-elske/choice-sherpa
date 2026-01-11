@@ -44,6 +44,7 @@ pub struct CycleArchivedEvent {
 domain_event!(
     CycleArchivedEvent,
     event_type = "cycle.archived",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
     occurred_at = archived_at,

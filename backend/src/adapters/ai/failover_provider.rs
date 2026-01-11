@@ -88,6 +88,7 @@ pub mod events {
     domain_event!(
         AITokensUsed,
         event_type = "ai.tokens_used",
+    schema_version = 1,
         aggregate_id = request_id,
         aggregate_type = "AIRequest",
         occurred_at = occurred_at,
@@ -127,6 +128,7 @@ pub mod events {
     domain_event!(
         ProviderFallback,
         event_type = "ai.provider_fallback",
+    schema_version = 1,
         aggregate_id = request_id,
         aggregate_type = "AIRequest",
         occurred_at = occurred_at,

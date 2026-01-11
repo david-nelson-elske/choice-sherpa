@@ -51,6 +51,7 @@ pub struct NavigatedToComponentEvent {
 domain_event!(
     NavigatedToComponentEvent,
     event_type = "cycle.navigated",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
     occurred_at = navigated_at,

@@ -273,6 +273,11 @@ impl DomainEvent for MembershipEvent {
         MembershipEvent::event_type(self)
     }
 
+    fn schema_version(&self) -> u32 {
+        // All membership events are currently at version 1
+        1
+    }
+
     fn aggregate_id(&self) -> String {
         // For AccessChecked, use user_id if no membership_id
         self.membership_id()

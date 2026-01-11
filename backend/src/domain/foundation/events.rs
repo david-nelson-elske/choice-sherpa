@@ -20,15 +20,20 @@ use super::Timestamp;
 
 /// Trait that all domain events must implement.
 ///
-/// Provides the contract for event identification, routing, and ordering.
+/// Provides the contract for event identification, routing, ordering, and versioning.
 /// Use the `domain_event!` macro to implement this trait with minimal boilerplate.
 ///
 /// For types that also implement `Serialize`, the `to_envelope()` method
 /// is automatically available via the `SerializableDomainEvent` extension trait.
 pub trait DomainEvent: Send + Sync {
-    /// Returns the event type string (e.g., "session.created").
+    /// Returns the event type string (e.g., "session.created.v1").
     /// Used for routing and filtering.
+    /// SHOULD include version suffix (e.g., ".v1", ".v2") for explicit versioning.
     fn event_type(&self) -> &'static str;
+
+    /// Returns the schema version number.
+    /// MUST match the version suffix in event_type.
+    fn schema_version(&self) -> u32;
 
     /// Returns the ID of the aggregate that emitted this event.
     fn aggregate_id(&self) -> String;
@@ -105,7 +110,8 @@ impl<T: DomainEvent + Serialize> SerializableDomainEvent for T {}
 ///
 /// domain_event!(
 ///     SessionCreated,
-///     event_type = "session.created",
+///     event_type = "session.created.v1",
+///     schema_version = 1,
 ///     aggregate_id = session_id,
 ///     aggregate_type = "Session",
 ///     occurred_at = created_at,
@@ -117,6 +123,7 @@ macro_rules! domain_event {
     (
         $event_name:ident,
         event_type = $event_type:expr,
+        schema_version = $schema_version:expr,
         aggregate_id = $agg_id_field:ident,
         aggregate_type = $agg_type:expr,
         occurred_at = $occurred_field:ident,
@@ -125,6 +132,10 @@ macro_rules! domain_event {
         impl $crate::domain::foundation::DomainEvent for $event_name {
             fn event_type(&self) -> &'static str {
                 $event_type
+            }
+
+            fn schema_version(&self) -> u32 {
+                $schema_version
             }
 
             fn aggregate_id(&self) -> String {
@@ -574,6 +585,10 @@ mod tests {
             "test.session.created"
         }
 
+        fn schema_version(&self) -> u32 {
+            1
+        }
+
         fn aggregate_id(&self) -> String {
             self.session_id.clone()
         }
@@ -694,5 +709,89 @@ mod tests {
 
         assert_eq!(envelope.schema_version, 1);
         assert_eq!(envelope.version(), 1);
+    }
+
+    // ============================================================
+    // DomainEvent schema_version() Tests
+    // ============================================================
+
+    #[derive(Debug, Clone, Serialize, Deserialize)]
+    struct TestEventV2 {
+        event_id: EventId,
+        aggregate_id: String,
+        occurred_at: Timestamp,
+        data: String,
+    }
+
+    impl DomainEvent for TestEventV2 {
+        fn event_type(&self) -> &'static str {
+            "test.event.v2"
+        }
+
+        fn schema_version(&self) -> u32 {
+            2
+        }
+
+        fn aggregate_id(&self) -> String {
+            self.aggregate_id.clone()
+        }
+
+        fn aggregate_type(&self) -> &'static str {
+            "TestAggregate"
+        }
+
+        fn occurred_at(&self) -> Timestamp {
+            self.occurred_at
+        }
+
+        fn event_id(&self) -> EventId {
+            self.event_id.clone()
+        }
+    }
+
+    #[test]
+    fn domain_event_schema_version_returns_correct_version() {
+        let event = TestEventV2 {
+            event_id: EventId::new(),
+            aggregate_id: "agg-123".to_string(),
+            occurred_at: Timestamp::now(),
+            data: "test data".to_string(),
+        };
+
+        assert_eq!(event.schema_version(), 2);
+    }
+
+    #[test]
+    fn domain_event_to_envelope_includes_schema_version() {
+        let event = TestEventV2 {
+            event_id: EventId::from_string("evt-v2-test"),
+            aggregate_id: "agg-456".to_string(),
+            occurred_at: Timestamp::now(),
+            data: "test".to_string(),
+        };
+
+        let envelope = event.to_envelope();
+
+        // Schema version should come from event_type parsing (not from trait method yet)
+        assert_eq!(envelope.schema_version, 2);
+        assert_eq!(envelope.version(), 2);
+        assert_eq!(envelope.event_type, "test.event.v2");
+    }
+
+    #[test]
+    fn domain_event_schema_version_matches_event_type() {
+        let event = TestEventV2 {
+            event_id: EventId::new(),
+            aggregate_id: "agg-789".to_string(),
+            occurred_at: Timestamp::now(),
+            data: "test".to_string(),
+        };
+
+        // Version from trait should match version in event_type
+        let version_from_trait = event.schema_version();
+        let version_from_type = EventEnvelope::extract_version(event.event_type());
+
+        assert_eq!(version_from_trait, version_from_type);
+        assert_eq!(version_from_trait, 2);
     }
 }

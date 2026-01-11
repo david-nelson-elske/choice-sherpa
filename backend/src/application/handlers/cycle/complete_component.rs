@@ -48,6 +48,7 @@ pub struct ComponentCompletedEvent {
 domain_event!(
     ComponentCompletedEvent,
     event_type = "component.completed",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
     occurred_at = completed_at,

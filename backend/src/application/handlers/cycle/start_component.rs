@@ -49,6 +49,7 @@ pub struct ComponentStartedEvent {
 domain_event!(
     ComponentStartedEvent,
     event_type = "component.started",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
     occurred_at = started_at,

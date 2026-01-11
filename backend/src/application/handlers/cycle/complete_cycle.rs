@@ -44,6 +44,7 @@ pub struct CycleCompletedEvent {
 domain_event!(
     CycleCompletedEvent,
     event_type = "cycle.completed",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
     occurred_at = completed_at,
