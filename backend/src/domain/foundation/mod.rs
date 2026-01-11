@@ -33,5 +33,5 @@ pub use session_status::SessionStatus;
 pub use state_machine::StateMachine;
 pub use errors::{DomainError, ErrorCode, ValidationError};
 pub use events::{DomainEvent, SerializableDomainEvent, EventId, EventMetadata, EventEnvelope, domain_event};
-pub use upcaster::{Upcaster, UpcasterRegistry, UpcastError};
+pub use upcaster::{Upcaster, UpcasterRegistry, UpcastError, EventDeserializer, DeserializeError};
 pub use command::CommandMetadata;

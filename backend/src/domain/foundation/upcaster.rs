@@ -251,6 +251,110 @@ impl Default for UpcasterRegistry {
 }
 
 // ============================================
+// Event Deserializer
+// ============================================
+
+/// Deserializes events with automatic upcasting to current version.
+///
+/// This is the primary way to consume events from the event store or message bus.
+/// It transparently handles version migrations so consumers only see current versions.
+///
+/// # Example
+///
+/// ```ignore
+/// let deserializer = EventDeserializer::new(registry);
+///
+/// // Old v1 event automatically upcasted to v3
+/// let event: SessionCreatedV3 = deserializer.deserialize(envelope)?;
+/// ```
+pub struct EventDeserializer {
+    registry: UpcasterRegistry,
+}
+
+impl EventDeserializer {
+    /// Creates a new deserializer with the given registry.
+    pub fn new(registry: UpcasterRegistry) -> Self {
+        Self { registry }
+    }
+
+    /// Deserializes and upcasts event to current version.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `E` - The target event type (must be current version)
+    ///
+    /// # Arguments
+    ///
+    /// * `envelope` - The event envelope from storage or message bus
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(E)` - The deserialized event at current version
+    /// * `Err(DeserializeError)` - If upcasting or deserialization fails
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// // Envelope contains v1 event
+    /// let v1_envelope = load_from_storage("evt-123")?;
+    ///
+    /// // Automatically upcasted to v3 and deserialized
+    /// let event: SessionCreatedV3 = deserializer.deserialize(v1_envelope)?;
+    /// ```
+    pub fn deserialize<E>(&self, envelope: EventEnvelope) -> Result<E, DeserializeError>
+    where
+        E: serde::de::DeserializeOwned,
+    {
+        // First upcast to current version
+        let current = self.registry.upcast_to_current(envelope)?;
+
+        // Then deserialize the payload
+        serde_json::from_value(current.payload)
+            .map_err(|e| DeserializeError::Parse(e.to_string()))
+    }
+
+    /// Deserializes without upcasting (for handlers that support multiple versions).
+    ///
+    /// Use this when your handler explicitly supports multiple event versions
+    /// and wants to handle each version differently.
+    ///
+    /// # Example
+    ///
+    /// ```ignore
+    /// match envelope.schema_version {
+    ///     1 => {
+    ///         let v1: SessionCreatedV1 = deserializer.deserialize_raw(&envelope)?;
+    ///         handle_v1(v1)
+    ///     }
+    ///     2 => {
+    ///         let v2: SessionCreatedV2 = deserializer.deserialize_raw(&envelope)?;
+    ///         handle_v2(v2)
+    ///     }
+    ///     _ => Err(HandlerError::UnsupportedVersion)
+    /// }
+    /// ```
+    pub fn deserialize_raw<E>(&self, envelope: &EventEnvelope) -> Result<E, DeserializeError>
+    where
+        E: serde::de::DeserializeOwned,
+    {
+        serde_json::from_value(envelope.payload.clone())
+            .map_err(|e| DeserializeError::Parse(e.to_string()))
+    }
+}
+
+/// Errors that can occur during event deserialization.
+#[derive(Debug, Error)]
+pub enum DeserializeError {
+    /// Failed to upcast event to current version.
+    #[error("upcast failed: {0}")]
+    Upcast(#[from] UpcastError),
+
+    /// Failed to parse JSON payload into target type.
+    #[error("parse failed: {0}")]
+    Parse(String),
+}
+
+// ============================================
 // Tests
 // ============================================
 
@@ -507,5 +611,135 @@ mod tests {
             Some("corr-1".to_string())
         );
         assert_eq!(v2_envelope.metadata.user_id, Some("user-1".to_string()));
+    }
+
+    // ============================================================
+    // EventDeserializer Tests
+    // ============================================================
+
+    #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+    struct TestEventV2Data {
+        data: String,
+        description: Option<String>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+    struct TestEventV3Data {
+        data: String,
+        description: Option<String>,
+        owner: OwnerData,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+    struct OwnerData {
+        user_id: String,
+        display_name: String,
+    }
+
+    #[test]
+    fn deserializer_upcasts_and_deserializes_to_current_version() {
+        let mut registry = UpcasterRegistry::new();
+        registry.register(Arc::new(TestEventV1ToV2));
+        registry.register(Arc::new(TestEventV2ToV3));
+        registry.set_current_version("test.event", 3);
+
+        let deserializer = EventDeserializer::new(registry);
+
+        // V1 envelope from storage
+        let v1_envelope = EventEnvelope {
+            event_id: EventId::from_string("evt-1"),
+            event_type: "test.event.v1".to_string(),
+            schema_version: 1,
+            aggregate_id: "agg-1".to_string(),
+            aggregate_type: "Test".to_string(),
+            occurred_at: Timestamp::now(),
+            payload: json!({
+                "user_id": "user-123",
+                "data": "test data"
+            }),
+            metadata: EventMetadata::default(),
+        };
+
+        // Deserialize directly to v3
+        let event: TestEventV3Data = deserializer.deserialize(v1_envelope).unwrap();
+
+        assert_eq!(event.data, "test data");
+        assert!(event.description.is_none());
+        assert_eq!(event.owner.user_id, "user-123");
+        assert_eq!(event.owner.display_name, "Unknown");
+    }
+
+    #[test]
+    fn deserializer_raw_does_not_upcast() {
+        let registry = UpcasterRegistry::new();
+        let deserializer = EventDeserializer::new(registry);
+
+        let v1_envelope = EventEnvelope {
+            event_id: EventId::from_string("evt-1"),
+            event_type: "test.event.v1".to_string(),
+            schema_version: 1,
+            aggregate_id: "agg-1".to_string(),
+            aggregate_type: "Test".to_string(),
+            occurred_at: Timestamp::now(),
+            payload: json!({
+                "data": "test"
+            }),
+            metadata: EventMetadata::default(),
+        };
+
+        // Deserialize without upcasting
+        let event: serde_json::Value = deserializer.deserialize_raw(&v1_envelope).unwrap();
+
+        assert_eq!(event["data"], "test");
+        assert!(event.get("description").is_none());
+    }
+
+    #[test]
+    fn deserializer_returns_error_for_invalid_payload() {
+        let registry = UpcasterRegistry::new();
+        let deserializer = EventDeserializer::new(registry);
+
+        let envelope = EventEnvelope {
+            event_id: EventId::from_string("evt-1"),
+            event_type: "test.event.v1".to_string(),
+            schema_version: 1,
+            aggregate_id: "agg-1".to_string(),
+            aggregate_type: "Test".to_string(),
+            occurred_at: Timestamp::now(),
+            payload: json!({
+                "wrong_field": "value"
+            }),
+            metadata: EventMetadata::default(),
+        };
+
+        let result: Result<TestEventV2Data, _> = deserializer.deserialize(envelope);
+
+        assert!(result.is_err());
+        assert!(matches!(result, Err(DeserializeError::Parse(_))));
+    }
+
+    #[test]
+    fn deserializer_returns_error_for_missing_upcaster() {
+        let mut registry = UpcasterRegistry::new();
+        registry.set_current_version("test.event", 3);
+        // No upcasters registered
+
+        let deserializer = EventDeserializer::new(registry);
+
+        let v1_envelope = EventEnvelope {
+            event_id: EventId::from_string("evt-1"),
+            event_type: "test.event.v1".to_string(),
+            schema_version: 1,
+            aggregate_id: "agg-1".to_string(),
+            aggregate_type: "Test".to_string(),
+            occurred_at: Timestamp::now(),
+            payload: json!({"data": "test"}),
+            metadata: EventMetadata::default(),
+        };
+
+        let result: Result<TestEventV3Data, _> = deserializer.deserialize(v1_envelope);
+
+        assert!(result.is_err());
+        assert!(matches!(result, Err(DeserializeError::Upcast(_))));
     }
 }
