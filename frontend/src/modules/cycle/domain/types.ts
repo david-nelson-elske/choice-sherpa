@@ -115,6 +115,36 @@ export interface CycleTreeNode {
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// PrOACT Tree Types (specialized visualization)
+// ─────────────────────────────────────────────────────────────────────
+
+/** A single letter in the PrOACT acronym. */
+export type PrOACTLetter = 'P' | 'R' | 'O' | 'A' | 'C' | 'T';
+
+/** Status of a single PrOACT letter. */
+export type LetterStatus = 'not_started' | 'in_progress' | 'completed';
+
+/** Status for all six PrOACT letters. */
+export interface PrOACTStatus {
+	p: LetterStatus; // Problem Frame
+	r: LetterStatus; // Objectives (what Really matters)
+	o: LetterStatus; // Options/Alternatives
+	a: LetterStatus; // Analysis/Consequences
+	c: LetterStatus; // Clear Tradeoffs
+	t: LetterStatus; // Think Through (Recommendation + Decision Quality)
+}
+
+/** Node in the PrOACT tree visualization. */
+export interface PrOACTTreeNode {
+	cycle_id: string;
+	label: string;
+	branch_point: PrOACTLetter | null;
+	letter_statuses: PrOACTStatus;
+	children: PrOACTTreeNode[];
+	updated_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Component Output Types
 // ─────────────────────────────────────────────────────────────────────
 

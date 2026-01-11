@@ -17,10 +17,11 @@ use axum::response::IntoResponse;
 
 use crate::application::handlers::cycle::{
     BranchCycleCommand, BranchCycleError, BranchCycleHandler, CreateCycleCommand, CreateCycleError,
-    CreateCycleHandler,
+    CreateCycleHandler, GetCycleTreeHandler, GetCycleTreeQuery, GetProactTreeViewHandler,
+    GetProactTreeViewQuery,
 };
 use crate::domain::foundation::{CommandMetadata, CycleId, SessionId, UserId};
-use crate::ports::{AccessChecker, CycleRepository, EventPublisher, SessionRepository};
+use crate::ports::{AccessChecker, CycleReader, CycleRepository, EventPublisher, SessionRepository};
 
 use super::dto::{
     BranchCycleRequest, CreateCycleRequest, CycleCommandResponse, ErrorResponse,
@@ -34,6 +35,7 @@ use super::dto::{
 #[derive(Clone)]
 pub struct CycleAppState {
     pub cycle_repository: Arc<dyn CycleRepository>,
+    pub cycle_reader: Arc<dyn CycleReader>,
     pub session_repository: Arc<dyn SessionRepository>,
     pub access_checker: Arc<dyn AccessChecker>,
     pub event_publisher: Arc<dyn EventPublisher>,
@@ -55,6 +57,14 @@ impl CycleAppState {
             self.access_checker.clone(),
             self.event_publisher.clone(),
         )
+    }
+
+    pub fn get_cycle_tree_handler(&self) -> GetCycleTreeHandler {
+        GetCycleTreeHandler::new(self.cycle_reader.clone())
+    }
+
+    pub fn get_proact_tree_view_handler(&self) -> GetProactTreeViewHandler {
+        GetProactTreeViewHandler::new(self.cycle_reader.clone())
     }
 }
 
@@ -167,6 +177,44 @@ pub async fn branch_cycle(
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
+// Query Handlers (GET endpoints)
+// ════════════════════════════════════════════════════════════════════════════════
+
+/// GET /api/sessions/:session_id/cycles/tree - Get cycle tree
+pub async fn get_cycle_tree(
+    State(state): State<CycleAppState>,
+    Path(session_id): Path<String>,
+    _user: AuthenticatedUser,
+) -> Result<impl IntoResponse, CycleApiError> {
+    let session_id: SessionId = session_id
+        .parse()
+        .map_err(|_| CycleApiError::BadRequest("Invalid session ID format".to_string()))?;
+
+    let handler = state.get_cycle_tree_handler();
+    let query = GetCycleTreeQuery { session_id };
+
+    let result = handler.handle(query).await?;
+    Ok((StatusCode::OK, Json(result)))
+}
+
+/// GET /api/sessions/:session_id/cycles/proact-tree - Get PrOACT tree visualization
+pub async fn get_proact_tree_view(
+    State(state): State<CycleAppState>,
+    Path(session_id): Path<String>,
+    _user: AuthenticatedUser,
+) -> Result<impl IntoResponse, CycleApiError> {
+    let session_id: SessionId = session_id
+        .parse()
+        .map_err(|_| CycleApiError::BadRequest("Invalid session ID format".to_string()))?;
+
+    let handler = state.get_proact_tree_view_handler();
+    let query = GetProactTreeViewQuery { session_id };
+
+    let result = handler.handle(query).await?;
+    Ok((StatusCode::OK, Json(result)))
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
 // Error Handling
 // ════════════════════════════════════════════════════════════════════════════════
 
@@ -208,6 +256,12 @@ impl From<BranchCycleError> for CycleApiError {
     }
 }
 
+impl From<crate::domain::foundation::DomainError> for CycleApiError {
+    fn from(err: crate::domain::foundation::DomainError) -> Self {
+        CycleApiError::Internal(err.to_string())
+    }
+}
+
 impl IntoResponse for CycleApiError {
     fn into_response(self) -> axum::response::Response {
         let (status, error) = match self {
@@ -241,10 +295,13 @@ impl IntoResponse for CycleApiError {
 mod tests {
     use super::*;
     use crate::domain::cycle::Cycle;
-    use crate::domain::foundation::DomainError;
+    use crate::domain::foundation::{ComponentType, DomainError};
     use crate::domain::membership::{MembershipTier, TierLimits};
     use crate::domain::session::Session;
-    use crate::ports::{AccessResult, UsageStats};
+    use crate::ports::{
+        AccessResult, ComponentOutputView, CycleProgressView, CycleReader, CycleSummary,
+        CycleTreeNode, CycleView, UsageStats,
+    };
     use async_trait::async_trait;
     use std::sync::Mutex;
 
@@ -378,6 +435,52 @@ mod tests {
         }
     }
 
+    struct MockCycleReader;
+
+    #[async_trait]
+    impl CycleReader for MockCycleReader {
+        async fn get_by_id(&self, _id: &CycleId) -> Result<Option<CycleView>, DomainError> {
+            Ok(None)
+        }
+
+        async fn list_by_session_id(
+            &self,
+            _session_id: &SessionId,
+        ) -> Result<Vec<CycleSummary>, DomainError> {
+            Ok(vec![])
+        }
+
+        async fn get_tree(
+            &self,
+            _session_id: &SessionId,
+        ) -> Result<Option<CycleTreeNode>, DomainError> {
+            Ok(None)
+        }
+
+        async fn get_progress(&self, _id: &CycleId) -> Result<Option<CycleProgressView>, DomainError> {
+            Ok(None)
+        }
+
+        async fn get_lineage(&self, _id: &CycleId) -> Result<Vec<CycleSummary>, DomainError> {
+            Ok(vec![])
+        }
+
+        async fn get_component_output(
+            &self,
+            _cycle_id: &CycleId,
+            _component_type: ComponentType,
+        ) -> Result<Option<ComponentOutputView>, DomainError> {
+            Ok(None)
+        }
+
+        async fn get_proact_tree_view(
+            &self,
+            _session_id: &SessionId,
+        ) -> Result<Option<crate::domain::cycle::CycleTreeNode>, DomainError> {
+            Ok(None)
+        }
+    }
+
     // ════════════════════════════════════════════════════════════════════════════
     // Test Helpers
     // ════════════════════════════════════════════════════════════════════════════
@@ -395,6 +498,7 @@ mod tests {
     fn test_state() -> CycleAppState {
         CycleAppState {
             cycle_repository: Arc::new(MockCycleRepository::new()),
+            cycle_reader: Arc::new(MockCycleReader),
             session_repository: Arc::new(MockSessionRepository),
             access_checker: Arc::new(MockAccessChecker),
             event_publisher: Arc::new(MockEventPublisher),
@@ -445,5 +549,7 @@ mod tests {
         let state = test_state();
         let _ = state.create_cycle_handler();
         let _ = state.branch_cycle_handler();
+        let _ = state.get_cycle_tree_handler();
+        let _ = state.get_proact_tree_view_handler();
     }
 }

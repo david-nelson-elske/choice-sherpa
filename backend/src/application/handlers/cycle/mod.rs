@@ -16,6 +16,7 @@ mod update_component_output;
 mod get_component;
 mod get_cycle;
 mod get_cycle_tree;
+mod get_proact_tree_view;
 
 pub use archive_cycle::{
     ArchiveCycleCommand, ArchiveCycleError, ArchiveCycleHandler, ArchiveCycleResult,
@@ -52,3 +53,6 @@ pub use update_component_output::{
 pub use get_component::{GetComponentHandler, GetComponentQuery, GetComponentResult};
 pub use get_cycle::{GetCycleHandler, GetCycleQuery, GetCycleResult};
 pub use get_cycle_tree::{GetCycleTreeHandler, GetCycleTreeQuery, GetCycleTreeResult};
+pub use get_proact_tree_view::{
+    GetProactTreeViewHandler, GetProactTreeViewQuery, GetProactTreeViewResult,
+};

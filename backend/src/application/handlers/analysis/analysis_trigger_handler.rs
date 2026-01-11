@@ -534,6 +534,13 @@ mod tests {
             let outputs = self.component_outputs.lock().unwrap();
             Ok(outputs.get(&component_type).cloned())
         }
+
+        async fn get_proact_tree_view(
+            &self,
+            _session_id: &SessionId,
+        ) -> Result<Option<crate::domain::cycle::CycleTreeNode>, DomainError> {
+            Ok(None)
+        }
     }
 
     struct MockEventPublisher {
