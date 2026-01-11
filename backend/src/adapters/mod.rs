@@ -33,6 +33,6 @@ pub use postgres::{
     PostgresAccessChecker, PostgresCycleReader, PostgresCycleRepository,
     PostgresMembershipReader, PostgresMembershipRepository,
 };
-pub use profile::{FsProfileStorage, PgProfileReader, PgProfileRepository};
+pub use profile::{FsProfileStorage, LlmProfileAnalyzer, PgProfileReader, PgProfileRepository};
 pub use stripe::{MockPaymentProvider, StripeConfig, StripePaymentAdapter};
 pub use validation::JsonSchemaValidator;
