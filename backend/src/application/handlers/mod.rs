@@ -2,6 +2,7 @@
 //!
 //! Command and query handlers that orchestrate domain operations.
 
+pub mod conversation;
 pub mod cycle;
 pub mod membership;
 pub mod session;
@@ -43,4 +44,13 @@ pub use session::{
     CreateSessionCommand, CreateSessionHandler, CreateSessionResult,
     CycleCreated, SessionCycleTracker,
     RenameSessionCommand, RenameSessionHandler, RenameSessionResult,
+};
+pub use conversation::{
+    // Commands
+    SendMessageCommand, SendMessageError, SendMessageHandler, SendMessageResult,
+    RegenerateResponseCommand, RegenerateResponseError, RegenerateResponseHandler, RegenerateResponseResult,
+    // Types
+    MessageId, MessageRole, StoredMessage, StreamEvent,
+    // Ports
+    ComponentOwnershipChecker, ConversationRepository, ConversationRepositoryExt, ConversationRecord, OwnershipInfo,
 };

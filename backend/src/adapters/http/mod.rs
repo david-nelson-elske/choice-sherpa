@@ -6,6 +6,7 @@
 //!
 //! - `middleware::auth` - Authentication middleware and extractors
 
+pub mod conversation;
 pub mod cycle;
 pub mod membership;
 pub mod middleware;

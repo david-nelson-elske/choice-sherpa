@@ -252,10 +252,10 @@ impl ZitadelSessionValidator {
     }
 
     /// Find the decoding key for a JWT.
-    fn find_decoding_key<'a>(
+    fn find_decoding_key(
         &self,
         header: &jsonwebtoken::Header,
-        jwks: &'a JwkSet,
+        jwks: &JwkSet,
     ) -> Result<(DecodingKey, Algorithm), AuthError> {
         // Get the key ID from the JWT header
         let kid = header.kid.as_ref().ok_or_else(|| {

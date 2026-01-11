@@ -16,10 +16,11 @@ use serde::{Deserialize, Serialize};
 /// AI model tier levels.
 ///
 /// Determines which AI model is used for conversations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum AiModelTier {
     /// GPT-4o-mini or equivalent - fast, cost-effective
+    #[default]
     Standard,
     /// GPT-4o or equivalent - highest quality
     Advanced,
@@ -40,12 +41,6 @@ impl AiModelTier {
             AiModelTier::Standard => "Standard AI",
             AiModelTier::Advanced => "Advanced AI",
         }
-    }
-}
-
-impl Default for AiModelTier {
-    fn default() -> Self {
-        AiModelTier::Standard
     }
 }
 

@@ -43,6 +43,8 @@ mod auth_provider;
 mod circuit_breaker;
 mod confirmation_request_repository;
 mod connection_registry;
+mod conversation_reader;
+mod conversation_repository;
 mod revisit_suggestion_repository;
 mod tool_executor;
 mod tool_invocation_repository;
@@ -109,3 +111,7 @@ pub use revisit_suggestion_repository::{
 pub use confirmation_request_repository::{
     ConfirmationRequestRepository, ConfirmationRequestRepoError, ConfirmationRequestCounts,
 };
+pub use conversation_reader::{
+    ConversationReader, ConversationView, MessageList, MessageListOptions, MessageView,
+};
+pub use conversation_repository::ConversationRepository;
