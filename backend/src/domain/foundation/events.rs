@@ -68,9 +68,13 @@ pub trait SerializableDomainEvent: DomainEvent + Serialize {
     /// This default implementation extracts all required fields from the
     /// `DomainEvent` trait and serializes the event as the payload.
     fn to_envelope(&self) -> EventEnvelope {
+        let event_type = self.event_type().to_string();
+        let schema_version = EventEnvelope::extract_version(&event_type);
+
         EventEnvelope {
             event_id: self.event_id(),
-            event_type: self.event_type().to_string(),
+            event_type,
+            schema_version,
             aggregate_id: self.aggregate_id(),
             aggregate_type: self.aggregate_type().to_string(),
             occurred_at: self.occurred_at(),
@@ -218,13 +222,17 @@ pub struct EventMetadata {
 /// - Deduplication (event_id)
 /// - Correlation (aggregate_id, metadata)
 /// - Ordering (occurred_at)
+/// - Versioning (schema_version)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventEnvelope {
     /// Unique ID for this event instance.
     pub event_id: EventId,
 
-    /// Event type for routing (e.g., "session.created").
+    /// Event type for routing (e.g., "session.created.v1").
     pub event_type: String,
+
+    /// Schema version number (extracted from event_type).
+    pub schema_version: u32,
 
     /// ID of the aggregate that emitted this event.
     pub aggregate_id: String,
@@ -244,21 +252,51 @@ pub struct EventEnvelope {
 
 impl EventEnvelope {
     /// Creates a new EventEnvelope with required fields.
+    ///
+    /// Automatically extracts schema version from event_type suffix (e.g., "session.created.v2" → 2).
+    /// If no version suffix is present, defaults to v1.
     pub fn new(
         event_type: impl Into<String>,
         aggregate_id: impl Into<String>,
         aggregate_type: impl Into<String>,
         payload: JsonValue,
     ) -> Self {
+        let event_type = event_type.into();
+        let schema_version = Self::extract_version(&event_type);
+
         Self {
             event_id: EventId::new(),
-            event_type: event_type.into(),
+            event_type,
+            schema_version,
             aggregate_id: aggregate_id.into(),
             aggregate_type: aggregate_type.into(),
             occurred_at: Timestamp::now(),
             payload,
             metadata: EventMetadata::default(),
         }
+    }
+
+    /// Extracts version number from event_type string.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// EventEnvelope::extract_version("session.created.v2") // Returns 2
+    /// EventEnvelope::extract_version("session.created.v10") // Returns 10
+    /// EventEnvelope::extract_version("legacy.event") // Returns 1 (default)
+    /// ```
+    pub(crate) fn extract_version(event_type: &str) -> u32 {
+        event_type
+            .rsplit_once(".v")
+            .and_then(|(_, version_str)| version_str.parse::<u32>().ok())
+            .unwrap_or(1)
+    }
+
+    /// Returns the schema version number.
+    ///
+    /// This is a convenience method that returns the same value as the `schema_version` field.
+    pub fn version(&self) -> u32 {
+        self.schema_version
     }
 
     /// Creates an envelope from a domain event with automatic serialization.
@@ -279,9 +317,13 @@ impl EventEnvelope {
     where
         T: DomainEvent + Serialize,
     {
+        let event_type = event.event_type().to_string();
+        let schema_version = Self::extract_version(&event_type);
+
         Self {
             event_id: event.event_id(),
-            event_type: event.event_type().to_string(),
+            event_type,
+            schema_version,
             aggregate_id: event.aggregate_id(),
             aggregate_type: event.aggregate_type().to_string(),
             occurred_at: event.occurred_at(),
@@ -326,7 +368,7 @@ impl EventEnvelope {
     /// Creates a test fixture EventEnvelope for use in tests.
     pub fn test_fixture() -> Self {
         Self::new(
-            "test.event",
+            "test.event.v1",
             "test-aggregate-123",
             "TestAggregate",
             serde_json::json!({"test": "data"}),
@@ -598,5 +640,59 @@ mod tests {
         assert_eq!(restored.event_id.as_str(), "evt-789");
         assert_eq!(restored.session_id, "session-abc");
         assert_eq!(restored.title, "Round Trip Test");
+    }
+
+    // ============================================================
+    // EventEnvelope Schema Versioning Tests
+    // ============================================================
+
+    #[test]
+    fn event_envelope_has_schema_version_field() {
+        let envelope = EventEnvelope::new(
+            "session.created.v1",
+            "session-123",
+            "Session",
+            json!({"title": "Test"}),
+        );
+
+        assert_eq!(envelope.schema_version, 1);
+    }
+
+    #[test]
+    fn event_envelope_extracts_version_from_event_type() {
+        let envelope = EventEnvelope::new(
+            "session.created.v2",
+            "session-123",
+            "Session",
+            json!({}),
+        );
+
+        assert_eq!(envelope.version(), 2);
+        assert_eq!(envelope.schema_version, 2);
+    }
+
+    #[test]
+    fn event_envelope_version_method_returns_schema_version() {
+        let envelope = EventEnvelope::new(
+            "cycle.completed.v5",
+            "cycle-456",
+            "Cycle",
+            json!({}),
+        );
+
+        assert_eq!(envelope.version(), 5);
+    }
+
+    #[test]
+    fn event_envelope_defaults_to_v1_without_version_suffix() {
+        let envelope = EventEnvelope::new(
+            "legacy.event",
+            "agg-123",
+            "Legacy",
+            json!({}),
+        );
+
+        assert_eq!(envelope.schema_version, 1);
+        assert_eq!(envelope.version(), 1);
     }
 }

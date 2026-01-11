@@ -230,6 +230,7 @@ mod tests {
         EventEnvelope {
             event_id: EventId::from_string("evt-cycle-1"),
             event_type: "cycle.created".to_string(),
+            schema_version: 1,
             aggregate_id: cycle_id.to_string(),
             aggregate_type: "Cycle".to_string(),
             occurred_at: Timestamp::now(),
