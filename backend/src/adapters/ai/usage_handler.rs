@@ -110,11 +110,12 @@ mod tests {
         EventEnvelope {
             event_id: EventId::new(),
             event_type: "ai.tokens_used".to_string(),
+            schema_version: 1,
             aggregate_id: "req-123".to_string(),
             aggregate_type: "AIRequest".to_string(),
+            occurred_at: Timestamp::now(),
             payload,
             metadata: EventMetadata::default(),
-            occurred_at: Timestamp::now(),
         }
     }
 
@@ -146,12 +147,13 @@ mod tests {
 
         let envelope = EventEnvelope {
             event_id: EventId::new(),
-            event_type: "session.created".to_string(),
+            event_type: "session.created.v1".to_string(),
+            schema_version: 1,
             aggregate_id: "session-123".to_string(),
             aggregate_type: "Session".to_string(),
+            occurred_at: Timestamp::now(),
             payload: serde_json::json!({}),
             metadata: EventMetadata::default(),
-            occurred_at: Timestamp::now(),
         };
 
         let result = handler.handle(envelope).await;

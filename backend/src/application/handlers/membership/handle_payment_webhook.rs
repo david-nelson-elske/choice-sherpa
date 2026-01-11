@@ -768,7 +768,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "membership.activated");
+        assert_eq!(events[0].event_type, "membership.activated.v1");
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -814,7 +814,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "membership.renewed");
+        assert_eq!(events[0].event_type, "membership.renewed.v1");
     }
 
     // ════════════════════════════════════════════════════════════════════════════
@@ -863,7 +863,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "membership.payment_failed");
+        assert_eq!(events[0].event_type, "membership.payment_failed.v1");
     }
 
     // ════════════════════════════════════════════════════════════════════════════

@@ -255,7 +255,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "session.renamed");
+        assert_eq!(events[0].event_type, "session.renamed.v1");
         assert_eq!(events[0].aggregate_id, session_id.to_string());
     }
 

@@ -299,7 +299,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "session.created");
+        assert_eq!(events[0].event_type, "session.created.v1");
         assert_eq!(events[0].aggregate_id, result.session.id().to_string());
     }
 
