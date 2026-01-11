@@ -64,6 +64,10 @@ mod session_validator;
 mod tool_executor;
 mod tool_invocation_repository;
 mod usage_tracker;
+mod profile_repository;
+mod profile_file_storage;
+mod profile_reader;
+mod profile_analyzer;
 
 pub use access_checker::{AccessChecker, AccessDeniedReason, AccessResult, UsageStats};
 pub use ai_provider::{
@@ -114,4 +118,10 @@ pub use revisit_suggestion_repository::{
 };
 pub use confirmation_request_repository::{
     ConfirmationRequestRepository, ConfirmationRequestRepoError, ConfirmationRequestCounts,
+};
+pub use profile_repository::{ExportFormat, ProfileRepository};
+pub use profile_file_storage::{ProfileFileStorage, StorageError};
+pub use profile_reader::{AgentInstructions, ProfileReader, ProfileSummary};
+pub use profile_analyzer::{
+    AnalysisResult, ConversationSummary, DecisionAnalysisData, ProfileAnalyzer, RiskIndicator,
 };
