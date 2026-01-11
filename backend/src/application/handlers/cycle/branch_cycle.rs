@@ -24,6 +24,8 @@ pub struct BranchCycleCommand {
     /// The component where branching occurs.
     /// This component will be marked for revision in the new branch.
     pub branch_point: ComponentType,
+    /// Optional label for the branch (e.g., "Remote Option", "Risk Analysis").
+    pub branch_label: Option<String>,
 }
 
 /// Result of successful cycle branching.
@@ -137,7 +139,7 @@ impl BranchCycleHandler {
         }
 
         // 3. Branch the cycle (domain logic handles validation)
-        let branch = parent_cycle.branch_at(cmd.branch_point)?;
+        let branch = parent_cycle.branch_at(cmd.branch_point, cmd.branch_label)?;
 
         // 4. Persist the new branch
         self.cycle_repository.save(&branch).await?;
@@ -408,6 +410,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: parent_id,
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         let result = handler.handle(cmd, test_metadata()).await;
 
@@ -431,6 +434,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: parent_id,
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         handler.handle(cmd, test_metadata()).await.unwrap();
 
@@ -453,6 +457,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: parent_id,
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         let result = handler.handle(cmd, test_metadata()).await.unwrap();
 
@@ -473,6 +478,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: CycleId::new(),
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         let result = handler.handle(cmd, test_metadata()).await;
 
@@ -498,6 +504,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: parent_id,
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         let result = handler.handle(cmd, test_metadata()).await;
 
@@ -526,6 +533,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: parent_id,
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         let result = handler.handle(cmd, test_metadata()).await;
 
@@ -549,6 +557,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: parent_id,
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         let result = handler.handle(cmd, test_metadata()).await.unwrap();
 
@@ -571,6 +580,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: parent_id,
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         handler.handle(cmd, test_metadata()).await.unwrap();
 
@@ -595,6 +605,7 @@ mod tests {
         let cmd = BranchCycleCommand {
             parent_cycle_id: parent_id,
             branch_point: ComponentType::IssueRaising,
+            branch_label: None,
         };
         let result = handler.handle(cmd, test_metadata()).await;
 

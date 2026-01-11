@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use sqlx::{PgPool, Row};
 use uuid::Uuid;
 
-use crate::domain::cycle::Cycle;
+use crate::domain::cycle::{BranchMetadata, Cycle};
 use crate::domain::foundation::{
     ComponentId, ComponentStatus, ComponentType, CycleId, CycleStatus, DomainError, ErrorCode,
     SessionId, Timestamp,
@@ -373,12 +373,17 @@ fn row_to_cycle(
     let created_at: chrono::DateTime<chrono::Utc> = row.get("created_at");
     let updated_at: chrono::DateTime<chrono::Utc> = row.get("updated_at");
 
+    // TODO: Load branch_label from DB once migration is added
+    // For now, use default (empty label)
+    let branch_metadata = BranchMetadata::default();
+
     // Reconstruct the cycle using the internal constructor
     Cycle::reconstitute(
         CycleId::from_uuid(id),
         SessionId::from_uuid(session_id),
         parent_cycle_id.map(CycleId::from_uuid),
         branch_point.map(|s| str_to_component_type(&s)).transpose()?,
+        branch_metadata,
         str_to_cycle_status(&status)?,
         str_to_component_type(&current_step)?,
         components,
