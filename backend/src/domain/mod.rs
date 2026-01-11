@@ -9,10 +9,12 @@
 //! - `cycle` - Decision cycle aggregate and lifecycle management
 //! - `analysis` - Pure domain services for decision analysis (Pugh, DQ, tradeoffs)
 //! - `conversation` - AI-guided dialogues within PrOACT components
+//! - `dashboard` - Read models and view compositions for dashboard interface
 
 pub mod analysis;
 pub mod conversation;
 pub mod cycle;
+pub mod dashboard;
 pub mod foundation;
 pub mod membership;
 pub mod proact;

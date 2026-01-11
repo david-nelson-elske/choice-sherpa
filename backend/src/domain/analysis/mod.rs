@@ -18,6 +18,7 @@
 
 mod consequences_table;
 mod dq_calculator;
+mod events;
 mod pugh_analyzer;
 mod tradeoff_analyzer;
 
@@ -25,6 +26,9 @@ mod tradeoff_analyzer;
 pub use consequences_table::{Cell, ConsequencesTable, ConsequencesTableBuilder};
 pub use dq_calculator::{
     DQCalculator, DQElement, Priority, DQ_ACCEPTABLE_THRESHOLD, DQ_ELEMENT_NAMES,
+};
+pub use events::{
+    DQElementScore, DQScoresComputed, PughScoresComputed, TensionSummary, TradeoffsAnalyzed,
 };
 pub use pugh_analyzer::{DominatedAlternative, IrrelevantObjective, PughAnalyzer};
 pub use tradeoff_analyzer::{Tension, TradeoffAnalyzer, TradeoffSummary};

@@ -2,6 +2,7 @@
 //!
 //! Handles sending messages and regenerating AI responses in conversations.
 
+mod get_conversation;
 mod regenerate_response;
 mod send_message;
 
@@ -32,3 +33,5 @@ pub use regenerate_response::{
     // Extended port
     ConversationRepositoryExt,
 };
+
+pub use get_conversation::{GetConversationHandler, GetConversationQuery};

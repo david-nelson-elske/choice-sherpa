@@ -7,6 +7,7 @@
 //! - `http` - HTTP/REST API implementations
 //! - `membership` - Membership access control implementations
 //! - `postgres` - PostgreSQL database implementations
+//! - `rate_limiter` - Rate limiting implementations (in-memory, Redis)
 //! - `stripe` - Stripe payment provider implementation
 //! - `validation` - Schema validation implementations
 //! - `websocket` - WebSocket real-time update implementations
@@ -17,6 +18,7 @@ pub mod events;
 pub mod http;
 pub mod membership;
 pub mod postgres;
+pub mod rate_limiter;
 pub mod stripe;
 pub mod validation;
 pub mod websocket;
@@ -38,4 +40,8 @@ pub use validation::JsonSchemaValidator;
 pub use websocket::{
     websocket_router, ClientId, DashboardUpdate, DashboardUpdateType, RoomManager, ServerMessage,
     WebSocketEventBridge, WebSocketState, DASHBOARD_EVENT_TYPES,
+};
+pub use rate_limiter::{
+    GlobalLimits, InMemoryRateLimiter, IpLimits, RateLimitConfig, RedisRateLimiter,
+    ResourceLimits, TierAwareRateLimiter, TierRateLimits,
 };

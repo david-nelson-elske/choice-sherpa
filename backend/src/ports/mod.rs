@@ -35,6 +35,10 @@
 //! - `ConnectionRegistry` - Multi-server WebSocket connection tracking
 //! - `CircuitBreaker` - External service resilience pattern
 //!
+//! ## Rate Limiting Port
+//!
+//! - `RateLimiter` - Port for rate limiting API requests
+//!
 //! See `docs/architecture/SCALING-READINESS.md` for architectural details.
 
 mod access_checker;
@@ -45,11 +49,9 @@ mod confirmation_request_repository;
 mod connection_registry;
 mod conversation_reader;
 mod conversation_repository;
-mod revisit_suggestion_repository;
-mod tool_executor;
-mod tool_invocation_repository;
 mod cycle_reader;
 mod cycle_repository;
+mod dashboard_reader;
 mod event_publisher;
 mod event_subscriber;
 mod membership_reader;
@@ -58,10 +60,14 @@ mod outbox_writer;
 mod payment_provider;
 mod processed_event_store;
 mod promo_code_validator;
+mod rate_limiter;
+mod revisit_suggestion_repository;
 mod schema_validator;
 mod session_reader;
 mod session_repository;
 mod session_validator;
+mod tool_executor;
+mod tool_invocation_repository;
 mod usage_tracker;
 
 pub use access_checker::{AccessChecker, AccessDeniedReason, AccessResult, UsageStats};
@@ -72,11 +78,16 @@ pub use ai_provider::{
 pub use auth_provider::AuthProvider;
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 pub use connection_registry::{ConnectionRegistry, ConnectionRegistryError, ServerId};
+pub use conversation_reader::{
+    ConversationReader, ConversationView, MessageList, MessageListOptions, MessageView,
+};
+pub use conversation_repository::ConversationRepository;
 pub use cycle_reader::{
     ComponentOutputView, ComponentStatusItem, CycleProgressView, CycleReader, CycleSummary,
     CycleTreeNode, CycleView, NextAction, NextActionType, ProgressStep,
 };
 pub use cycle_repository::CycleRepository;
+pub use dashboard_reader::{DashboardError, DashboardReader};
 pub use event_publisher::EventPublisher;
 pub use event_subscriber::{EventBus, EventHandler, EventSubscriber};
 pub use membership_reader::{
@@ -98,6 +109,10 @@ pub use session_validator::SessionValidator;
 pub use promo_code_validator::{
     PromoCodeInvalidReason, PromoCodeValidation, PromoCodeValidator,
 };
+pub use rate_limiter::{
+    RateLimitDenied, RateLimitError, RateLimitKey, RateLimitResult, RateLimitScope,
+    RateLimitStatus, RateLimiter,
+};
 pub use usage_tracker::{
     ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
 };
@@ -111,7 +126,3 @@ pub use revisit_suggestion_repository::{
 pub use confirmation_request_repository::{
     ConfirmationRequestRepository, ConfirmationRequestRepoError, ConfirmationRequestCounts,
 };
-pub use conversation_reader::{
-    ConversationReader, ConversationView, MessageList, MessageListOptions, MessageView,
-};
-pub use conversation_repository::ConversationRepository;

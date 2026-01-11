@@ -486,7 +486,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "membership.created");
+        assert_eq!(events[0].event_type, "membership.created.v1");
     }
 
     #[tokio::test]
