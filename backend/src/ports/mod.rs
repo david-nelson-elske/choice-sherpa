@@ -35,6 +35,10 @@
 //! - `ConnectionRegistry` - Multi-server WebSocket connection tracking
 //! - `CircuitBreaker` - External service resilience pattern
 //!
+//! ## Rate Limiting Port
+//!
+//! - `RateLimiter` - Port for rate limiting API requests
+//!
 //! See `docs/architecture/SCALING-READINESS.md` for architectural details.
 
 mod access_checker;
@@ -56,6 +60,7 @@ mod outbox_writer;
 mod payment_provider;
 mod processed_event_store;
 mod promo_code_validator;
+mod rate_limiter;
 mod schema_validator;
 mod session_reader;
 mod session_repository;
@@ -95,6 +100,10 @@ pub use session_repository::SessionRepository;
 pub use session_validator::SessionValidator;
 pub use promo_code_validator::{
     PromoCodeInvalidReason, PromoCodeValidation, PromoCodeValidator,
+};
+pub use rate_limiter::{
+    RateLimitDenied, RateLimitError, RateLimitKey, RateLimitResult, RateLimitScope,
+    RateLimitStatus, RateLimiter,
 };
 pub use usage_tracker::{
     ProviderUsage, UsageLimitStatus, UsageRecord, UsageSummary, UsageTracker, UsageTrackerError,
