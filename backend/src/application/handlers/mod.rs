@@ -8,6 +8,7 @@ pub mod cycle;
 pub mod dashboard;
 pub mod membership;
 pub mod session;
+pub mod user;
 
 pub use cycle::{
     // Commands
@@ -59,4 +60,15 @@ pub use conversation::{
     SendMessageCommand, SendMessageHandler, SendMessageResult,
     // Queries
     GetConversationHandler, GetConversationQuery,
+};
+pub use user::{
+    // Commands
+    CreateProfileCommand, CreateProfileHandler, CreateProfileResult,
+    DeleteProfileCommand, DeleteProfileHandler, DeleteProfileResult,
+    RecordOutcomeCommand, RecordOutcomeHandler, RecordOutcomeResult,
+    UpdateProfileFromDecisionCommand, UpdateProfileFromDecisionHandler,
+    UpdateProfileFromDecisionResult,
+    // Queries
+    GetAgentInstructionsHandler, GetAgentInstructionsQuery,
+    GetProfileSummaryHandler, GetProfileSummaryQuery,
 };
