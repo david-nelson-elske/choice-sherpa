@@ -6,6 +6,7 @@
 //!
 //! - `middleware::auth` - Authentication middleware and extractors
 
+pub mod conversation;
 pub mod cycle;
 pub mod dashboard;
 pub mod membership;
@@ -14,6 +15,8 @@ pub mod session;
 pub mod tools;
 
 // Re-export key types for convenience
+pub use conversation::conversation_routes;
+pub use conversation::ConversationHandlers;
 pub use cycle::CycleAppState;
 pub use dashboard::dashboard_routes;
 pub use dashboard::DashboardAppState;
