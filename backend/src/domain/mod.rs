@@ -10,6 +10,7 @@
 //! - `analysis` - Pure domain services for decision analysis (Pugh, DQ, tradeoffs)
 //! - `conversation` - AI-guided dialogues within PrOACT components
 //! - `dashboard` - Read models and view compositions for dashboard interface
+//! - `user` - Decision profile and cross-decision intelligence
 
 pub mod analysis;
 pub mod conversation;
@@ -19,3 +20,4 @@ pub mod foundation;
 pub mod membership;
 pub mod proact;
 pub mod session;
+pub mod user;
