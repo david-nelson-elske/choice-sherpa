@@ -1,12 +1,12 @@
 //! DecisionProfile aggregate root and core value objects
 
-use crate::domain::foundation::{Timestamp, UserId};
+use crate::domain::foundation::{CycleId, Timestamp, UserId};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use super::{
     BlindSpotsGrowth, CommunicationPreferences, DecisionHistory, DecisionMakingStyle,
-    RiskProfile, ValuesPriorities,
+    OutcomeRecord, RiskProfile, ValuesPriorities,
 };
 
 /// Unique identifier for a decision profile
@@ -377,6 +377,26 @@ impl DecisionProfile {
         self.consent = consent;
         self.updated_at = timestamp;
         self.version = self.version.increment();
+    }
+
+    /// Record an outcome for a past decision
+    pub fn record_outcome(&mut self, cycle_id: &CycleId, outcome: OutcomeRecord) -> Result<(), String> {
+        // Find the decision by cycle_id
+        let decision = self
+            .decision_history
+            .decisions
+            .iter_mut()
+            .find(|d| &d.cycle_id == cycle_id)
+            .ok_or_else(|| format!("Decision with cycle_id {:?} not found in profile history", cycle_id))?;
+
+        // Record the outcome
+        decision.record_outcome(outcome);
+
+        // Update profile metadata
+        self.updated_at = Timestamp::now();
+        self.version = self.version.increment();
+
+        Ok(())
     }
 }
 

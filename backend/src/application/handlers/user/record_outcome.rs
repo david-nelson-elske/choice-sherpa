@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::domain::foundation::{CommandMetadata, CycleId, DomainError, ErrorCode, UserId};
+use crate::domain::foundation::{CommandMetadata, CycleId, DomainError, ErrorCode, Timestamp, UserId};
 use crate::domain::user::{OutcomeRecord, SatisfactionLevel};
 use crate::ports::ProfileRepository;
 
@@ -47,14 +47,18 @@ impl RecordOutcomeHandler {
 
         // 2. Create outcome record
         let outcome = OutcomeRecord::new(
+            Timestamp::now(),
             cmd.satisfaction,
             cmd.actual_consequences.clone(),
             cmd.surprises.clone(),
             cmd.would_decide_same,
-        )?;
+        )
+        .map_err(|e| DomainError::validation("outcome", &e))?;
 
         // 3. Record outcome in history
-        profile.record_outcome(&cmd.cycle_id, outcome)?;
+        profile
+            .record_outcome(&cmd.cycle_id, outcome)
+            .map_err(|e| DomainError::validation("cycle_id", &e))?;
 
         // 4. Save updated profile
         self.repository.update(&profile).await?;
@@ -123,12 +127,34 @@ mod tests {
             unimplemented!()
         }
 
+        async fn find_by_id(
+            &self,
+            profile_id: DecisionProfileId,
+        ) -> Result<Option<DecisionProfile>, DomainError> {
+            Ok(self
+                .profiles
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|p| p.id() == profile_id)
+                .cloned())
+        }
+
         async fn export(
             &self,
             _profile_id: DecisionProfileId,
             _format: crate::ports::ExportFormat,
         ) -> Result<Vec<u8>, DomainError> {
             unimplemented!()
+        }
+
+        async fn exists_for_user(&self, user_id: &UserId) -> Result<bool, DomainError> {
+            Ok(self
+                .profiles
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|p| p.user_id() == user_id))
         }
     }
 
@@ -137,33 +163,57 @@ mod tests {
     }
 
     fn test_consent() -> ProfileConsent {
-        ProfileConsent::new(true, true, true, Timestamp::now()).unwrap()
+        ProfileConsent::full(Timestamp::now())
     }
 
     fn test_metadata() -> CommandMetadata {
-        CommandMetadata::new(test_user_id(), "test-correlation-id")
+        CommandMetadata::new(test_user_id())
     }
 
     fn test_profile_with_decision() -> DecisionProfile {
-        let mut profile = DecisionProfile::new(test_user_id(), test_consent()).unwrap();
+        use crate::domain::user::{
+            BlindSpotsGrowth, CommunicationPreferences, DecisionHistory, DecisionMakingStyle,
+            DecisionProfileId, DecisionRecord, ProfileConfidence, ProfileVersion, RiskProfile,
+            ValuesPriorities,
+        };
+
         let cycle_id = CycleId::new();
-        profile
-            .add_decision(
-                cycle_id,
-                "Test Decision".to_string(),
-                DecisionDomain::Career,
-                Some(85),
-                "Growth vs Stability".to_string(),
-                "Option A".to_string(),
-            )
-            .unwrap();
-        profile
+        let decision = DecisionRecord::new(
+            cycle_id,
+            Timestamp::now(),
+            "Test Decision".to_string(),
+            DecisionDomain::Career,
+            Some(85),
+            "Growth vs Stability".to_string(),
+            "Option A".to_string(),
+        )
+        .unwrap();
+
+        let mut history = DecisionHistory::default();
+        history.decisions.push(decision);
+
+        DecisionProfile::from_parts(
+            DecisionProfileId::new(),
+            test_user_id(),
+            RiskProfile::default(),
+            ValuesPriorities::default(),
+            DecisionMakingStyle::default(),
+            BlindSpotsGrowth::default(),
+            CommunicationPreferences::default(),
+            history,
+            ProfileVersion::initial(),
+            Timestamp::now(),
+            Timestamp::now(),
+            1,
+            ProfileConfidence::Low,
+            test_consent(),
+        )
     }
 
     #[tokio::test]
     async fn test_record_outcome_success() {
         let profile = test_profile_with_decision();
-        let cycle_id = profile.decision_history().decisions()[0].cycle_id;
+        let cycle_id = profile.decision_history().decisions[0].cycle_id;
         let repo = Arc::new(MockProfileRepository::new().with_profile(profile));
         let handler = RecordOutcomeHandler::new(repo);
 
@@ -213,7 +263,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_record_outcome_decision_not_found() {
-        let profile = DecisionProfile::new(test_user_id(), test_consent()).unwrap();
+        let profile = DecisionProfile::new(test_user_id(), test_consent(), Timestamp::now()).unwrap();
         let repo = Arc::new(MockProfileRepository::new().with_profile(profile));
         let handler = RecordOutcomeHandler::new(repo);
 

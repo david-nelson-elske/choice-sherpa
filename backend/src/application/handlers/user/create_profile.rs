@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use crate::domain::foundation::{CommandMetadata, DomainError, ErrorCode, UserId};
+use crate::domain::foundation::{CommandMetadata, DomainError, ErrorCode, Timestamp, UserId};
 use crate::domain::user::{DecisionProfile, DecisionProfileId, ProfileConsent};
-use crate::ports::{ProfileRepository};
+use crate::ports::ProfileRepository;
 
 /// Command to create a new decision profile.
 #[derive(Debug, Clone)]
@@ -49,14 +49,15 @@ impl CreateProfileHandler {
         // 2. Check if profile already exists
         if let Some(_existing) = self.repository.find_by_user(&cmd.user_id).await? {
             return Err(DomainError::new(
-                ErrorCode::Conflict,
+                ErrorCode::ValidationFailed,
                 "Profile already exists for this user",
             ));
         }
 
         // 3. Create empty profile
-        let profile = DecisionProfile::new(cmd.user_id.clone(), cmd.consent)?;
-        let profile_id = *profile.id();
+        let profile = DecisionProfile::new(cmd.user_id.clone(), cmd.consent, Timestamp::now())
+            .map_err(|e| DomainError::validation("profile", &e))?;
+        let profile_id = profile.id();
 
         // 4. Persist profile
         self.repository.create(&profile).await?;
@@ -127,12 +128,34 @@ mod tests {
             unimplemented!()
         }
 
+        async fn find_by_id(
+            &self,
+            profile_id: DecisionProfileId,
+        ) -> Result<Option<DecisionProfile>, DomainError> {
+            Ok(self
+                .profiles
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|p| p.id() == profile_id)
+                .cloned())
+        }
+
         async fn export(
             &self,
             _profile_id: DecisionProfileId,
             _format: crate::ports::ExportFormat,
         ) -> Result<Vec<u8>, DomainError> {
             unimplemented!()
+        }
+
+        async fn exists_for_user(&self, user_id: &UserId) -> Result<bool, DomainError> {
+            Ok(self
+                .profiles
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|p| p.user_id() == user_id))
         }
     }
 
@@ -141,11 +164,11 @@ mod tests {
     }
 
     fn test_consent() -> ProfileConsent {
-        ProfileConsent::new(true, true, true, Timestamp::now()).unwrap()
+        ProfileConsent::full(Timestamp::now())
     }
 
     fn test_metadata() -> CommandMetadata {
-        CommandMetadata::new(test_user_id(), "test-correlation-id")
+        CommandMetadata::new(test_user_id())
     }
 
     #[tokio::test]
@@ -194,7 +217,7 @@ mod tests {
     #[tokio::test]
     async fn test_create_profile_already_exists() {
         let existing_profile =
-            DecisionProfile::new(test_user_id(), test_consent()).unwrap();
+            DecisionProfile::new(test_user_id(), test_consent(), Timestamp::now()).unwrap();
         let repo = Arc::new(MockProfileRepository::new().with_existing_profile(existing_profile));
         let handler = CreateProfileHandler::new(repo);
 

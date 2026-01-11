@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use crate::domain::foundation::{CommandMetadata, DomainError, ErrorCode, UserId};
+use crate::domain::foundation::{CommandMetadata, DomainError, ErrorCode, Timestamp, UserId};
 use crate::ports::{
     AnalysisResult, DecisionAnalysisData, ProfileAnalyzer, ProfileRepository,
 };
@@ -136,12 +136,34 @@ use crate::ports::{ConversationSummary, RiskIndicator};
             unimplemented!()
         }
 
+        async fn find_by_id(
+            &self,
+            profile_id: DecisionProfileId,
+        ) -> Result<Option<DecisionProfile>, DomainError> {
+            Ok(self
+                .profiles
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|p| p.id() == profile_id)
+                .cloned())
+        }
+
         async fn export(
             &self,
             _profile_id: DecisionProfileId,
             _format: crate::ports::ExportFormat,
         ) -> Result<Vec<u8>, DomainError> {
             unimplemented!()
+        }
+
+        async fn exists_for_user(&self, user_id: &UserId) -> Result<bool, DomainError> {
+            Ok(self
+                .profiles
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|p| p.user_id() == user_id))
         }
     }
 
@@ -219,30 +241,30 @@ use crate::ports::{ConversationSummary, RiskIndicator};
     }
 
     fn test_consent() -> ProfileConsent {
-        ProfileConsent::new(true, true, true, Timestamp::now()).unwrap()
+        ProfileConsent::full(Timestamp::now())
     }
 
     fn test_metadata() -> CommandMetadata {
-        CommandMetadata::new(test_user_id(), "test-correlation-id")
+        CommandMetadata::new(test_user_id())
     }
 
     fn test_analysis_data() -> DecisionAnalysisData {
         DecisionAnalysisData {
-            cycle_id: CycleId::new(),
             title: "Test Decision".to_string(),
             domain: DecisionDomain::Career,
-            chosen_alternative: "Option A".to_string(),
             dq_score: Some(85),
             key_tradeoff: "Growth vs Stability".to_string(),
-            objectives_used: vec!["Financial security".to_string()],
+            chosen_alternative: "Option A".to_string(),
+            objectives: vec!["Financial security".to_string()],
+            alternatives: vec!["Option A".to_string(), "Option B".to_string()],
+            conversations: vec![],
             risk_indicators: vec![],
-            conversation_summary: None,
         }
     }
 
     #[tokio::test]
     async fn test_update_profile_from_decision_success() {
-        let profile = DecisionProfile::new(test_user_id(), test_consent()).unwrap();
+        let profile = DecisionProfile::new(test_user_id(), test_consent(), Timestamp::now()).unwrap();
         let repo = Arc::new(MockProfileRepository::new().with_profile(profile));
         let analyzer = Arc::new(MockProfileAnalyzer::new());
         let handler = UpdateProfileFromDecisionHandler::new(repo, analyzer);
@@ -293,7 +315,7 @@ use crate::ports::{ConversationSummary, RiskIndicator};
     async fn test_update_profile_without_analysis_consent() {
         let mut consent = test_consent();
         consent.analysis_enabled = false;
-        let profile = DecisionProfile::new(test_user_id(), consent).unwrap();
+        let profile = DecisionProfile::new(test_user_id(), consent, Timestamp::now()).unwrap();
         let repo = Arc::new(MockProfileRepository::new().with_profile(profile));
         let analyzer = Arc::new(MockProfileAnalyzer::new());
         let handler = UpdateProfileFromDecisionHandler::new(repo, analyzer);

@@ -55,7 +55,7 @@ impl DeleteProfileHandler {
             .await?
             .ok_or_else(|| DomainError::new(ErrorCode::NotFound, "Profile not found"))?;
 
-        let profile_id = *profile.id();
+        let profile_id = profile.id();
 
         // 3. Delete profile (cascades to history via foreign key)
         self.repository.delete(profile_id).await?;
@@ -124,13 +124,26 @@ mod tests {
 
         async fn delete(&self, profile_id: DecisionProfileId) -> Result<(), DomainError> {
             let mut profiles = self.profiles.lock().unwrap();
-            if let Some(pos) = profiles.iter().position(|p| *p.id() == profile_id) {
+            if let Some(pos) = profiles.iter().position(|p| p.id() == profile_id) {
                 profiles.remove(pos);
                 self.deleted_ids.lock().unwrap().push(profile_id);
                 Ok(())
             } else {
                 Err(DomainError::new(ErrorCode::NotFound, "Profile not found"))
             }
+        }
+
+        async fn find_by_id(
+            &self,
+            profile_id: DecisionProfileId,
+        ) -> Result<Option<DecisionProfile>, DomainError> {
+            Ok(self
+                .profiles
+                .lock()
+                .unwrap()
+                .iter()
+                .find(|p| p.id() == profile_id)
+                .cloned())
         }
 
         async fn export(
@@ -140,6 +153,15 @@ mod tests {
         ) -> Result<Vec<u8>, DomainError> {
             unimplemented!()
         }
+
+        async fn exists_for_user(&self, user_id: &UserId) -> Result<bool, DomainError> {
+            Ok(self
+                .profiles
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|p| p.user_id() == user_id))
+        }
     }
 
     fn test_user_id() -> UserId {
@@ -147,16 +169,16 @@ mod tests {
     }
 
     fn test_consent() -> ProfileConsent {
-        ProfileConsent::new(true, true, true, Timestamp::now()).unwrap()
+        ProfileConsent::full(Timestamp::now())
     }
 
     fn test_metadata() -> CommandMetadata {
-        CommandMetadata::new(test_user_id(), "test-correlation-id")
+        CommandMetadata::new(test_user_id())
     }
 
     #[tokio::test]
     async fn test_delete_profile_success() {
-        let profile = DecisionProfile::new(test_user_id(), test_consent()).unwrap();
+        let profile = DecisionProfile::new(test_user_id(), test_consent(), Timestamp::now()).unwrap();
         let repo = Arc::new(MockProfileRepository::new().with_profile(profile));
         let handler = DeleteProfileHandler::new(repo.clone());
 
@@ -176,7 +198,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delete_profile_wrong_confirmation() {
-        let profile = DecisionProfile::new(test_user_id(), test_consent()).unwrap();
+        let profile = DecisionProfile::new(test_user_id(), test_consent(), Timestamp::now()).unwrap();
         let repo = Arc::new(MockProfileRepository::new().with_profile(profile));
         let handler = DeleteProfileHandler::new(repo.clone());
 
