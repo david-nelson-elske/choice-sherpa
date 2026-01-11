@@ -525,6 +525,132 @@ impl CycleReader for PostgresCycleReader {
             None => Ok(None),
         }
     }
+
+    async fn get_proact_tree_view(
+        &self,
+        session_id: &SessionId,
+    ) -> Result<Option<crate::domain::cycle::CycleTreeNode>, DomainError> {
+        use crate::domain::cycle::{LetterStatus, PrOACTLetter, PrOACTStatus, CycleTreeNode as PrOACTTreeNode};
+
+        // Fetch all cycles with their component statuses
+        let cycle_rows = sqlx::query(
+            r#"
+            SELECT c.id, c.parent_cycle_id, c.branch_point, c.updated_at
+            FROM cycles c
+            WHERE c.session_id = $1
+            ORDER BY c.created_at ASC
+            "#,
+        )
+        .bind(session_id.as_uuid())
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| db_error(&format!("Failed to fetch cycles for PrOACT tree: {}", e)))?;
+
+        if cycle_rows.is_empty() {
+            return Ok(None);
+        }
+
+        // Fetch all components for all cycles in this session
+        let component_rows = sqlx::query(
+            r#"
+            SELECT comp.cycle_id, comp.component_type, comp.status
+            FROM components comp
+            JOIN cycles c ON c.id = comp.cycle_id
+            WHERE c.session_id = $1
+            "#,
+        )
+        .bind(session_id.as_uuid())
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| db_error(&format!("Failed to fetch components for PrOACT tree: {}", e)))?;
+
+        // Build status map: cycle_id -> component_type -> status
+        let mut cycle_components: HashMap<Uuid, HashMap<ComponentType, ComponentStatus>> = HashMap::new();
+
+        for row in component_rows {
+            let cycle_id: Uuid = row.get("cycle_id");
+            let ct_str: String = row.get("component_type");
+            let status_str: String = row.get("status");
+
+            let ct = str_to_component_type(&ct_str)?;
+            let status = str_to_component_status(&status_str)?;
+
+            cycle_components
+                .entry(cycle_id)
+                .or_default()
+                .insert(ct, status);
+        }
+
+        // Build PrOACT nodes and parent mapping
+        let mut nodes: HashMap<Uuid, PrOACTTreeNode> = HashMap::new();
+        let mut parent_map: HashMap<Uuid, Option<Uuid>> = HashMap::new();
+
+        for row in &cycle_rows {
+            let id: Uuid = row.get("id");
+            let parent_id: Option<Uuid> = row.get("parent_cycle_id");
+            let branch_point_str: Option<String> = row.get("branch_point");
+            let updated_at: chrono::DateTime<chrono::Utc> = row.get("updated_at");
+
+            // Get component statuses for this cycle
+            let component_statuses = cycle_components.get(&id).cloned().unwrap_or_default();
+
+            // Map component statuses to PrOACT letter statuses
+            let letter_statuses = component_statuses_to_proact_status(&component_statuses);
+
+            // Convert branch_point to PrOACTLetter
+            let branch_point = branch_point_str
+                .and_then(|s| str_to_component_type(&s).ok())
+                .and_then(component_type_to_proact_letter);
+
+            let node = PrOACTTreeNode {
+                cycle_id: CycleId::from_uuid(id),
+                label: format!("Cycle {}", &id.to_string()[..8]),  // Default label, TODO: load from DB
+                branch_point,
+                letter_statuses,
+                children: Vec::new(),  // Will be filled later
+                updated_at,
+            };
+
+            nodes.insert(id, node);
+            parent_map.insert(id, parent_id);
+        }
+
+        // Find root (no parent)
+        let root_id = parent_map
+            .iter()
+            .find(|(_, parent)| parent.is_none())
+            .map(|(id, _)| *id);
+
+        let root_id = match root_id {
+            Some(id) => id,
+            None => return Ok(None),
+        };
+
+        // Build tree recursively
+        fn build_proact_tree(
+            id: Uuid,
+            nodes: &mut HashMap<Uuid, PrOACTTreeNode>,
+            parent_map: &HashMap<Uuid, Option<Uuid>>,
+        ) -> Option<PrOACTTreeNode> {
+            let mut node = nodes.remove(&id)?;
+
+            // Find children
+            let child_ids: Vec<Uuid> = parent_map
+                .iter()
+                .filter(|(_, parent)| **parent == Some(id))
+                .map(|(child_id, _)| *child_id)
+                .collect();
+
+            node.children = child_ids
+                .into_iter()
+                .filter_map(|child_id| build_proact_tree(child_id, nodes, parent_map))
+                .collect();
+
+            Some(node)
+        }
+
+        Ok(build_proact_tree(root_id, &mut nodes, &parent_map))
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
@@ -603,6 +729,79 @@ fn component_display_name(ct: ComponentType) -> String {
         ComponentType::Recommendation => "Recommendation".to_string(),
         ComponentType::DecisionQuality => "Decision Quality".to_string(),
         ComponentType::NotesNextSteps => "Notes & Next Steps".to_string(),
+    }
+}
+
+/// Maps a ComponentType to its corresponding PrOACTLetter.
+///
+/// Note: IssueRaising and NotesNextSteps don't map to PrOACT letters
+/// as they are pre/post steps, not part of the core framework.
+fn component_type_to_proact_letter(ct: ComponentType) -> Option<crate::domain::cycle::PrOACTLetter> {
+    use crate::domain::cycle::PrOACTLetter;
+
+    match ct {
+        ComponentType::ProblemFrame => Some(PrOACTLetter::P),
+        ComponentType::Objectives => Some(PrOACTLetter::R),
+        ComponentType::Alternatives => Some(PrOACTLetter::O),
+        ComponentType::Consequences => Some(PrOACTLetter::A),
+        ComponentType::Tradeoffs => Some(PrOACTLetter::C),
+        ComponentType::Recommendation | ComponentType::DecisionQuality => Some(PrOACTLetter::T),
+        ComponentType::IssueRaising | ComponentType::NotesNextSteps => None,
+    }
+}
+
+/// Converts a map of component statuses to PrOACT letter statuses.
+///
+/// Aggregates component statuses by their PrOACT letter. For letter T,
+/// which maps to both Recommendation and DecisionQuality, the status is:
+/// - Completed: both are complete
+/// - InProgress: at least one is in progress
+/// - NotStarted: neither is started
+fn component_statuses_to_proact_status(
+    statuses: &HashMap<ComponentType, ComponentStatus>,
+) -> crate::domain::cycle::PrOACTStatus {
+    use crate::domain::cycle::{LetterStatus, PrOACTStatus};
+
+    // Helper to convert ComponentStatus to LetterStatus
+    fn to_letter_status(status: ComponentStatus) -> LetterStatus {
+        match status {
+            ComponentStatus::Complete => LetterStatus::Completed,
+            ComponentStatus::InProgress | ComponentStatus::NeedsRevision => LetterStatus::InProgress,
+            ComponentStatus::NotStarted => LetterStatus::NotStarted,
+        }
+    }
+
+    // Get status for a single component type
+    fn get_status(
+        statuses: &HashMap<ComponentType, ComponentStatus>,
+        ct: ComponentType,
+    ) -> LetterStatus {
+        statuses
+            .get(&ct)
+            .copied()
+            .map(to_letter_status)
+            .unwrap_or(LetterStatus::NotStarted)
+    }
+
+    // Get combined status for T (Recommendation + DecisionQuality)
+    fn get_t_status(statuses: &HashMap<ComponentType, ComponentStatus>) -> LetterStatus {
+        let rec_status = get_status(statuses, ComponentType::Recommendation);
+        let dq_status = get_status(statuses, ComponentType::DecisionQuality);
+
+        match (rec_status, dq_status) {
+            (LetterStatus::Completed, LetterStatus::Completed) => LetterStatus::Completed,
+            (LetterStatus::NotStarted, LetterStatus::NotStarted) => LetterStatus::NotStarted,
+            _ => LetterStatus::InProgress,
+        }
+    }
+
+    PrOACTStatus {
+        p: get_status(statuses, ComponentType::ProblemFrame),
+        r: get_status(statuses, ComponentType::Objectives),
+        o: get_status(statuses, ComponentType::Alternatives),
+        a: get_status(statuses, ComponentType::Consequences),
+        c: get_status(statuses, ComponentType::Tradeoffs),
+        t: get_t_status(statuses),
     }
 }
 

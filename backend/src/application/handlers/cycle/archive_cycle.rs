@@ -43,7 +43,8 @@ pub struct CycleArchivedEvent {
 
 domain_event!(
     CycleArchivedEvent,
-    event_type = "cycle.archived",
+    event_type = "cycle.archived.v1",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
     occurred_at = archived_at,
@@ -367,7 +368,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "cycle.archived");
+        assert_eq!(events[0].event_type, "cycle.archived.v1");
         assert_eq!(events[0].aggregate_id, cycle_id.to_string());
     }
 

@@ -185,6 +185,7 @@ mod tests {
         EventEnvelope {
             event_id: EventId::new(),
             event_type: event_type.to_string(),
+            schema_version: 1,
             aggregate_id: session_id.to_string(),
             aggregate_type: "Session".to_string(),
             occurred_at: Timestamp::now(),
@@ -200,6 +201,7 @@ mod tests {
         EventEnvelope {
             event_id: EventId::new(),
             event_type: event_type.to_string(),
+            schema_version: 1,
             aggregate_id: cycle_id.to_string(),
             aggregate_type: "Cycle".to_string(),
             occurred_at: Timestamp::now(),
@@ -253,6 +255,7 @@ mod tests {
         let event = EventEnvelope {
             event_id: EventId::new(),
             event_type: "component.completed".to_string(),
+            schema_version: 1,
             aggregate_id: "component-123".to_string(),
             aggregate_type: "Component".to_string(),
             occurred_at: Timestamp::now(),
@@ -279,6 +282,7 @@ mod tests {
         let event = EventEnvelope {
             event_id: EventId::new(),
             event_type: "unknown.event".to_string(),
+            schema_version: 1,
             aggregate_id: "some-id".to_string(),
             aggregate_type: "Unknown".to_string(),
             occurred_at: Timestamp::now(),
@@ -322,6 +326,7 @@ mod tests {
         let event = EventEnvelope {
             event_id: EventId::new(),
             event_type: "cycle.created".to_string(),
+            schema_version: 1,
             aggregate_id: "cycle-123".to_string(),
             aggregate_type: "Cycle".to_string(),
             occurred_at: Timestamp::now(),
@@ -360,6 +365,7 @@ mod tests {
         let event = EventEnvelope {
             event_id: EventId::new(),
             event_type: "internal.cleanup".to_string(),
+            schema_version: 1,
             aggregate_id: "some-id".to_string(),
             aggregate_type: "Internal".to_string(),
             occurred_at: Timestamp::now(),

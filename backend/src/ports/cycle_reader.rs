@@ -9,6 +9,7 @@
 //! - **Separated from write**: CQRS pattern for scalability
 //! - **Tree support**: Queries for cycle branches and lineage
 
+use crate::domain::cycle::CycleTreeNode as PrOACTTreeNode;
 use crate::domain::foundation::{
     ComponentStatus, ComponentType, CycleId, CycleStatus, DomainError, SessionId, Timestamp,
 };
@@ -56,6 +57,17 @@ pub trait CycleReader: Send + Sync {
         cycle_id: &CycleId,
         component_type: ComponentType,
     ) -> Result<Option<ComponentOutputView>, DomainError>;
+
+    /// Get the PrOACT letter-based tree view for a session.
+    ///
+    /// Returns a tree structure optimized for PrOACT visualization with
+    /// letter statuses (P-r-O-A-C-T) for each cycle node.
+    ///
+    /// This is a specialized view for the cycle tree browser UI component.
+    async fn get_proact_tree_view(
+        &self,
+        session_id: &SessionId,
+    ) -> Result<Option<PrOACTTreeNode>, DomainError>;
 }
 
 /// Detailed view of a cycle for UI display.

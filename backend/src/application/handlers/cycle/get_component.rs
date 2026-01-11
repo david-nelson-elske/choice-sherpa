@@ -125,6 +125,13 @@ mod tests {
                 .find(|o| o.cycle_id == *cycle_id && o.component_type == component_type)
                 .cloned())
         }
+
+        async fn get_proact_tree_view(
+            &self,
+            _session_id: &SessionId,
+        ) -> Result<Option<crate::domain::cycle::CycleTreeNode>, DomainError> {
+            Ok(None)
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────

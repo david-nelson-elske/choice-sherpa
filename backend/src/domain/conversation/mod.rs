@@ -3,6 +3,7 @@
 //! Manages AI-guided dialogues within each PrOACT component.
 //! Handles conversation lifecycle, agent phases, and data extraction.
 
+mod conversation;
 mod state;
 mod phase;
 mod engine;
@@ -11,6 +12,7 @@ mod context;
 pub mod configs;
 pub mod tools;
 
+pub use conversation::Conversation;
 pub use state::ConversationState;
 pub use phase::AgentPhase;
 pub use engine::{PhaseTransitionEngine, PhaseTransitionConfig, ConversationSnapshot};

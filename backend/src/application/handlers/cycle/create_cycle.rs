@@ -46,7 +46,8 @@ pub struct CycleCreatedEvent {
 
 domain_event!(
     CycleCreatedEvent,
-    event_type = "cycle.created",
+    event_type = "cycle.created.v1",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
     occurred_at = created_at,
@@ -495,7 +496,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "cycle.created");
+        assert_eq!(events[0].event_type, "cycle.created.v1");
         assert_eq!(events[0].aggregate_id, result.cycle.id().to_string());
     }
 

@@ -4,19 +4,32 @@
 //!
 //! # Tables
 //!
+//! - `sessions` - Session aggregate data
 //! - `cycles` - Cycle aggregate metadata
 //! - `components` - Component data with JSONB outputs
+//! - `conversations` - Conversation state and metadata
+//! - `messages` - Conversation message history
 //! - `memberships` - User membership/subscription data
 //! - `promo_codes` - Promotional codes for free access
 
 mod access_checker_impl;
+mod conversation_reader;
+mod conversation_repository;
 mod cycle_reader;
 mod cycle_repository;
+mod dashboard_reader;
 mod membership_reader;
 mod membership_repository;
+mod session_reader;
+mod session_repository;
 
 pub use access_checker_impl::PostgresAccessChecker;
+pub use conversation_reader::PostgresConversationReader;
+pub use conversation_repository::PostgresConversationRepository;
 pub use cycle_reader::PostgresCycleReader;
 pub use cycle_repository::PostgresCycleRepository;
+pub use dashboard_reader::PostgresDashboardReader;
 pub use membership_reader::PostgresMembershipReader;
 pub use membership_repository::PostgresMembershipRepository;
+pub use session_reader::PostgresSessionReader;
+pub use session_repository::PostgresSessionRepository;

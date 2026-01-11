@@ -173,6 +173,7 @@ fn test_envelope(event_type: &str, event_id: &str) -> EventEnvelope {
     EventEnvelope {
         event_id: EventId::from_string(event_id),
         event_type: event_type.to_string(),
+        schema_version: 1,
         aggregate_id: "test-aggregate".to_string(),
         aggregate_type: "Test".to_string(),
         occurred_at: Timestamp::now(),

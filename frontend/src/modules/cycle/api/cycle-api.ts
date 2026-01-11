@@ -10,6 +10,7 @@ import type {
 	CycleView,
 	CycleSummary,
 	CycleTreeNode,
+	PrOACTTreeNode,
 	ComponentOutputView,
 	ComponentType
 } from '../domain/types';
@@ -274,7 +275,20 @@ export async function getCycleTree(
 	session: Session | null,
 	sessionId: string
 ): Promise<CycleTreeNode | null> {
-	const response = await authFetch(`${API_BASE}/tree?session_id=${sessionId}`, session, {
+	const response = await authFetch(`/api/sessions/${sessionId}/cycles/tree`, session, {
+		method: 'GET'
+	});
+	return handleResponse(response);
+}
+
+/**
+ * Get the PrOACT tree visualization for a session.
+ */
+export async function getProactTreeView(
+	session: Session | null,
+	sessionId: string
+): Promise<PrOACTTreeNode | null> {
+	const response = await authFetch(`/api/sessions/${sessionId}/cycles/proact-tree`, session, {
 		method: 'GET'
 	});
 	return handleResponse(response);

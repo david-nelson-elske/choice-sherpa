@@ -2,7 +2,10 @@
 //!
 //! Command and query handlers that orchestrate domain operations.
 
+pub mod analysis;
+pub mod conversation;
 pub mod cycle;
+pub mod dashboard;
 pub mod membership;
 pub mod session;
 
@@ -27,6 +30,12 @@ pub use cycle::{
     GetCycleHandler, GetCycleQuery, GetCycleResult,
     GetCycleTreeHandler, GetCycleTreeQuery, GetCycleTreeResult,
 };
+pub use dashboard::{
+    // Queries
+    CompareCyclesHandler, CompareCyclesQuery, CompareCyclesResult,
+    GetComponentDetailHandler, GetComponentDetailQuery, GetComponentDetailResult,
+    GetDashboardOverviewHandler, GetDashboardOverviewQuery, GetDashboardOverviewResult,
+};
 pub use membership::{
     // Commands
     CancelMembershipCommand, CancelMembershipHandler, CancelMembershipResult,
@@ -43,4 +52,11 @@ pub use session::{
     CreateSessionCommand, CreateSessionHandler, CreateSessionResult,
     CycleCreated, SessionCycleTracker,
     RenameSessionCommand, RenameSessionHandler, RenameSessionResult,
+};
+pub use analysis::{AnalysisTriggerHandler, ComponentCompletedPayload};
+pub use conversation::{
+    // Commands
+    SendMessageCommand, SendMessageHandler, SendMessageResult,
+    // Queries
+    GetConversationHandler, GetConversationQuery,
 };

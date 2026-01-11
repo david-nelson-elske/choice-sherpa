@@ -254,6 +254,7 @@ mod tests {
         EventEnvelope {
             event_id: EventId::from_string(id),
             event_type: "test.event".to_string(),
+            schema_version: 1,
             aggregate_id: "agg-1".to_string(),
             aggregate_type: "Test".to_string(),
             occurred_at: Timestamp::now(),

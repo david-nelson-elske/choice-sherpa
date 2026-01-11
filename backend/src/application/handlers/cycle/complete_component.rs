@@ -47,7 +47,8 @@ pub struct ComponentCompletedEvent {
 
 domain_event!(
     ComponentCompletedEvent,
-    event_type = "component.completed",
+    event_type = "component.completed.v1",
+    schema_version = 1,
     aggregate_id = cycle_id,
     aggregate_type = "Cycle",
     occurred_at = completed_at,
@@ -352,7 +353,7 @@ mod tests {
 
         let events = publisher.published_events();
         assert_eq!(events.len(), 1);
-        assert_eq!(events[0].event_type, "component.completed");
+        assert_eq!(events[0].event_type, "component.completed.v1");
         assert_eq!(events[0].aggregate_id, cycle_id.to_string());
     }
 
