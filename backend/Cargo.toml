@@ -69,6 +69,7 @@ jsonwebtoken = "9.3"
 [dev-dependencies]
 # Testing - pinned for Rust 1.72 compatibility
 proptest = "1.4"
+tempfile = "3.8"
 
 [lib]
 path = "src/lib.rs"

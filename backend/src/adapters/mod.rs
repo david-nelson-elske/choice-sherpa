@@ -7,6 +7,7 @@
 //! - `http` - HTTP/REST API implementations
 //! - `membership` - Membership access control implementations
 //! - `postgres` - PostgreSQL database implementations
+//! - `profile` - Profile storage implementations (filesystem, PostgreSQL)
 //! - `stripe` - Stripe payment provider implementation
 //! - `validation` - Schema validation implementations
 
@@ -16,6 +17,7 @@ pub mod events;
 pub mod http;
 pub mod membership;
 pub mod postgres;
+pub mod profile;
 pub mod stripe;
 pub mod validation;
 
@@ -31,5 +33,6 @@ pub use postgres::{
     PostgresAccessChecker, PostgresCycleReader, PostgresCycleRepository,
     PostgresMembershipReader, PostgresMembershipRepository,
 };
+pub use profile::{FsProfileStorage, PgProfileReader, PgProfileRepository};
 pub use stripe::{MockPaymentProvider, StripeConfig, StripePaymentAdapter};
 pub use validation::JsonSchemaValidator;
